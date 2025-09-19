@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>הלאה בקיצור - Music News</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px 0;
+        }
+
+        .site-title {
+            font-size: 2.8rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s ease-in-out infinite;
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #a0a0a0;
+            font-weight: 300;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .admin-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .admin-title {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: #4ecdc4;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #e0e0e0;
+            font-weight: 500;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #4ecdc4;
+            box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(78, 205, 196, 0.3);
+        }
+
+        .news-feed {
+            margin-top: 30px;
+        }
+
+        .news-item {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .news-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .news-item:hover {
+            transform: translateY(-3px);
+            border-color: rgba(78, 205, 196, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .news-item:hover::before {
+            opacity: 1;
+        }
+
+        .news-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .news-meta {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #a0a0a0;
+        }
+
+        .language-badge {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .source-tag {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+
+        .news-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .news-title a {
+            color: #ffffff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .news-title a:hover {
+            color: #4ecdc4;
+        }
+
+        .news-summary {
+            color: #d0d0d0;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .news-date {
+            color: #8a8a8a;
+            font-size: 0.85rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #a0a0a0;
+            padding: 60px 20px;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #4ecdc4;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .site-title {
+                font-size: 2.2rem;
+            }
+            
+            .admin-panel {
+                padding: 20px;
+            }
+            
+            .news-item {
+                padding: 20px;
+            }
+            
+            .news-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="site-title">הלאה בקיצור</h1>
+            <p class="subtitle">Your Personal Music News Feed</p>
+        </header>
+
+        <div class="admin-panel">
+            <h2 class="admin-title">Add News Story</h2>
+            <form id="newsForm">
+                <div class="form-group">
+                    <label for="headline">Headline</label>
+                    <input type="text" id="headline" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="summary">Summary</label>
+                    <textarea id="summary" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="link">Link</label>
+                    <input type="url" id="link" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="source">Source</label>
+                    <select id="source" required>
+                        <option value="">Select source...</option>
+                        <option value="Pitchfork">Pitchfork</option>
+                        <option value="Rolling Stone">Rolling Stone</option>
+                        <option value="Billboard">Billboard</option>
+                        <option value="HotNewHipHop">HotNewHipHop</option>
+                        <option value="HipHopDX">HipHopDX</option>
+                        <option value="Resident Advisor">Resident Advisor</option>
+                        <option value="XLR8R">XLR8R</option>
+                        <option value="Mako Music">Mako Music</option>
+                        <option value="Galgalatz">Galgalatz</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="language">Language</label>
+                    <select id="language" required>
+                        <option value="">Select language...</option>
+                        <option value="EN">English</option>
+                        <option value="HE">עברית</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn">Add Story</button>
+            </form>
+        </div>
+
+        <div class="news-feed" id="newsFeed">
+            <div class="empty-state">
+                <h3>No stories yet</h3>
+                <p>Add your first music news story using the form above!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let newsData = [];
+
+        // Load existing news from memory
+        function loadNews() {
+            const feed = document.getElementById('newsFeed');
+            
+            if (newsData.length === 0) {
+                feed.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No stories yet</h3>
+                        <p>Add your first music news story using the form above!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Sort by date (newest first) and limit to 15 items
+            const recentNews = newsData
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .slice(0, 15);
+
+            feed.innerHTML = recentNews.map(story => `
+                <article class="news-item">
+                    <div class="news-header">
+                        <div class="news-meta">
+                            <span class="language-badge">${story.language}</span>
+                            <span class="source-tag">${story.source}</span>
+                        </div>
+                        <div class="news-date">${formatDate(story.date)}</div>
+                    </div>
+                    <h2 class="news-title">
+                        <a href="${story.link}" target="_blank" rel="noopener">${story.headline}</a>
+                    </h2>
+                    <p class="news-summary">${story.summary}</p>
+                </article>
+            `).join('');
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+            
+            if (diffHours < 1) {
+                return 'Just now';
+            } else if (diffHours < 24) {
+                return `${diffHours} hours ago`;
+            } else {
+                const diffDays = Math.floor(diffHours / 24);
+                if (diffDays === 1) {
+                    return 'Yesterday';
+                } else {
+                    return `${diffDays} days ago`;
+                }
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('newsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const headline = document.getElementById('headline').value;
+            const summary = document.getElementById('summary').value;
+            const link = document.getElementById('link').value;
+            const source = document.getElementById('source').value;
+            const language = document.getElementById('language').value;
+            
+            const newStory = {
+                id: Date.now(),
+                headline,
+                summary,
+                link,
+                source,
+                language,
+                date: new Date().toISOString()
+            };
+            
+            newsData.unshift(newStory);
+            loadNews();
+            
+            // Reset form
+            this.reset();
+            
+            // Scroll to see the new story
+            document.getElementById('newsFeed').scrollIntoView({ behavior: 'smooth' });
+        });
+
+        // Add some sample data for demonstration
+        newsData = [
+            {
+                id: 1,
+                headline: "Drake Announces Surprise Album Release",
+                summary: "The Toronto rapper revealed on Instagram that his new project will drop this Friday, featuring collaborations with several underground artists.",
+                link: "#",
+                source: "HipHopDX",
+                language: "EN",
+                date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 2,
+                headline: "Disclosure Returns with New Electronic EP",
+                summary: "The British electronic duo shares their first new music in two years, exploring deeper house influences and featuring vocalist Kelis.",
+                link: "#",
+                source: "Resident Advisor",
+                language: "EN",
+                date: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 3,
+                headline: "עידן רייכל חושף פרויקט חדש",
+                summary: "המוזיקאי הישראלי מכריז על אלבום סולו ראשון מזה 5 שנים, הכולל שיתופי פעולה עם אמנים מהמזרח התיכון.",
+                link: "#",
+                source: "Mako Music",
+                language: "HE",
+                date: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString()
+            }
+        ];
+
+        // Load news on page load
+        loadNews();
+    </script>
+</body>
+</html>
