@@ -55,70 +55,7 @@
             50% { background-position: 100% 50%; }
         }
 
-        .admin-panel {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
 
-        .admin-title {
-            font-size: 1.3rem;
-            margin-bottom: 20px;
-            color: #4ecdc4;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            color: #e0e0e0;
-            font-weight: 500;
-        }
-
-        input, textarea, select {
-            width: 100%;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            color: #ffffff;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        input:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: #4ecdc4;
-            box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.1);
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .btn {
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-            border: none;
-            padding: 12px 25px;
-            border-radius: 25px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 14px;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(78, 205, 196, 0.3);
-        }
 
         .news-feed {
             margin-top: 30px;
@@ -262,53 +199,7 @@
             <p class="subtitle">Your Personal Music News Feed</p>
         </header>
 
-        <div class="admin-panel">
-            <h2 class="admin-title">Add News Story</h2>
-            <form id="newsForm">
-                <div class="form-group">
-                    <label for="headline">Headline</label>
-                    <input type="text" id="headline" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="summary">Summary</label>
-                    <textarea id="summary" required></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="link">Link</label>
-                    <input type="url" id="link" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="source">Source</label>
-                    <select id="source" required>
-                        <option value="">Select source...</option>
-                        <option value="Pitchfork">Pitchfork</option>
-                        <option value="Rolling Stone">Rolling Stone</option>
-                        <option value="Billboard">Billboard</option>
-                        <option value="HotNewHipHop">HotNewHipHop</option>
-                        <option value="HipHopDX">HipHopDX</option>
-                        <option value="Resident Advisor">Resident Advisor</option>
-                        <option value="XLR8R">XLR8R</option>
-                        <option value="Mako Music">Mako Music</option>
-                        <option value="Galgalatz">Galgalatz</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="language">Language</label>
-                    <select id="language" required>
-                        <option value="">Select language...</option>
-                        <option value="EN">English</option>
-                        <option value="HE">עברית</option>
-                    </select>
-                </div>
-                
-                <button type="submit" class="btn">Add Story</button>
-            </form>
-        </div>
+
 
         <div class="news-feed" id="newsFeed">
             <div class="empty-state">
@@ -328,17 +219,36 @@
             if (newsData.length === 0) {
                 feed.innerHTML = `
                     <div class="empty-state">
-                        <h3>No stories yet</h3>
-                        <p>Add your first music news story using the form above!</p>
+                        <h3>Loading latest music news...</h3>
+                        <p>Your curated feed from the best music sources</p>
                     </div>
                 `;
                 return;
             }
 
-            // Sort by date (newest first) and limit to 15 items
-            const recentNews = newsData
-                .sort((a, b) => new Date(b.date) - new Date(a.date))
-                .slice(0, 15);
+            // Get 3 most recent stories from each source
+            const sourceGroups = {};
+            
+            // Group stories by source
+            newsData.forEach(story => {
+                if (!sourceGroups[story.source]) {
+                    sourceGroups[story.source] = [];
+                }
+                sourceGroups[story.source].push(story);
+            });
+            
+            // Get 3 most recent from each source
+            const balancedNews = [];
+            Object.keys(sourceGroups).forEach(source => {
+                const sourceStories = sourceGroups[source]
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))
+                    .slice(0, 3); // Take 3 most recent from each source
+                balancedNews.push(...sourceStories);
+            });
+            
+            // Sort all selected stories chronologically (newest first)
+            const recentNews = balancedNews
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
 
             feed.innerHTML = recentNews.map(story => `
                 <article class="news-item">
@@ -377,64 +287,151 @@
             }
         }
 
-        // Handle form submission
-        document.getElementById('newsForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const headline = document.getElementById('headline').value;
-            const summary = document.getElementById('summary').value;
-            const link = document.getElementById('link').value;
-            const source = document.getElementById('source').value;
-            const language = document.getElementById('language').value;
-            
-            const newStory = {
-                id: Date.now(),
-                headline,
-                summary,
-                link,
-                source,
-                language,
-                date: new Date().toISOString()
-            };
-            
-            newsData.unshift(newStory);
-            loadNews();
-            
-            // Reset form
-            this.reset();
-            
-            // Scroll to see the new story
-            document.getElementById('newsFeed').scrollIntoView({ behavior: 'smooth' });
-        });
-
-        // Add some sample data for demonstration
+        // Sample music news stories
         newsData = [
+            // HipHopDX stories
             {
                 id: 1,
                 headline: "Drake Announces Surprise Album Release",
                 summary: "The Toronto rapper revealed on Instagram that his new project will drop this Friday, featuring collaborations with several underground artists.",
-                link: "#",
+                link: "https://example.com/drake-album",
                 source: "HipHopDX",
                 language: "EN",
                 date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
             },
             {
+                id: 11,
+                headline: "Kendrick Lamar Teases New Music Video",
+                summary: "The rapper shared cryptic behind-the-scenes footage on social media, hinting at his most ambitious visual project yet.",
+                link: "https://example.com/kendrick-video",
+                source: "HipHopDX",
+                language: "EN",
+                date: new Date(Date.now() - 14 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 12,
+                headline: "Travis Scott Announces Festival Lineup",
+                summary: "Astroworld Festival returns with a star-studded lineup including surprise guests and emerging hip-hop artists.",
+                link: "https://example.com/travis-festival",
+                source: "HipHopDX",
+                language: "EN",
+                date: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString()
+            },
+            
+            // Resident Advisor stories
+            {
                 id: 2,
                 headline: "Disclosure Returns with New Electronic EP",
                 summary: "The British electronic duo shares their first new music in two years, exploring deeper house influences and featuring vocalist Kelis.",
-                link: "#",
+                link: "https://example.com/disclosure-ep",
                 source: "Resident Advisor",
                 language: "EN",
                 date: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString()
             },
             {
+                id: 13,
+                headline: "Four Tet Announces World Tour",
+                summary: "The British producer reveals dates across Europe, North America, and Asia, promising to showcase material from his latest ambient-influenced album.",
+                link: "https://example.com/four-tet-tour",
+                source: "Resident Advisor",
+                language: "EN",
+                date: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 14,
+                headline: "Berlin Club Scene Revival",
+                summary: "After pandemic restrictions, Berlin's underground venues are reopening with innovative safety protocols and fresh electronic music programming.",
+                link: "https://example.com/berlin-clubs",
+                source: "Resident Advisor",
+                language: "EN",
+                date: new Date(Date.now() - 32 * 60 * 60 * 1000).toISOString()
+            },
+            
+            // Mako Music stories
+            {
                 id: 3,
                 headline: "עידן רייכל חושף פרויקט חדש",
                 summary: "המוזיקאי הישראלי מכריז על אלבום סולו ראשון מזה 5 שנים, הכולל שיתופי פעולה עם אמנים מהמזרח התיכון.",
-                link: "#",
+                link: "https://example.com/idan-raichel",
                 source: "Mako Music",
                 language: "HE",
                 date: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 15,
+                headline: "נועה קירל משתפת פעולה עם מפיק בינלאומי",
+                summary: "הזמרת הישראלית חושפת על הקלטת שירים חדשים בלוס אנג'לס עם מפיק שעבד עם ביונסה ואריאנה גרנדה.",
+                link: "https://example.com/noa-kirel-collaboration",
+                source: "Mako Music",
+                language: "HE",
+                date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 16,
+                headline: "תזמורת אנדלוסית חוזרת לבמה",
+                summary: "לאחר הפסקה של שלש שנים, התזמורת המפורסמת מכריזה על סדרת הופעות חדשה ברחבי הארץ עם רפרטואר מחודש.",
+                link: "https://example.com/andalusit-orchestra",
+                source: "Mako Music",
+                language: "HE",
+                date: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+            },
+            
+            // Pitchfork stories
+            {
+                id: 4,
+                headline: "Billie Eilish Previews Documentary Footage",
+                summary: "The pop star shares behind-the-scenes clips from her upcoming documentary, showing the creative process behind her latest album.",
+                link: "https://example.com/billie-documentary",
+                source: "Pitchfork",
+                language: "EN",
+                date: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 17,
+                headline: "Taylor Swift Breaks Streaming Records Again",
+                summary: "Her latest re-recorded album becomes the most-streamed album by a female artist in a single day across all major platforms.",
+                link: "https://example.com/taylor-records",
+                source: "Pitchfork",
+                language: "EN",
+                date: new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 18,
+                headline: "Radiohead Teases Mysterious New Project",
+                summary: "The band's social media accounts have been posting cryptic messages and sound clips, fueling speculation about their first album in six years.",
+                link: "https://example.com/radiohead-project",
+                source: "Pitchfork",
+                language: "EN",
+                date: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString()
+            },
+            
+            // Rolling Stone stories
+            {
+                id: 19,
+                headline: "The Weeknd Announces Stadium Tour",
+                summary: "The Canadian superstar reveals his biggest tour yet, with elaborate stage production and special guests at each venue.",
+                link: "https://example.com/weeknd-tour",
+                source: "Rolling Stone",
+                language: "EN",
+                date: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 20,
+                headline: "Bruce Springsteen Extends Broadway Run",
+                summary: "The Boss adds more dates to his intimate acoustic show, featuring rare deep cuts and personal stories.",
+                link: "https://example.com/springsteen-broadway",
+                source: "Rolling Stone",
+                language: "EN",
+                date: new Date(Date.now() - 16 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 21,
+                headline: "Rock Hall of Fame Announces Nominees",
+                summary: "This year's list includes first-time nominees from hip-hop, electronic, and alternative rock genres, sparking debate among fans.",
+                link: "https://example.com/rock-hall-nominees",
+                source: "Rolling Stone",
+                language: "EN",
+                date: new Date(Date.now() - 40 * 60 * 60 * 1000).toISOString()
             }
         ];
 
