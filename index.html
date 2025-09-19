@@ -15,12 +15,12 @@
       line-height: 1.6;
     }
 
-    .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+    .container { max-width: 900px; margin: 0 auto; padding: 20px; }
 
-    .header { text-align: center; margin-bottom: 40px; padding: 20px 0; }
+    .header { text-align: center; margin-bottom: 24px; padding: 20px 0; }
 
     .site-title {
-      font-size: 2.8rem; font-weight: 900; letter-spacing: -1px; margin-bottom: 10px;
+      font-size: 2.6rem; font-weight: 900; letter-spacing: -1px; margin-bottom: 8px;
       background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
       background-size: 300% 300%;
       -webkit-background-clip: text; background-clip: text;
@@ -28,22 +28,35 @@
       animation: gradientShift 3s ease-in-out infinite;
     }
 
-    .subtitle { font-size: 1.1rem; color: #a0a0a0; font-weight: 300; }
+    .subtitle { font-size: 1rem; color: #a0a0a0; font-weight: 300; }
 
-    @keyframes gradientShift {
-      0%,100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
+    @keyframes gradientShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+
+    .toolbar {
+      display: flex; gap: 10px; align-items: center; justify-content: center;
+      margin: 12px 0 8px;
+      flex-wrap: wrap;
     }
 
-    .news-feed { margin-top: 30px; }
+    .btn {
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.06);
+      color: #fff; padding: 8px 14px; border-radius: 999px;
+      font-size: 0.9rem; cursor: pointer; transition: all .2s ease;
+      backdrop-filter: blur(6px);
+    }
+    .btn:hover { transform: translateY(-1px); border-color: rgba(78,205,196,0.5); }
+    .btn.active { border-color: rgba(78,205,196,0.8); box-shadow: 0 0 0 2px rgba(78,205,196,0.25) inset; }
+
+    .news-feed { margin-top: 14px; }
 
     .news-item {
       background: rgba(255, 255, 255, 0.03);
       backdrop-filter: blur(15px);
-      border-radius: 15px;
-      padding: 25px; margin-bottom: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      transition: all 0.3s ease;
+      border-radius: 16px;
+      padding: 22px; margin-bottom: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      transition: all 0.25s ease;
       position: relative;
     }
 
@@ -51,31 +64,27 @@
       content: '';
       position: absolute; top: 0; left: 0; right: 0; height: 3px;
       background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1);
-      opacity: 0; transition: opacity 0.3s ease;
+      opacity: 0; transition: opacity 0.25s ease;
+      border-top-left-radius: 16px; border-top-right-radius: 16px;
     }
 
-    .news-item:hover {
-      transform: translateY(-3px);
-      border-color: rgba(78, 205, 196, 0.2);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    }
-
+    .news-item:hover { transform: translateY(-2px); border-color: rgba(78, 205, 196, 0.25); }
     .news-item:hover::before { opacity: 1; }
 
     .news-header {
       display: flex; justify-content: space-between; align-items: flex-start;
-      margin-bottom: 15px; flex-wrap: wrap; gap: 10px;
+      margin-bottom: 12px; gap: 8px; flex-wrap: wrap;
     }
 
     .news-meta {
-      display: flex; gap: 15px; align-items: center;
+      display: flex; gap: 10px; align-items: center;
       font-size: 0.85rem; color: #a0a0a0;
     }
 
     .language-badge {
       background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-      color: #fff; padding: 4px 10px; border-radius: 12px;
-      font-size: 0.75rem; font-weight: 600;
+      color: #fff; padding: 3px 10px; border-radius: 12px;
+      font-size: 0.75rem; font-weight: 700;
     }
 
     .source-tag {
@@ -83,53 +92,77 @@
       padding: 4px 10px; border-radius: 12px; font-size: 0.75rem;
     }
 
-    .news-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 12px; line-height: 1.4; }
-    .news-title a { color: #fff; text-decoration: none; transition: color 0.3s ease; }
-    .news-title a:hover { color: #4ecdc4; }
+    .news-title { font-size: 1.22rem; font-weight: 800; margin-bottom: 10px; line-height: 1.4; }
+    .news-title a { color: #fff; text-decoration: none; transition: color 0.2s ease; }
+    .news-title a:hover { color: #4ecdc4; text-decoration: underline; text-underline-offset: 3px; }
 
-    .news-summary { color: #d0d0d0; line-height: 1.6; margin-bottom: 15px; }
-    .news-date { color: #8a8a8a; font-size: 0.85rem; }
+    .news-summary { color: #d0d0d0; line-height: 1.65; margin-bottom: 10px; }
+    .news-date { color: #8a8a8a; font-size: 0.85rem; white-space: nowrap; }
 
-    .empty-state { text-align: center; color: #a0a0a0; padding: 60px 20px; }
-    .empty-state h3 { font-size: 1.5rem; margin-bottom: 10px; color: #4ecdc4; }
+    .empty-state { text-align: center; color: #a0a0a0; padding: 50px 16px; }
+    .empty-state h3 { font-size: 1.35rem; margin-bottom: 8px; color: #4ecdc4; }
+
+    .error { color: #ff9c9c; }
 
     @media (max-width: 768px) {
       .container { padding: 15px; }
-      .site-title { font-size: 2.2rem; }
-      .news-item { padding: 20px; }
+      .site-title { font-size: 2.1rem; }
+      .news-item { padding: 18px; }
       .news-header { flex-direction: column; align-items: flex-start; }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <header class="header">
+    <header class="header" role="banner">
       <h1 class="site-title">הלאה בקיצור</h1>
       <p class="subtitle">Your Personal Music News Feed</p>
     </header>
 
-    <div class="news-feed" id="newsFeed"></div>
+    <!-- סרגל פילטרים -->
+    <div class="toolbar" role="toolbar" aria-label="News filters">
+      <button class="btn active" data-filter="all" aria-pressed="true">הכול</button>
+      <button class="btn" data-filter="HE" aria-pressed="false">ישראלי</button>
+      <button class="btn" data-filter="EN" aria-pressed="false">בינלאומי</button>
+    </div>
+
+    <div class="news-feed" id="newsFeed" role="feed" aria-busy="true"></div>
   </div>
 
   <script defer>
-    const WORKER_ENDPOINT = "https://music-agrragator.dustrial.workers.dev.";
+    const WORKER_ENDPOINT = "music-agrragator.dustrial.workers.dev";
+
+    // שכבת הגנה בצד לקוח (בנוסף ל־Worker)
+    const BLOCKED_SOURCES = ["al jazeera"];
+    const BLOCKED_DOMAINS = ["aljazeera.com"];
+
+    let rawItems = [];
+    let currentFilter = "all"; // all | HE | EN
+
+    function isAllowed(item) {
+      const src = (item.source || "").toLowerCase();
+      const host = (() => { try { return new URL(item.link).hostname.replace(/^www\./, ""); } catch { return ""; } })();
+      return !BLOCKED_SOURCES.some(b => src.includes(b)) &&
+             !BLOCKED_DOMAINS.some(d => host.endsWith(d));
+    }
 
     async function fetchNews() {
       try {
-        const res = await fetch(WORKER_ENDPOINT);
-        if (!res.ok) throw new Error("Failed fetching aggregator");
-        return await res.json();
+        const res = await fetch(WORKER_ENDPOINT, { headers: { "accept": "application/json" } });
+        if (!res.ok) throw new Error(`Aggregator returned ${res.status}`);
+        const data = await res.json();
+        if (!Array.isArray(data)) throw new Error("Invalid aggregator response");
+        return data.filter(isAllowed);
       } catch (e) {
         console.error(e);
+        showError(e.message || "שגיאה בטעינת החדשות");
         return [];
       }
     }
 
     function groupAndBalance(items) {
       const groups = {};
-      for (const it of items) {
-        (groups[it.source] ||= []).push(it);
-      }
+      for (const it of items) (groups[it.source] ||= []).push(it);
       const balanced = [];
       for (const src of Object.keys(groups)) {
         const top3 = groups[src]
@@ -138,6 +171,11 @@
         balanced.push(...top3);
       }
       return balanced.sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+
+    function applyFilter(items, lang) {
+      if (lang === "all") return items;
+      return items.filter(x => (x.language || "").toUpperCase() === lang.toUpperCase());
     }
 
     function formatDate(dateString) {
@@ -152,6 +190,8 @@
 
     function render(items) {
       const feed = document.getElementById('newsFeed');
+      feed.setAttribute('aria-busy', 'false');
+
       if (!items.length) {
         feed.innerHTML = `
           <div class="empty-state">
@@ -160,34 +200,73 @@
           </div>`;
         return;
       }
+
       feed.innerHTML = items.map(story => `
-        <article class="news-item">
+        <article class="news-item" role="article">
           <div class="news-header">
             <div class="news-meta">
-              <span class="language-badge">${story.language || 'EN'}</span>
-              <span class="source-tag">${story.source}</span>
+              <span class="language-badge" title="${story.language || 'EN'}">${story.language || 'EN'}</span>
+              <span class="source-tag" title="מקור">${story.source}</span>
             </div>
-            <div class="news-date">${formatDate(story.date)}</div>
+            <div class="news-date" title="${new Date(story.date).toLocaleString()}">${formatDate(story.date)}</div>
           </div>
           <h2 class="news-title">
-            <a href="${story.link}" target="_blank" rel="noopener noreferrer">${story.headline}</a>
+            <a href="${story.link}" target="_blank" rel="noopener noreferrer">${escapeHtml(story.headline)}</a>
           </h2>
-          <p class="news-summary">${story.summary || ''}</p>
+          <p class="news-summary">${escapeHtml(story.summary || '')}</p>
         </article>
       `).join('');
     }
 
-    async function init() {
+    function loading() {
       const feed = document.getElementById('newsFeed');
+      feed.setAttribute('aria-busy', 'true');
       feed.innerHTML = `
         <div class="empty-state">
-          <h3>Loading latest music news...</h3>
-          <p>Your curated feed from the best music sources</p>
+          <h3>טוען חדשות מוזיקה...</h3>
+          <p>האוצרות האחרונים מהמקורות המובילים</p>
         </div>`;
+    }
 
-      const raw = await fetchNews();
-      const balanced = groupAndBalance(raw);
-      render(balanced);
+    function showError(msg) {
+      const feed = document.getElementById('newsFeed');
+      feed.setAttribute('aria-busy', 'false');
+      feed.innerHTML = `
+        <div class="empty-state">
+          <h3 class="error">אירעה שגיאה</h3>
+          <p>${escapeHtml(msg)}</p>
+        </div>`;
+    }
+
+    function escapeHtml(str) {
+      return (str || "").replace(/[&<>"]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));
+    }
+
+    function updateActiveButton() {
+      document.querySelectorAll('.toolbar .btn').forEach(btn => {
+        const isActive = btn.dataset.filter === currentFilter;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-pressed', String(isActive));
+      });
+    }
+
+    async function init() {
+      loading();
+      rawItems = await fetchNews();
+      const balanced = groupAndBalance(rawItems);
+      render(applyFilter(balanced, currentFilter));
+      bindFilters(balanced);
+    }
+
+    function bindFilters(balanced) {
+      document.querySelectorAll('.toolbar .btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentFilter = btn.dataset.filter || 'all';
+          updateActiveButton();
+          render(applyFilter(balanced, currentFilter));
+        });
+      });
+      updateActiveButton();
     }
 
     init();
