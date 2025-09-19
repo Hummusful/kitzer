@@ -1,196 +1,456 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>הלאה בקיצור - Music News</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>הלאה בקיצור - Music News</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
-      min-height: 100vh;
-      color: #ffffff;
-      line-height: 1.6;
-    }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            line-height: 1.6;
+        }
 
-    .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
 
-    .header { text-align: center; margin-bottom: 40px; padding: 20px 0; }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px 0;
+        }
 
-    .site-title {
-      font-size: 2.8rem; font-weight: 900; letter-spacing: -1px; margin-bottom: 10px;
-      background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
-      background-size: 300% 300%;
-      -webkit-background-clip: text; background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: gradientShift 3s ease-in-out infinite;
-    }
+        .site-title {
+            font-size: 2.8rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s ease-in-out infinite;
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+        }
 
-    .subtitle { font-size: 1.1rem; color: #a0a0a0; font-weight: 300; }
+        .subtitle {
+            font-size: 1.1rem;
+            color: #a0a0a0;
+            font-weight: 300;
+        }
 
-    @keyframes gradientShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
 
-    .news-feed { margin-top: 30px; }
 
-    .news-item {
-      background: rgba(255, 255, 255, 0.03);
-      backdrop-filter: blur(15px);
-      border-radius: 15px;
-      padding: 25px; margin-bottom: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      transition: all 0.3s ease;
-      position: relative;
-    }
 
-    .news-item::before {
-      content: '';
-      position: absolute; top: 0; left: 0; right: 0; height: 3px;
-      background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1);
-      opacity: 0; transition: opacity 0.3s ease;
-    }
+        .news-feed {
+            margin-top: 30px;
+        }
 
-    .news-item:hover {
-      transform: translateY(-3px);
-      border-color: rgba(78, 205, 196, 0.2);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    }
+        .news-item {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            /* הוספתי שורה זו כדי להראות שהפריט לחיץ */
+            cursor: pointer;
+        }
 
-    .news-item:hover::before { opacity: 1; }
+        .news-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
 
-    .news-header {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      margin-bottom: 15px; flex-wrap: wrap; gap: 10px;
-    }
+        .news-item:hover {
+            transform: translateY(-3px);
+            border-color: rgba(78, 205, 196, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
 
-    .news-meta {
-      display: flex; gap: 15px; align-items: center;
-      font-size: 0.85rem; color: #a0a0a0;
-    }
+        .news-item:hover::before {
+            opacity: 1;
+        }
 
-    .language-badge {
-      background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-      color: #fff; padding: 4px 10px; border-radius: 12px;
-      font-size: 0.75rem; font-weight: 600;
-    }
+        .news-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
 
-    .source-tag {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 4px 10px; border-radius: 12px; font-size: 0.75rem;
-    }
+        .news-meta {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #a0a0a0;
+        }
 
-    .news-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 12px; line-height: 1.4; }
-    .news-title a { color: #fff; text-decoration: none; transition: color 0.3s ease; }
-    .news-title a:hover { color: #4ecdc4; }
+        .language-badge {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
 
-    .news-summary { color: #d0d0d0; line-height: 1.6; margin-bottom: 15px; }
-    .news-date { color: #8a8a8a; font-size: 0.85rem; }
+        .source-tag {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
 
-    .empty-state { text-align: center; color: #a0a0a0; padding: 60px 20px; }
-    .empty-state h3 { font-size: 1.5rem; margin-bottom: 10px; color: #4ecdc4; }
+        .news-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
 
-    @media (max-width: 768px) {
-      .container { padding: 15px; }
-      .site-title { font-size: 2.2rem; }
-      .news-item { padding: 20px; }
-      .news-header { flex-direction: column; align-items: flex-start; }
-    }
-  </style>
+        .news-title a {
+            color: #ffffff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .news-title a:hover {
+            color: #4ecdc4;
+        }
+
+        .news-summary {
+            color: #d0d0d0;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .news-date {
+            color: #8a8a8a;
+            font-size: 0.85rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #a0a0a0;
+            padding: 60px 20px;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #4ecdc4;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .site-title {
+                font-size: 2.2rem;
+            }
+            
+            .admin-panel {
+                padding: 20px;
+            }
+            
+            .news-item {
+                padding: 20px;
+            }
+            
+            .news-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <header class="header">
-      <h1 class="site-title">הלאה בקיצור</h1>
-      <p class="subtitle">Your Personal Music News Feed</p>
-    </header>
+    <div class="container">
+        <header class="header">
+            <h1 class="site-title">הלאה בקיצור</h1>
+            <p class="subtitle">Your Personal Music News Feed</p>
+        </header>
 
-    <div class="news-feed" id="newsFeed"></div>
-  </div>
 
-  <script defer>
-    let newsData = [];
 
-    function loadNews() {
-      const feed = document.getElementById('newsFeed');
-
-      if (newsData.length === 0) {
-        feed.innerHTML = `
-          <div class="empty-state">
-            <h3>Loading latest music news...</h3>
-            <p>Your curated feed from the best music sources</p>
-          </div>`;
-        return;
-      }
-
-      // קיבוץ לפי מקור ולקיחת 3 אחרונים מכל מקור
-      const sourceGroups = {};
-      newsData.forEach(story => {
-        (sourceGroups[story.source] ||= []).push(story);
-      });
-
-      const balancedNews = [];
-      Object.keys(sourceGroups).forEach(source => {
-        const top3 = sourceGroups[source]
-          .sort((a, b) => new Date(b.date) - new Date(a.date))
-          .slice(0, 3);
-        balancedNews.push(...top3);
-      });
-
-      const recentNews = balancedNews.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-      feed.innerHTML = recentNews.map(story => `
-        <article class="news-item">
-          <div class="news-header">
-            <div class="news-meta">
-              <span class="language-badge">${story.language}</span>
-              <span class="source-tag">${story.source}</span>
+        <div class="news-feed" id="newsFeed">
+            <div class="empty-state">
+                <h3>No stories yet</h3>
+                <p>Add your first music news story using the form above!</p>
             </div>
-            <div class="news-date">${formatDate(story.date)}</div>
-          </div>
-          <h2 class="news-title">
-            <a href="${story.link}" target="_blank" rel="noopener noreferrer">${story.headline}</a>
-          </h2>
-          <p class="news-summary">${story.summary}</p>
-        </article>
-      `).join('');
-    }
+        </div>
+    </div>
 
-    function formatDate(dateString) {
-      const date = new Date(dateString);
-      const now = new Date();
-      const diffHours = Math.floor(Math.abs(now - date) / (1000 * 60 * 60));
+    <script>
+        let newsData = [];
 
-      if (diffHours < 1) return 'Just now';
-      if (diffHours < 24) return `${diffHours} hours ago`;
-      const diffDays = Math.floor(diffHours / 24);
-      return diffDays === 1 ? 'Yesterday' : `${diffDays} days ago`;
-    }
+        // Load existing news from memory
+        function loadNews() {
+            const feed = document.getElementById('newsFeed');
+            
+            if (newsData.length === 0) {
+                feed.innerHTML = `
+                    <div class="empty-state">
+                        <h3>Loading latest music news...</h3>
+                        <p>Your curated feed from the best music sources</p>
+                    </div>
+                `;
+                return;
+            }
 
-    // נתוני דוגמה
-    newsData = [
-      { headline: "Drake Announces Surprise Album Release", summary: "The Toronto rapper revealed on Instagram that his new project will drop this Friday, featuring collaborations with several underground artists.", link: "https://example.com/drake-album", source: "HipHopDX", language: "EN", date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() },
-      { headline: "Kendrick Lamar Teases New Music Video", summary: "The rapper shared cryptic behind-the-scenes footage on social media, hinting at his most ambitious visual project yet.", link: "https://example.com/kendrick-video", source: "HipHopDX", language: "EN", date: new Date(Date.now() - 14 * 60 * 60 * 1000).toISOString() },
-      { headline: "Travis Scott Announces Festival Lineup", summary: "Astroworld Festival returns with a star-studded lineup including surprise guests and emerging hip-hop artists.", link: "https://example.com/travis-festival", source: "HipHopDX", language: "EN", date: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString() },
+            // Get 3 most recent stories from each source
+            const sourceGroups = {};
+            
+            // Group stories by source
+            newsData.forEach(story => {
+                if (!sourceGroups[story.source]) {
+                    sourceGroups[story.source] = [];
+                }
+                sourceGroups[story.source].push(story);
+            });
+            
+            // Get 3 most recent from each source
+            const balancedNews = [];
+            Object.keys(sourceGroups).forEach(source => {
+                const sourceStories = sourceGroups[source]
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))
+                    .slice(0, 3); // Take 3 most recent from each source
+                balancedNews.push(...sourceStories);
+            });
+            
+            // Sort all selected stories chronologically (newest first)
+            const recentNews = balancedNews
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-      { headline: "Disclosure Returns with New Electronic EP", summary: "The British electronic duo shares their first new music in two years, exploring deeper house influences and featuring vocalist Kelis.", link: "https://example.com/disclosure-ep", source: "Resident Advisor", language: "EN", date: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString() },
-      { headline: "Four Tet Announces World Tour", summary: "The British producer reveals dates across Europe, North America, and Asia, promising to showcase material from his latest ambient-influenced album.", link: "https://example.com/four-tet-tour", source: "Resident Advisor", language: "EN", date: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString() },
-      { headline: "Berlin Club Scene Revival", summary: "After pandemic restrictions, Berlin's underground venues are reopening with innovative safety protocols and fresh electronic music programming.", link: "https://example.com/berlin-clubs", source: "Resident Advisor", language: "EN", date: new Date(Date.now() - 32 * 60 * 60 * 1000).toISOString() },
+            feed.innerHTML = recentNews.map(story => `
+                <article class="news-item"
+                         role="link"
+                         tabindex="0"
+                         data-link="${story.link}"
+                         onclick="openStory(event)"
+                         onkeydown="if (event.key==='Enter'||event.key===' ') openStory(event)">
+                    <div class="news-header">
+                        <div class="news-meta">
+                            <span class="language-badge">${story.language}</span>
+                            <span class="source-tag">${story.source}</span>
+                        </div>
+                        <div class="news-date">${formatDate(story.date)}</div>
+                    </div>
+                    <h2 class="news-title">
+                        <a href="${story.link}" target="_blank" rel="noopener">${story.headline}</a>
+                    </h2>
+                    <p class="news-summary">${story.summary}</p>
+                </article>
+            `).join('');
+        }
 
-      { headline: "עידן רייכל חושף פרויקט חדש", summary: "המוזיקאי הישראלי מכריז על אלבום סולו ראשון מזה 5 שנים, הכולל שיתופי פעולה עם אמנים מהמזרח התיכון.", link: "https://example.com/idan-raichel", source: "Mako Music", language: "HE", date: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString() },
-      { headline: "נועה קירל משתפת פעולה עם מפיק בינלאומי", summary: "הזמרת הישראלית חושפת על הקלטת שירים חדשים בלוס אנג'לס עם מפיק שעבד עם ביונסה ואריאנה גרנדה.", link: "https://example.com/noa-kirel-collaboration", source: "Mako Music", language: "HE", date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() },
-      { headline: "תזמורת אנדלוסית חוזרת לבמה", summary: "לאחר הפסקה של שלש שנים, התזמורת המפורסמת מכריזה על סדרת הופעות חדשה ברחבי הארץ עם רפרטואר מחודש.", link: "https://example.com/andalusit-orchestra", source: "Mako Music", language: "HE", date: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString() },
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+            
+            if (diffHours < 1) {
+                return 'Just now';
+            } else if (diffHours < 24) {
+                return `${diffHours} hours ago`;
+            } else {
+                const diffDays = Math.floor(diffHours / 24);
+                if (diffDays === 1) {
+                    return 'Yesterday';
+                } else {
+                    return `${diffDays} days ago`;
+                }
+            }
+        }
 
-      { headline: "Billie Eilish Previews Documentary Footage", summary: "The pop star shares behind-the-scenes clips from her upcoming documentary, showing the creative process behind her latest album.", link: "https://example.com/billie-documentary", source: "Pitchfork", language: "EN", date: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString() },
-      { headline: "Taylor Swift Breaks Streaming Records Again", summary: "Her latest re-recorded album becomes the most-streamed album by a female artist in a single day across all major platforms.", link: "https://example.com/taylor-records", source: "Pitchfork", language: "EN", date: new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString() },
-      { headline: "Radiohead Teases Mysterious New Project", summary: "The band's social media accounts have been posting cryptic messages and sound clips, fueling speculation about their first album in six years.", link: "https://example.com/radiohead-project", source: "Pitchfork", language: "EN", date: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString() },
+        // Sample music news stories
+        newsData = [
+            // HipHopDX stories
+            {
+                id: 1,
+                headline: "Drake Announces Surprise Album Release",
+                summary: "The Toronto rapper revealed on Instagram that his new project will drop this Friday, featuring collaborations with several underground artists.",
+                link: "https://example.com/drake-album",
+                source: "HipHopDX",
+                language: "EN",
+                date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 11,
+                headline: "Kendrick Lamar Teases New Music Video",
+                summary: "The rapper shared cryptic behind-the-scenes footage on social media, hinting at his most ambitious visual project yet.",
+                link: "https://example.com/kendrick-video",
+                source: "HipHopDX",
+                language: "EN",
+                date: new Date(Date.now() - 14 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 12,
+                headline: "Travis Scott Announces Festival Lineup",
+                summary: "Astroworld Festival returns with a star-studded lineup including surprise guests and emerging hip-hop artists.",
+                link: "https://example.com/travis-festival",
+                source: "HipHopDX",
+                language: "EN",
+                date: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString()
+            },
+            
+            // Resident Advisor stories
+            {
+                id: 2,
+                headline: "Disclosure Returns with New Electronic EP",
+                summary: "The British electronic duo shares their first new music in two years, exploring deeper house influences and featuring vocalist Kelis.",
+                link: "https://example.com/disclosure-ep",
+                source: "Resident Advisor",
+                language: "EN",
+                date: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 13,
+                headline: "Four Tet Announces World Tour",
+                summary: "The British producer reveals dates across Europe, North America, and Asia, promising to showcase material from his latest ambient-influenced album.",
+                link: "https://example.com/four-tet-tour",
+                source: "Resident Advisor",
+                language: "EN",
+                date: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 14,
+                headline: "Berlin Club Scene Revival",
+                summary: "After pandemic restrictions, Berlin's underground venues are reopening with innovative safety protocols and fresh electronic music programming.",
+                link: "https://example.com/berlin-clubs",
+                source: "Resident Advisor",
+                language: "EN",
+                date: new Date(Date.now() - 32 * 60 * 60 * 1000).toISOString()
+            },
+            
+            // Mako Music stories
+            {
+                id: 3,
+                headline: "עידן רייכל חושף פרויקט חדש",
+                summary: "המוזיקאי הישראלי מכריז על אלבום סולו ראשון מזה 5 שנים, הכולל שיתופי פעולה עם אמנים מהמזרח התיכון.",
+                link: "https://example.com/idan-raichel",
+                source: "Mako Music",
+                language: "HE",
+                date: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 15,
+                headline: "נועה קירל משתפת פעולה עם מפיק בינלאומי",
+                summary: "הזמרת הישראלית חושפת על הקלטת שירים חדשים בלוס אנג'לס עם מפיק שעבד עם ביונסה ואריאנה גרנדה.",
+                link: "https://example.com/noa-kirel-collaboration",
+                source: "Mako Music",
+                language: "HE",
+                date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 16,
+                headline: "תזמורת אנדלוסית חוזרת לבמה",
+                summary: "לאחר הפסקה של שלש שנים, התזמורת המפורסמת מכריזה על סדרת הופעות חדשה ברחבי הארץ עם רפרטואר מחודש.",
+                link: "https://example.com/andalusit-orchestra",
+                source: "Mako Music",
+                language: "HE",
+                date: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+            },
+            
+            // Pitchfork stories
+            {
+                id: 4,
+                headline: "Billie Eilish Previews Documentary Footage",
+                summary: "The pop star shares behind-the-scenes clips from her upcoming documentary, showing the creative process behind her latest album.",
+                link: "https://example.com/billie-documentary",
+                source: "Pitchfork",
+                language: "EN",
+                date: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 17,
+                headline: "Taylor Swift Breaks Streaming Records Again",
+                summary: "Her latest re-recorded album becomes the most-streamed album by a female artist in a single day across all major platforms.",
+                link: "https://example.com/taylor-records",
+                source: "Pitchfork",
+                language: "EN",
+                date: new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 18,
+                headline: "Radiohead Teases Mysterious New Project",
+                summary: "The band's social media accounts have been posting cryptic messages and sound clips, fueling speculation about their first album in six years.",
+                link: "https://example.com/radiohead-project",
+                source: "Pitchfork",
+                language: "EN",
+                date: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString()
+            },
+            
+            // Rolling Stone stories
+            {
+                id: 19,
+                headline: "The Weeknd Announces Stadium Tour",
+                summary: "The Canadian superstar reveals his biggest tour yet, with elaborate stage production and special guests at each venue.",
+                link: "https://example.com/weeknd-tour",
+                source: "Rolling Stone",
+                language: "EN",
+                date: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 20,
+                headline: "Bruce Springsteen Extends Broadway Run",
+                summary: "The Boss adds more dates to his intimate acoustic show, featuring rare deep cuts and personal stories.",
+                link: "https://example.com/springsteen-broadway",
+                source: "Rolling Stone",
+                language: "EN",
+                date: new Date(Date.now() - 16 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 21,
+                headline: "Rock Hall of Fame Announces Nominees",
+                summary: "This year's list includes first-time nominees from hip-hop, electronic, and alternative rock genres, sparking debate among fans.",
+                link: "https://example.com/rock-hall-nominees",
+                source: "Rolling Stone",
+                language: "EN",
+                date: new Date(Date.now() - 40 * 60 * 60 * 1000).toISOString()
+            }
+        ];
 
-      { headline: "The Weeknd Announces Stadium Tour", summary: "The Canadian superstar reveals his biggest tour yet, with elaborate stage production and special guests at each venue.", link: "https://example.com/weeknd-tour", source: "Rolling Stone", language: "EN", date: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() },
-      { headline: "Bruce Springsteen Extends Broadway Run", summary: "The Boss adds more dates to his intimate acoustic show, featuring rare deep cuts and personal stories.", link: "https://example.com/springsteen-broadway", source: "Rolling Stone", language: "EN", date: new Date(Date.now() - 16 * 60 * 60 * 1000).toISOString() },
-      { headline: "Rock Hall of Fame Announces Nominees", summary: "This year's list includes first-time nominees from hip-hop, electronic, and alternative rock genres, sparking debate among fans.", link: "https://example.com/rock-hall-nominees", source: "Rolling Stone", language: "EN", date: new Date(Date.now() - 40 * 60 * 60 * 1000).toISOString() }
-    ];
+        // Load news on page load
+        loadNews();
 
-    loadNews();
-  </script>
+        // פונקציה ללחיצה על כרטיס (לא משנה איפה בכרטיס, כל עוד לא לחצו על <a>)
+        function openStory(e) {
+            if (e.target.closest('a')) return; // אם לחצו על הלינק עצמו – לא לפתוח שוב
+            const url = e.currentTarget.dataset.link;
+            if (url) window.open(url, '_blank', 'noopener');
+        }
+    </script>
 </body>
 </html>
