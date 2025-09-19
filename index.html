@@ -30,7 +30,10 @@
 
     .subtitle { font-size: 1.1rem; color: #a0a0a0; font-weight: 300; }
 
-    @keyframes gradientShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+    @keyframes gradientShift {
+      0%,100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
 
     .news-feed { margin-top: 30px; }
 
@@ -109,41 +112,59 @@
   </div>
 
   <script defer>
-    let newsData = [];
+    const WORKER_ENDPOINT = "https://music-agrragator.dustrial.workers.dev.";
 
-    function loadNews() {
+    async function fetchNews() {
+      try {
+        const res = await fetch(WORKER_ENDPOINT);
+        if (!res.ok) throw new Error("Failed fetching aggregator");
+        return await res.json();
+      } catch (e) {
+        console.error(e);
+        return [];
+      }
+    }
+
+    function groupAndBalance(items) {
+      const groups = {};
+      for (const it of items) {
+        (groups[it.source] ||= []).push(it);
+      }
+      const balanced = [];
+      for (const src of Object.keys(groups)) {
+        const top3 = groups[src]
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .slice(0, 3);
+        balanced.push(...top3);
+      }
+      return balanced.sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffHours = Math.floor(Math.abs(now - date) / (1000 * 60 * 60));
+      if (diffHours < 1) return 'Just now';
+      if (diffHours < 24) return `${diffHours} hours ago`;
+      const diffDays = Math.floor(diffHours / 24);
+      return diffDays === 1 ? 'Yesterday' : `${diffDays} days ago`;
+    }
+
+    function render(items) {
       const feed = document.getElementById('newsFeed');
-
-      if (newsData.length === 0) {
+      if (!items.length) {
         feed.innerHTML = `
           <div class="empty-state">
-            <h3>Loading latest music news...</h3>
-            <p>Your curated feed from the best music sources</p>
+            <h3>לא נמצאו ידיעות כרגע</h3>
+            <p>נסה לרענן בעוד רגע</p>
           </div>`;
         return;
       }
-
-      // קיבוץ לפי מקור ולקיחת 3 אחרונים מכל מקור
-      const sourceGroups = {};
-      newsData.forEach(story => {
-        (sourceGroups[story.source] ||= []).push(story);
-      });
-
-      const balancedNews = [];
-      Object.keys(sourceGroups).forEach(source => {
-        const top3 = sourceGroups[source]
-          .sort((a, b) => new Date(b.date) - new Date(a.date))
-          .slice(0, 3);
-        balancedNews.push(...top3);
-      });
-
-      const recentNews = balancedNews.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-      feed.innerHTML = recentNews.map(story => `
+      feed.innerHTML = items.map(story => `
         <article class="news-item">
           <div class="news-header">
             <div class="news-meta">
-              <span class="language-badge">${story.language}</span>
+              <span class="language-badge">${story.language || 'EN'}</span>
               <span class="source-tag">${story.source}</span>
             </div>
             <div class="news-date">${formatDate(story.date)}</div>
@@ -151,52 +172,25 @@
           <h2 class="news-title">
             <a href="${story.link}" target="_blank" rel="noopener noreferrer">${story.headline}</a>
           </h2>
-          <p class="news-summary">${story.summary}</p>
+          <p class="news-summary">${story.summary || ''}</p>
         </article>
       `).join('');
     }
 
-    function formatDate(dateString) {
-      const date = new Date(dateString);
-      const now = new Date();
-      const diffHours = Math.floor(Math.abs(now - date) / (1000 * 60 * 60));
+    async function init() {
+      const feed = document.getElementById('newsFeed');
+      feed.innerHTML = `
+        <div class="empty-state">
+          <h3>Loading latest music news...</h3>
+          <p>Your curated feed from the best music sources</p>
+        </div>`;
 
-      if (diffHours < 1) return 'Just now';
-      if (diffHours < 24) return `${diffHours} hours ago`;
-      const diffDays = Math.floor(diffHours / 24);
-      return diffDays === 1 ? 'Yesterday' : `${diffDays} days ago`;
+      const raw = await fetchNews();
+      const balanced = groupAndBalance(raw);
+      render(balanced);
     }
 
-    // חדשות מוזיקה אמיתיות
-    newsData = [
-      // Drake & Hip-Hop News
-      { headline: "Drake's 'Iceman' Album: Everything We Know", summary: "Fans are delighted to have new music from the rapper, as well as confirmation that the album is coming! Producer DJ Gordo claimed that the album was officially finished as of August 2025.", link: "https://www.capitalxtra.com/news/drake-new-album-iceman-release-date-features/", source: "Capital XTRA", language: "EN", date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString() },
-      { headline: "Drake's New Solo Album Could Be His Best—Here's Why", summary: "During a stop on his Anita Max Win Tour in Australia, Drake mentioned that he would be dropping a solo LP 'when the time is right' after his joint album with PARTYNEXTDOOR.", link: "https://www.complex.com/music/a/peter-a-berry/drake-new-album-2025", source: "Complex", language: "EN", date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() },
-      { headline: "Drake Releases 'Some Sexy Songs 4 U' with PARTYNEXTDOOR", summary: "The 38-year-old artist released the collaborative album on Valentine's Day, February 14, 2025. The record has already sparked discussions among fans.", link: "https://hollywoodlife.com/feature/drake-2025-album-5370316/", source: "Hollywood Life", language: "EN", date: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString() },
-
-      // Electronic Music News
-      { headline: "Four Tet and William Tyler Announce Collaborative Album", summary: "Kieran Hebden (Four Tet) has teamed up with guitarist William Tyler to reveal '41 Longfield Street Late '80s', due out in September. The album's announcement came via social media.", link: "https://edm.com/news/four-tet-william-tyler-announce-new-album-41-longfield-street-late-80s/", source: "EDM.com", language: "EN", date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
-      { headline: "Four Tet Announces Return of Under The K Bridge Festival", summary: "Four Tet's latest album 'Three' has been nominated for Best Dance/Electronic Music Album at the Grammys 2025. He is also nominated for Best Dance/Electronic Recording for 'Loved'.", link: "https://www.nme.com/news/music/four-tet-announces-return-of-under-the-k-bridge-festival-3829074", source: "NME", language: "EN", date: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString() },
-      { headline: "Grammys 2025: Justice, Four Tet, Charli XCX, Kaytranada Nominated", summary: "The Recording Academy revealed nominations for Best Dance/Electronic Album including Four Tet (Three), Justice (Hyperdrama), Zedd (Telos), Charli XCX (Brat) and Kaytranada (TIMELESS).", link: "https://edm.com/news/dance-electronic-grammy-award-nominations-2025/", source: "EDM.com", language: "EN", date: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString() },
-
-      // Israeli Music News  
-      { headline: "ישראל חושפת את 'New Day Will Rise' לאירוויזיון 2025", summary: "ישראל פרסמה ביום ראשון את השיר שלה לאירוויזיון 2025, בלדת כוח איטית בשם 'New Day Will Rise', חודשיים לפני התחרות בבזל, שוויץ. השיר מבוצע על ידי יובל רפאל.", link: "https://www.timesofisrael.com/israel-unveils-new-day-will-rise-its-2025-eurovision-power-ballad/", source: "Times of Israel", language: "HE", date: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString() },
-      { headline: "ישראל במקום השני באירוויזיון 2025", summary: "בגמר, ישראל הופיעה במקום הרביעי והגיעה למקום השני מתוך 26 המדינות המשתתפות, וקיבלה 357 נקודות. זהו הישג מרשים עבור הנציגות הישראלית.", link: "https://en.wikipedia.org/wiki/Israel_in_the_Eurovision_Song_Contest_2025", source: "Wikipedia", language: "HE", date: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString() },
-      { headline: "מה הגדיר את המוזיקה הישראלית השנה", summary: "הנה השנה של ישראל במוזיקה לפי מובילי המצעדים: גלגלצ - נס וסטילה עם 'חרבו דרבו'; כאן גימל - 'הוריקיין' בביצוע עדן גולן; ומאקו היטליסט - 'מנגן ושר' מאושר כהן.", link: "https://www.jpost.com/j-spot/article-825962", source: "Jerusalem Post", language: "HE", date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString() },
-
-      // More Recent News
-      { headline: "Music Festival in Belgium Cancels Concert Over Israeli Conductor", summary: "Flanders Festival Ghent says it made decision over lack of 'clarity' about incoming conductor Lahav Shani's views. The cancellation has sparked controversy in classical music circles.", link: "https://www.aljazeera.com/news/2025/9/11/music-festival-in-belgium-cancels-concert-over-israeli-conductor", source: "Al Jazeera", language: "EN", date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
-      { headline: "Over 400 Artists Pull Music from Israeli Streaming Services", summary: "Over 400 artists have announced the 'No Music for Genocide' boycott, which seeks to add pressure to Israel by geo-blocking music streams. The move affects multiple streaming platforms.", link: "https://consequence.net/2025/09/no-music-for-genocide-israel-boycott/", source: "Consequence", language: "EN", date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
-      { headline: "Everything We Know About Drake's Upcoming Album 'Iceman'", summary: "Drake released his 'What Did I Miss' single to begin the rollout of his new 'Iceman' album which the 6 God says is 'coming soon.' The album represents a return to his hip-hop roots.", link: "https://www.billboard.com/lists/drake-iceman-new-album-everything-we-know-what-did-i-miss/", source: "Billboard", language: "EN", date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
-
-      // Rolling Stone Features
-      { headline: "Everything We Know About Drake's Upcoming Album, 'Iceman'", summary: "Drake's cryptic posting as of late suggests the Iceman era is indeed imminent. We're currently just under two months out from the release of 'What Did I Miss,' which would mean we might expect to see a new album by October.", link: "https://www.rollingstone.com/music/music-features/everything-we-know-about-drakes-new-album-iceman-1235416867/", source: "Rolling Stone", language: "EN", date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() },
-      
-      // Additional Electronic News
-      { headline: "The 2025 GRAMMY Nominations Have Been Announced", summary: "Four Tet was also selected for two awards, with his track 'Loved' and his album 'Three' gaining nominations for Best Dance/Electronic Recording and Best Dance/Electronic Album.", link: "https://mixmag.net/read/2025-dance-electronic-grammy-nominations-announced-news", source: "Mixmag", language: "EN", date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString() }
-    ];
-
-    loadNews();
+    init();
   </script>
 </body>
 </html>
