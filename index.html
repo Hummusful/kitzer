@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>הלאה בקיצור - Music News</title>
   <style>
-   * { margin: 0; padding: 0; box-sizing: border-box; }
+ * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -51,7 +51,61 @@ body {
 .news-feed { margin-top: 14px; }
 
 .news-item {
-  background: rgba(
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(15px);
+  border-radius: 16px;
+  padding: 22px; margin-bottom: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.25s ease;
+  position: relative;
+}
+.news-item::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1);
+  opacity: 0; transition: opacity 0.25s ease;
+  border-top-left-radius: 16px; border-top-right-radius: 16px;
+}
+.news-item:hover { transform: translateY(-2px); border-color: rgba(78, 205, 196, 0.25); }
+.news-item:hover::before { opacity: 1; }
+
+.news-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 12px; gap: 8px; flex-wrap: wrap;
+}
+.news-meta {
+  display: flex; gap: 10px; align-items: center;
+  font-size: 0.85rem; color: #a0a0a0;
+}
+
+.language-badge {
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+  color: #fff; padding: 3px 10px; border-radius: 12px;
+  font-size: 0.75rem; font-weight: 700;
+}
+.source-tag {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 10px; border-radius: 12px; font-size: 0.75rem;
+}
+
+.news-title { font-size: 1.22rem; font-weight: 800; margin-bottom: 10px; line-height: 1.4; }
+.news-title a { color: #fff; text-decoration: none; transition: color 0.2s ease; }
+.news-title a:hover { color: #4ecdc4; text-decoration: underline; text-underline-offset: 3px; }
+
+.news-summary { color: #d0d0d0; line-height: 1.65; margin-bottom: 10px; }
+.news-date { color: #8a8a8a; font-size: 0.85rem; white-space: nowrap; }
+
+.empty-state { text-align: center; color: #a0a0a0; padding: 50px 16px; }
+.empty-state h3 { font-size: 1.35rem; margin-bottom: 8px; color: #4ecdc4; }
+
+.error { color: #ff9c9c; }
+
+@media (max-width: 768px) {
+  .container { padding: 15px; }
+  .site-title { font-size: 2.1rem; }
+  .news-item { padding: 18px; }
+  .news-header { flex-direction: column; align-items: flex-start; }
+}
 
   </style>
 </head>
@@ -73,7 +127,7 @@ body {
 
   <script defer>
   const WORKER_ENDPOINT = "https://music-agrragator.dustrial.workers.dev/";
-  
+
     // חסימה מינימלית (רק מה שביקשת)
   const BLOCKED_SOURCES = ["al jazeera"];
   const BLOCKED_DOMAINS = ["aljazeera.com"];
