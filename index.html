@@ -5,7 +5,54 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>הלאה בקיצור - Music News</title>
   <style>
-    /* ... (ה‑CSS כפי שהיה בגרסה הקודמת, ניתן להשאיר אותו ללא שינוי) ... */
+   * { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+  min-height: 100vh;
+  color: #ffffff;
+  line-height: 1.6;
+}
+
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+
+.header { text-align: center; margin-bottom: 24px; padding: 20px 0; }
+
+.site-title {
+  font-size: 2.6rem; font-weight: 900; letter-spacing: -1px; margin-bottom: 8px;
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+  background-size: 300% 300%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientShift 3s ease-in-out infinite;
+}
+
+.subtitle { font-size: 1rem; color: #a0a0a0; font-weight: 300; }
+
+@keyframes gradientShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+
+/* Toolbar */
+.toolbar {
+  display: flex; gap: 10px; align-items: center; justify-content: center;
+  margin: 12px 0 8px;
+  flex-wrap: wrap;
+}
+.btn {
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  color: #fff; padding: 8px 14px; border-radius: 999px;
+  font-size: 0.9rem; cursor: pointer; transition: all .2s ease;
+  backdrop-filter: blur(6px);
+}
+.btn:hover { transform: translateY(-1px); border-color: rgba(78,205,196,0.5); }
+.btn.active { border-color: rgba(78,205,196,0.8); box-shadow: 0 0 0 2px rgba(78,205,196,0.25) inset; }
+
+.news-feed { margin-top: 14px; }
+
+.news-item {
+  background: rgba(
+
   </style>
 </head>
 <body>
@@ -26,11 +73,12 @@
 
   <script defer>
   const WORKER_ENDPOINT = "https://music-agrragator.dustrial.workers.dev/";
-
-  // חסימה מינימלית (רק מה שביקשת)
+  
+    // חסימה מינימלית (רק מה שביקשת)
   const BLOCKED_SOURCES = ["al jazeera"];
   const BLOCKED_DOMAINS = ["aljazeera.com"];
 
+  
   let currentFilter = "all"; // all | HE | EN
 
   function isAllowed(item) {
