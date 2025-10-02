@@ -107,6 +107,14 @@ body {
   .news-header { flex-direction: column; align-items: flex-start; }
 }
 
+/* --- תוספות קטנות --- */
+@media (prefers-reduced-motion: reduce) {
+  .site-title { animation: none; }
+  .news-item, .btn { transition: none; }
+}
+
+/* שיפור ביצועים בציורים מרובים */
+.news-item { content-visibility: auto; contain-intrinsic-size: 200px; }
   </style>
 </head>
 <body>
@@ -122,88 +130,171 @@ body {
       <button class="btn" data-filter="EN" aria-pressed="false">בינלאומי</button>
     </div>
 
-    <div class="news-feed" id="newsFeed" role="feed" aria-busy="true"></div>
+    <!-- aria-live="polite" לנגישות -->
+    <div class="news-feed" id="newsFeed" role="feed" aria-live="polite" aria-busy="true"></div>
   </div>
 
   <script defer>
   const WORKER_ENDPOINT = "https://music-agrragator.dustrial.workers.dev/";
 
-    // חסימה מינימלית (רק מה שביקשת)
-  const BLOCKED_SOURCES = ["al jazeera"];
-  const BLOCKED_DOMAINS = ["aljazeera.com"];
+  // קבועים לשימוש חוזר
+  const MAX_ITEMS_TO_DISPLAY = 30;
+  const MAX_ITEMS_PER_SOURCE = 3;
 
-  
+  // חסימה מינימלית (כפי שביקשת)
+  const BLOCKED_SOURCES = ["al jazeera"].map(s => s.toLowerCase());
+  const BLOCKED_DOMAINS  = ["aljazeera.com"];
+
   let currentFilter = "all"; // all | HE | EN
 
   function isAllowed(item) {
-    const src = (item.source || "").toLowerCase();
-    const host = (() => { try { return new URL(item.link).hostname.replace(/^www\./,""); } catch { return ""; } })();
+    const src = String(item.source||'').toLowerCase();
+    let host = '';
+    try { host = new URL(item.link).hostname.replace(/^www\./,'').toLowerCase(); } catch {}
     return !BLOCKED_SOURCES.some(b => src.includes(b)) &&
-           !BLOCKED_DOMAINS.some(d => host.endsWith(d));
+           !BLOCKED_DOMAINS.some(d => host === d || host.endsWith('.'+d));
   }
 
-  // --- שלב 1: מושכים ומציגים RAW (לראות מיד חדשות על המסך) ---
-  async function fetchNews() {
-    const res = await fetch(WORKER_ENDPOINT, { headers: { accept: "application/json" } });
-    if (!res.ok) throw new Error(`Aggregator returned ${res.status}`);
-    const data = await res.json();
-    console.log("RAW from worker:", data.length, data.slice(0,3));
-    if (!Array.isArray(data)) throw new Error("Invalid aggregator response");
-    return data.filter(isAllowed);
+  /* ---------- עזרי אבטחה ו-i18n ---------- */
+  function escapeHtml(str){
+    return (str||"").replace(/[&<>"]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));
+  }
+  function escapeText(str){ return escapeHtml(String(str||'')); }
+
+  function safeUrl(href){
+    try{
+      const u = new URL(href);
+      if (u.protocol === 'http:' || u.protocol === 'https:') return u.href;
+      return null;
+    }catch{ return null; }
   }
 
-  function renderRaw(items) {
+  function normLang(v){
+    const s = String(v||'').trim().toLowerCase();
+    if (!s) return 'EN';
+    if (s.startsWith('he')) return 'HE';
+    if (s.startsWith('en')) return 'EN';
+    return s.toUpperCase();
+  }
+
+  function toDateSafe(v){
+    const t = Date.parse(v);
+    return isNaN(t) ? new Date() : new Date(t);
+  }
+
+  const rtf = new Intl.RelativeTimeFormat('he-IL', { numeric: 'auto' });
+  function formatDate(dateInput){
+    const date = toDateSafe(dateInput);
+    const now  = new Date();
+    const diffMs = date - now;
+    const sec = Math.round(diffMs/1000);
+    const min = Math.round(sec/60);
+    const hr  = Math.round(min/60);
+    const day = Math.round(hr/24);
+    if (Math.abs(sec) < 45) return rtf.format(0, 'second'); // "עכשיו"
+    if (Math.abs(min) < 45) return rtf.format(min, 'minute');
+    if (Math.abs(hr)  < 22) return rtf.format(hr,  'hour');
+    return rtf.format(day, 'day');
+  }
+
+  /* ---------- שלב 1: משיכה והצגה ראשונית ---------- */
+  async function fetchNews(timeoutMs = 10000) {
+    const ctrl = new AbortController();
+    const to = setTimeout(()=>ctrl.abort(new Error('Timeout')), timeoutMs);
+    try {
+      const res = await fetch(WORKER_ENDPOINT, {
+        headers: { accept: "application/json" },
+        signal: ctrl.signal
+      });
+      if (!res.ok) throw new Error(`Aggregator returned ${res.status}`);
+      const data = await res.json();
+      if (!Array.isArray(data)) throw new Error("Invalid aggregator response");
+      return data.filter(isAllowed);
+    } finally {
+      clearTimeout(to);
+    }
+  }
+
+  function renderNews(items) {
     const feed = document.getElementById('newsFeed');
     feed.setAttribute('aria-busy','false');
     if (!items.length) {
       feed.innerHTML = `<div class="empty-state"><h3>לא נמצאו ידיעות כרגע</h3><p>נסה לרענן בעוד רגע</p></div>`;
       return;
     }
-    feed.innerHTML = items.slice(0,30).map(card).join("");
+    feed.innerHTML = items.slice(0, MAX_ITEMS_TO_DISPLAY).map(card).join("");
   }
 
   function card(story) {
+    const lang = normLang(story.language);
+    const src  = escapeText(story.source || '');
+    const url  = safeUrl(story.link);
+    const link = url || '#';
+    const title = escapeHtml(story.headline || '');
+    const summary = escapeHtml(story.summary || '');
+    const dateAttr = toDateSafe(story.date||Date.now()).toLocaleString('he-IL');
+
+    const anchorAttrs = url
+      ? `href="${link}" target="_blank" rel="noopener noreferrer"`
+      : `href="#" aria-disabled="true"`;
+
     return `
       <article class="news-item" role="article">
         <div class="news-header">
           <div class="news-meta">
-            <span class="language-badge">${story.language || 'EN'}</span>
-            <span class="source-tag">${story.source || ''}</span>
+            <span class="language-badge">${escapeText(lang)}</span>
+            <span class="source-tag">${src}</span>
           </div>
-          <div class="news-date" title="${new Date(story.date||Date.now()).toLocaleString()}">${formatDate(story.date)}</div>
+          <div class="news-date" title="${escapeText(dateAttr)}">${formatDate(story.date)}</div>
         </div>
         <h2 class="news-title">
-          <a href="${story.link}" target="_blank" rel="noopener noreferrer">${escapeHtml(story.headline || '')}</a>
+          <a ${anchorAttrs}>${title}</a>
         </h2>
-        <p class="news-summary">${escapeHtml(story.summary || '')}</p>
+        <p class="news-summary">${summary}</p>
       </article>`;
   }
 
-  // --- שלב 2: מוסיפים איזון לפי מקור + פילטרים אחרי שמוצג RAW ---
+  /* ---------- שלב 2: איזון לפי מקור + פילטרים ---------- */
   function groupAndBalance(items) {
-    const groups = {};
-    for (const it of items) (groups[it.source || 'Unknown'] ||= []).push(it);
-    const balanced = [];
-    for (const src of Object.keys(groups)) {
-      const top3 = groups[src].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,3);
-      balanced.push(...top3);
+    // סינון ראשוני: קישור בטוח, טקסט כלשהו, תאריך תקין
+    const clean = items.filter(it =>
+      safeUrl(it.link) &&
+      (it.headline || it.summary) &&
+      !isNaN(Date.parse(it.date))
+    );
+
+    const groups = new Map();
+    for (const it of clean) {
+      const k = (it.source || 'Unknown').trim();
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(it);
     }
-    return balanced.sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+    const balanced = [];
+    for (const arr of groups.values()) {
+      const topN = arr
+        .slice()
+        .sort((a,b)=> toDateSafe(b.date) - toDateSafe(a.date))
+        .slice(0, MAX_ITEMS_PER_SOURCE);
+      balanced.push(...topN);
+    }
+
+    // הסרת כפילויות לפי קישור ושמירה על סדר זמן
+    const seen = new Set();
+    const deduped = [];
+    for (const it of balanced.sort((a,b)=> toDateSafe(b.date) - toDateSafe(a.date))) {
+      const k = safeUrl(it.link);
+      if (!k || seen.has(k)) continue;
+      seen.add(k);
+      deduped.push(it);
+    }
+    return deduped;
   }
 
   function applyFilter(items, lang) {
     if (lang === "all") return items;
-    return items.filter(x => (x.language || "").toUpperCase() === lang.toUpperCase());
-  }
-
-  function renderBalanced(items) {
-    const feed = document.getElementById('newsFeed');
-    feed.setAttribute('aria-busy','false');
-    if (!items.length) {
-      feed.innerHTML = `<div class="empty-state"><h3>לא נמצאו ידיעות כרגע</h3><p>נסה לרענן בעוד רגע</p></div>`;
-      return;
-    }
-    feed.innerHTML = items.map(card).join("");
+    const wanted = String(lang||'').toUpperCase();
+    return items.filter(x => normLang(x.language) === wanted);
   }
 
   function bindFilters(balanced) {
@@ -212,8 +303,7 @@ body {
         currentFilter = btn.dataset.filter || 'all';
         updateActiveButton();
         const filtered = applyFilter(balanced, currentFilter);
-        console.log("Filter:", currentFilter, "→", filtered.length);
-        renderBalanced(filtered);
+        renderNews(filtered);
       });
     });
     updateActiveButton();
@@ -233,35 +323,20 @@ body {
     feed.innerHTML = `<div class="empty-state"><h3>טוען חדשות מוזיקה...</h3><p>האוצרות האחרונים מהמקורות המובילים</p></div>`;
   }
 
-  function escapeHtml(str){return (str||"").replace(/[&<>"]/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]))}
-  function formatDate(dateString){
-    const date = new Date(dateString||Date.now());
-    const now  = new Date();
-    const diffHours = Math.floor(Math.abs(now - date)/(1000*60*60));
-    if (diffHours<1) return 'Just now';
-    if (diffHours<24) return `${diffHours} hours ago`;
-    const diffDays = Math.floor(diffHours/24);
-    return diffDays===1 ? 'Yesterday' : `${diffDays} days ago`;
-  }
-
   // INIT
   (async function init(){
     try{
       loading();
       const raw = await fetchNews();
-      // הצג מיד RAW כדי לוודא שמופיע משהו בעמוד
-      renderRaw(raw);
-      console.log("After RAW render. Now balancing + filters…");
-      // עכשיו איזון + פילטרים
+      // הצגה מיידית (RAW)
+      renderNews(raw);
+      // איזון + פילטרים — ללא setTimeout
       const balanced = groupAndBalance(raw);
-      console.log("Balanced count:", balanced.length);
       bindFilters(balanced);
-      // ברירת מחדל: הכל
       currentFilter = "all";
       updateActiveButton();
-      renderBalanced(applyFilter(balanced, currentFilter));
+      renderNews(applyFilter(balanced, currentFilter));
     }catch(e){
-      console.error(e);
       const feed = document.getElementById('newsFeed');
       feed.setAttribute('aria-busy','false');
       feed.innerHTML = `<div class="empty-state"><h3 class="error">אירעה שגיאה</h3><p>${escapeHtml(e.message||"שגיאה לא צפויה")}</p></div>`;
