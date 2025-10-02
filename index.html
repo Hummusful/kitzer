@@ -51,7 +51,8 @@ body {
 .news-feed { margin-top: 14px; }
 
 .news-item {
-  background: rgba(255, 255, 255, 0.03);
+  /* גריד הוסר: נשאר רק שכבת עומק עדינה */
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
   backdrop-filter: blur(15px);
   border-radius: 16px;
   padding: 22px; margin-bottom: 16px;
@@ -92,7 +93,8 @@ body {
 .news-title a { color: #fff; text-decoration: none; transition: color 0.2s ease; }
 .news-title a:hover { color: #4ecdc4; text-decoration: underline; text-underline-offset: 3px; }
 
-.news-summary { color: #d0d0d0; line-height: 1.65; margin-bottom: 10px; }
+.news-summary { color: #e8e8e8; line-height: 1.65; margin-bottom: 10px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
 .news-date { color: #8a8a8a; font-size: 0.85rem; white-space: nowrap; }
 
 .empty-state { text-align: center; color: #a0a0a0; padding: 50px 16px; }
@@ -152,22 +154,19 @@ body {
   filter: blur(16px);
   opacity: .35; pointer-events: none;
 }
+@media (max-width: 768px) {
+  .container::before { filter: blur(10px); opacity: .25; }
+}
 
-/* כותרת בסגנון gradient neon איטי יותר */
+/* כותרת בסגנון gradient neon */
 .site-title {
   letter-spacing: 0.5px;
   text-shadow: var(--cp-glow);
-  animation-duration: 6s; /* ערך ברירת מחדל; יוחלף בהמשך ע"י var */
+  animation-duration: 4.8s;
 }
 
-/* כרטיס חדשות – קווי PCB עדינים + פס עליון ניאון */
-.news-item {
-  border: 1px solid rgba(255,255,255,0.06);
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)),
-    repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 8px);
-  overflow: hidden;
-}
+/* כרטיס חדשות – פס עליון ניאון, ללא גריד */
+.news-item { border: 1px solid rgba(255,255,255,0.06); overflow: hidden; }
 .news-item::before {
   height: 3px;
   background: linear-gradient(90deg, var(--cp-neon-pink), var(--cp-neon-cyan), var(--cp-neon-lime));
@@ -222,8 +221,17 @@ body {
 /* נגישות: מצב פוקוס ברור */
 :where(a, button):focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px #000, 0 0 0 4px var(--cp-neon-cyan);
+  box-shadow:
+    0 0 0 2px #000,
+    0 0 0 4px var(--cp-neon-cyan),
+    0 0 16px var(--cp-neon-cyan);
   border-radius: 10px;
+}
+@media (forced-colors: active) {
+  :where(a, button):focus-visible {
+    box-shadow: 0 0 0 2px CanvasText;
+    outline: 2px solid CanvasText;
+  }
 }
 
 /* מכבד העדפות תנועה */
@@ -239,61 +247,7 @@ body {
 }
 .news-item:hover .source-tag { animation: cp-glitch .25s linear 1; }
 
-/* === Readability & Contrast (הצעותיך) === */
-.news-summary {
-  color: #e8e8e8;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-}
-
-/* === PCB Lines tuned (הצעותיך) — override עדין יותר + מובייל === */
-.news-item {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)),
-    repeating-linear-gradient(
-      90deg,
-      rgba(0,229,255,0.06) 0 1px,
-      transparent 1px 12px
-    );
-}
-@media (max-width: 768px) {
-  .news-item {
-    background:
-      linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)),
-      repeating-linear-gradient(
-        90deg,
-        rgba(0,229,255,0.04) 0 1px,
-        transparent 1px 14px
-      );
-  }
-}
-
-/* === Container glow mobile-friendly (הצעותיך) === */
-@media (max-width: 768px) {
-  .container::before {
-    filter: blur(10px);
-    opacity: .25;
-  }
-}
-
-/* === Title gradient speed via CSS var (הצעותיך) === */
-:root { --title-gradient-duration: 4.8s; }
-.site-title { animation-duration: var(--title-gradient-duration); }
-
-/* === Focus state: cyber glow + accessibility (הצעותיך) === */
-:where(a, button):focus-visible {
-  box-shadow:
-    0 0 0 2px #000,
-    0 0 0 4px var(--cp-neon-cyan),
-    0 0 16px var(--cp-neon-cyan);
-}
-@media (forced-colors: active) {
-  :where(a, button):focus-visible {
-    box-shadow: 0 0 0 2px CanvasText;
-    outline: 2px solid CanvasText;
-  }
-}
-
-/* === Optional: subtle scanlines (הצעותיך) === */
+/* Scanlines עדינים — מכובים במובייל/Reduced Motion */
 body::after {
   content: "";
   position: fixed; inset: 0;
@@ -304,20 +258,20 @@ body::after {
     rgba(0,0,0,0.00) 4px
   );
   pointer-events: none;
-  opacity: 0.06; /* עדין כדי לא לפגוע בקריאות */
+  opacity: 0.06;
   z-index: 9999;
 }
 @media (max-width: 768px), (prefers-reduced-motion: reduce) {
   body::after { display: none; }
 }
 
-/* === Subtitle micro-glow (הצעותיך) === */
+/* Subtitle micro-glow */
 .subtitle {
   text-shadow: 0 0 8px rgba(0,229,255,0.25);
   letter-spacing: 1px;
 }
 
-/* === Button border animation (הצעותיך) === */
+/* Button border animation */
 .btn { position: relative; overflow: hidden; }
 .btn::after {
   content: "";
