@@ -15,7 +15,7 @@ body {
   line-height: 1.6;
 }
 
-.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.container { max-width: 1100px; margin: 0 auto; padding: 20px; }
 
 .header { text-align: center; margin-bottom: 24px; padding: 20px 0; }
 
@@ -34,68 +34,71 @@ body {
 
 /* Toolbar */
 .toolbar {
-  display: flex; gap: 10px; align-items: center; justify-content: center;
-  margin: 12px 0 8px;
+  display: flex; gap: 12px; align-items: center; justify-content: center;
+  margin: 16px 0 10px;
   flex-wrap: wrap;
 }
 .btn {
-  border: 1px solid rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.06);
-  color: #fff; padding: 8px 14px; border-radius: 999px;
-  font-size: 0.9rem; cursor: pointer; transition: all .2s ease;
+  border: 1px solid rgba(0,229,255,0.25);
+  background: rgba(0,229,255,0.08);
+  color: #fff; padding: 9px 16px; border-radius: 999px;
+  font-size: 0.92rem; cursor: pointer; transition: all .2s ease;
+  letter-spacing: .2px;
   backdrop-filter: blur(6px);
 }
-.btn:hover { transform: translateY(-1px); border-color: rgba(78,205,196,0.5); }
-.btn.active { border-color: rgba(78,205,196,0.8); box-shadow: 0 0 0 2px rgba(78,205,196,0.25) inset; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(0,229,255,0.35), 0 2px 10px rgba(0,229,255,0.12); }
+.btn.active { background: rgba(0,229,255,0.16); box-shadow: 0 0 0 2px rgba(0,229,255,0.22) inset; }
 
-.news-feed { margin-top: 14px; }
+.news-feed { margin-top: 16px; }
 
+/* כרטיסים — ללא גריד, וריאציית "נשימה" */
 .news-item {
-  /* גריד הוסר: נשאר רק שכבת עומק עדינה */
   background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
   backdrop-filter: blur(15px);
   border-radius: 16px;
-  padding: 22px; margin-bottom: 16px;
+  padding: 26px 22px; margin-bottom: 18px;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: all 0.25s ease;
-  position: relative;
+  transition: border-color 0.25s ease, transform 0.25s ease;
+  position: relative; overflow: hidden;
 }
+.news-item:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.14); }
+
 .news-item::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
   background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1);
-  opacity: 0; transition: opacity 0.25s ease;
+  opacity: .55; transition: opacity 0.25s ease;
   border-top-left-radius: 16px; border-top-right-radius: 16px;
 }
-.news-item:hover { transform: translateY(-2px); border-color: rgba(78, 205, 196, 0.25); }
-.news-item:hover::before { opacity: 1; }
+.news-item:hover::before { opacity: .7; }
 
 .news-header {
   display: flex; justify-content: space-between; align-items: flex-start;
-  margin-bottom: 12px; gap: 8px; flex-wrap: wrap;
+  gap: 8px; flex-wrap: wrap;
+  padding-bottom: 8px; margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 .news-meta {
-  display: flex; gap: 10px; align-items: center;
+  display: flex; gap: 8px; align-items: center;
   font-size: 0.85rem; color: #a0a0a0;
 }
 
 .language-badge {
   background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
   color: #fff; padding: 3px 10px; border-radius: 12px;
-  font-size: 0.75rem; font-weight: 700;
+  font-size: 0.75rem; font-weight: 700; opacity: .9;
 }
 .source-tag {
   background: rgba(255, 255, 255, 0.1);
-  padding: 4px 10px; border-radius: 12px; font-size: 0.75rem;
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; opacity: .85;
 }
 
-.news-title { font-size: 1.22rem; font-weight: 800; margin-bottom: 10px; line-height: 1.4; }
-.news-title a { color: #fff; text-decoration: none; transition: color 0.2s ease; }
-.news-title a:hover { color: #4ecdc4; text-decoration: underline; text-underline-offset: 3px; }
+.news-title { font-size: 1.28rem; font-weight: 800; margin-bottom: 6px; line-height: 1.42; letter-spacing: .1px; }
+.news-title a { color: #fff; text-decoration: none; transition: color 0.2s ease, border-color .2s ease, text-shadow .2s ease; border-bottom: 2px solid transparent; }
+.news-title a:hover { color: #4ecdc4; border-bottom-color: rgba(0,229,255,0.45); text-shadow: none; }
 
-.news-summary { color: #e8e8e8; line-height: 1.65; margin-bottom: 10px;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
-.news-date { color: #8a8a8a; font-size: 0.85rem; white-space: nowrap; }
+.news-summary { color: #e8e8e8; line-height: 1.75; margin-top: 8px; margin-bottom: 10px; text-shadow: 0 1px 2px rgba(0,0,0,0.3); font-size: 1.02rem; }
+.news-date { color: #9aa3b2; font-size: 0.85rem; white-space: nowrap; }
 
 .empty-state { text-align: center; color: #a0a0a0; padding: 50px 16px; }
 .empty-state h3 { font-size: 1.35rem; margin-bottom: 8px; color: #4ecdc4; }
@@ -105,8 +108,18 @@ body {
 @media (max-width: 768px) {
   .container { padding: 15px; }
   .site-title { font-size: 2.1rem; }
-  .news-item { padding: 18px; }
+  .news-item { padding: 20px 18px; }
   .news-header { flex-direction: column; align-items: flex-start; }
+}
+
+/* שני טורים בדסקטופ, פיד מהיר */
+@media (min-width: 1024px) {
+  .news-feed {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .news-item { margin: 0; }
 }
 
 /* --- תוספות קטנות --- */
@@ -119,7 +132,7 @@ body {
 /* שיפור ביצועים בציורים מרובים */
 .news-item { content-visibility: auto; contain-intrinsic-size: 200px; }
 
-/* === Cyberpunk Akira/GitS Layer (non-intrusive) === */
+/* === Cyberpunk Akira/GitS Layer (non-intrusive, מרוסן) === */
 :root {
   --cp-bg-1: #0f0f23;
   --cp-bg-2: #111827;
@@ -158,41 +171,21 @@ body {
   .container::before { filter: blur(10px); opacity: .25; }
 }
 
-/* כותרת בסגנון gradient neon */
+/* כותרת בסגנון gradient neon (מהיר מעט יותר) */
 .site-title {
   letter-spacing: 0.5px;
   text-shadow: var(--cp-glow);
   animation-duration: 4.8s;
 }
 
-/* כרטיס חדשות – פס עליון ניאון, ללא גריד */
-.news-item { border: 1px solid rgba(255,255,255,0.06); overflow: hidden; }
-.news-item::before {
-  height: 3px;
-  background: linear-gradient(90deg, var(--cp-neon-pink), var(--cp-neon-cyan), var(--cp-neon-lime));
-  opacity: .8;
-}
-.news-item:hover { box-shadow: 0 0 0 1px rgba(0,229,255,0.25), 0 8px 24px rgba(0,229,255,0.08); }
-
 /* תגיות מקור/שפה – “שבבי” ניאון */
 .language-badge {
-  background: linear-gradient(45deg, var(--cp-neon-pink), var(--cp-neon-cyan));
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
   box-shadow: 0 0 8px rgba(0,229,255,0.35);
 }
 .source-tag {
-  border: 1px dashed rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.12);
   backdrop-filter: blur(6px);
-}
-
-/* קישורים עם קו תחתון סינתטי */
-.news-title a {
-  text-decoration: none;
-  border-bottom: 2px solid transparent;
-}
-.news-title a:hover {
-  color: var(--cp-neon-cyan);
-  border-bottom-color: rgba(0,229,255,0.6);
-  text-shadow: 0 0 10px rgba(0,229,255,0.25);
 }
 
 /* Bullet ניאון ליד כל כותרת */
@@ -202,20 +195,6 @@ body {
   color: var(--cp-neon-pink);
   text-shadow: 0 0 8px rgba(255,45,111,0.5);
   font-weight: 900;
-}
-
-/* כפתורים בסגנון קפסולת ניאון */
-.btn {
-  border-color: rgba(255,255,255,0.18);
-  background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03));
-}
-.btn:hover {
-  box-shadow: 0 0 0 1px rgba(0,229,255,0.35), 0 0 18px rgba(0,229,255,0.15);
-  transform: translateY(-1px);
-}
-.btn.active {
-  border-color: rgba(0,229,255,0.9);
-  box-shadow: 0 0 0 2px rgba(0,229,255,0.25) inset, 0 0 22px rgba(0,229,255,0.15);
 }
 
 /* נגישות: מצב פוקוס ברור */
@@ -232,11 +211,6 @@ body {
     box-shadow: 0 0 0 2px CanvasText;
     outline: 2px solid CanvasText;
   }
-}
-
-/* מכבד העדפות תנועה */
-@media (prefers-reduced-motion: reduce) {
-  .site-title { animation: none; }
 }
 
 /* גליץ' עדין על תגית מקור */
@@ -270,19 +244,6 @@ body::after {
   text-shadow: 0 0 8px rgba(0,229,255,0.25);
   letter-spacing: 1px;
 }
-
-/* Button border animation */
-.btn { position: relative; overflow: hidden; }
-.btn::after {
-  content: "";
-  position: absolute; inset: 0;
-  border: 1px solid var(--cp-neon-cyan);
-  opacity: 0; transition: opacity 0.3s ease;
-  pointer-events: none;
-  border-radius: inherit;
-}
-.btn:hover::after { opacity: 0.5; }
-.btn:focus-visible::after { opacity: 0.75; }
   </style>
 </head>
 <body>
