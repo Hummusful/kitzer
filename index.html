@@ -108,6 +108,7 @@ body {
 }
 
 /* --- תוספות קטנות --- */
+/* כיבוי אנימציות למעדיפים פחות תנועה */
 @media (prefers-reduced-motion: reduce) {
   .site-title { animation: none; }
   .news-item, .btn { transition: none; }
@@ -115,6 +116,219 @@ body {
 
 /* שיפור ביצועים בציורים מרובים */
 .news-item { content-visibility: auto; contain-intrinsic-size: 200px; }
+
+/* === Cyberpunk Akira/GitS Layer (non-intrusive) === */
+:root {
+  --cp-bg-1: #0f0f23;
+  --cp-bg-2: #111827;
+  --cp-neon-pink: #ff2d6f;
+  --cp-neon-cyan: #00e5ff;
+  --cp-neon-lime: #b4ff39;
+  --cp-edge: rgba(0,229,255,0.15);
+  --cp-glow: 0 0 18px rgba(0,229,255,0.25), 0 0 36px rgba(255,45,111,0.15);
+}
+
+/* רקע “עיר” דיגיטלי מרומז */
+body {
+  background:
+    radial-gradient(1200px 600px at 70% -10%, rgba(255,45,111,0.06), transparent 50%),
+    radial-gradient(800px 400px at 10% 110%, rgba(0,229,255,0.05), transparent 50%),
+    linear-gradient(135deg, var(--cp-bg-1), var(--cp-bg-2));
+}
+
+/* מסגרת קפסולת ניאון לקונטיינר */
+.container {
+  position: relative;
+  border-radius: 24px;
+  padding: 22px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00));
+  box-shadow: 0 0 0 1px var(--cp-edge), 0 10px 30px rgba(0,0,0,0.35);
+}
+.container::before {
+  content: "";
+  position: absolute; inset: -1px;
+  border-radius: 26px;
+  background: linear-gradient(120deg, rgba(0,229,255,0.35), rgba(255,45,111,0.25), transparent 60%);
+  filter: blur(16px);
+  opacity: .35; pointer-events: none;
+}
+
+/* כותרת בסגנון gradient neon איטי יותר */
+.site-title {
+  letter-spacing: 0.5px;
+  text-shadow: var(--cp-glow);
+  animation-duration: 6s; /* ערך ברירת מחדל; יוחלף בהמשך ע"י var */
+}
+
+/* כרטיס חדשות – קווי PCB עדינים + פס עליון ניאון */
+.news-item {
+  border: 1px solid rgba(255,255,255,0.06);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 8px);
+  overflow: hidden;
+}
+.news-item::before {
+  height: 3px;
+  background: linear-gradient(90deg, var(--cp-neon-pink), var(--cp-neon-cyan), var(--cp-neon-lime));
+  opacity: .8;
+}
+.news-item:hover { box-shadow: 0 0 0 1px rgba(0,229,255,0.25), 0 8px 24px rgba(0,229,255,0.08); }
+
+/* תגיות מקור/שפה – “שבבי” ניאון */
+.language-badge {
+  background: linear-gradient(45deg, var(--cp-neon-pink), var(--cp-neon-cyan));
+  box-shadow: 0 0 8px rgba(0,229,255,0.35);
+}
+.source-tag {
+  border: 1px dashed rgba(255,255,255,0.18);
+  backdrop-filter: blur(6px);
+}
+
+/* קישורים עם קו תחתון סינתטי */
+.news-title a {
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+.news-title a:hover {
+  color: var(--cp-neon-cyan);
+  border-bottom-color: rgba(0,229,255,0.6);
+  text-shadow: 0 0 10px rgba(0,229,255,0.25);
+}
+
+/* Bullet ניאון ליד כל כותרת */
+.news-title::before {
+  content: "•";
+  margin-left: 8px; /* RTL */
+  color: var(--cp-neon-pink);
+  text-shadow: 0 0 8px rgba(255,45,111,0.5);
+  font-weight: 900;
+}
+
+/* כפתורים בסגנון קפסולת ניאון */
+.btn {
+  border-color: rgba(255,255,255,0.18);
+  background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03));
+}
+.btn:hover {
+  box-shadow: 0 0 0 1px rgba(0,229,255,0.35), 0 0 18px rgba(0,229,255,0.15);
+  transform: translateY(-1px);
+}
+.btn.active {
+  border-color: rgba(0,229,255,0.9);
+  box-shadow: 0 0 0 2px rgba(0,229,255,0.25) inset, 0 0 22px rgba(0,229,255,0.15);
+}
+
+/* נגישות: מצב פוקוס ברור */
+:where(a, button):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #000, 0 0 0 4px var(--cp-neon-cyan);
+  border-radius: 10px;
+}
+
+/* מכבד העדפות תנועה */
+@media (prefers-reduced-motion: reduce) {
+  .site-title { animation: none; }
+}
+
+/* גליץ' עדין על תגית מקור */
+@keyframes cp-glitch {
+  0%,100% { transform: translate(0); filter: hue-rotate(0deg); }
+  40% { transform: translate(-0.5px, -0.5px); }
+  60% { transform: translate(0.5px, 0.5px); }
+}
+.news-item:hover .source-tag { animation: cp-glitch .25s linear 1; }
+
+/* === Readability & Contrast (הצעותיך) === */
+.news-summary {
+  color: #e8e8e8;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* === PCB Lines tuned (הצעותיך) — override עדין יותר + מובייל === */
+.news-item {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)),
+    repeating-linear-gradient(
+      90deg,
+      rgba(0,229,255,0.06) 0 1px,
+      transparent 1px 12px
+    );
+}
+@media (max-width: 768px) {
+  .news-item {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)),
+      repeating-linear-gradient(
+        90deg,
+        rgba(0,229,255,0.04) 0 1px,
+        transparent 1px 14px
+      );
+  }
+}
+
+/* === Container glow mobile-friendly (הצעותיך) === */
+@media (max-width: 768px) {
+  .container::before {
+    filter: blur(10px);
+    opacity: .25;
+  }
+}
+
+/* === Title gradient speed via CSS var (הצעותיך) === */
+:root { --title-gradient-duration: 4.8s; }
+.site-title { animation-duration: var(--title-gradient-duration); }
+
+/* === Focus state: cyber glow + accessibility (הצעותיך) === */
+:where(a, button):focus-visible {
+  box-shadow:
+    0 0 0 2px #000,
+    0 0 0 4px var(--cp-neon-cyan),
+    0 0 16px var(--cp-neon-cyan);
+}
+@media (forced-colors: active) {
+  :where(a, button):focus-visible {
+    box-shadow: 0 0 0 2px CanvasText;
+    outline: 2px solid CanvasText;
+  }
+}
+
+/* === Optional: subtle scanlines (הצעותיך) === */
+body::after {
+  content: "";
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0.08) 0,
+    rgba(0,0,0,0.00) 2px,
+    rgba(0,0,0,0.00) 4px
+  );
+  pointer-events: none;
+  opacity: 0.06; /* עדין כדי לא לפגוע בקריאות */
+  z-index: 9999;
+}
+@media (max-width: 768px), (prefers-reduced-motion: reduce) {
+  body::after { display: none; }
+}
+
+/* === Subtitle micro-glow (הצעותיך) === */
+.subtitle {
+  text-shadow: 0 0 8px rgba(0,229,255,0.25);
+  letter-spacing: 1px;
+}
+
+/* === Button border animation (הצעותיך) === */
+.btn { position: relative; overflow: hidden; }
+.btn::after {
+  content: "";
+  position: absolute; inset: 0;
+  border: 1px solid var(--cp-neon-cyan);
+  opacity: 0; transition: opacity 0.3s ease;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.btn:hover::after { opacity: 0.5; }
+.btn:focus-visible::after { opacity: 0.75; }
   </style>
 </head>
 <body>
@@ -330,7 +544,7 @@ body {
       const raw = await fetchNews();
       // הצגה מיידית (RAW)
       renderNews(raw);
-      // איזון + פילטרים — ללא setTimeout
+      // איזון + פילטרים
       const balanced = groupAndBalance(raw);
       bindFilters(balanced);
       currentFilter = "all";
