@@ -269,10 +269,11 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
 
   // כפתור רק-Spotify → ?only=spotify
   document.getElementById('onlySpotifyBtn').addEventListener('click', () => {
-    const u = new URL(location.href);
-    u.searchParams.set('only', 'spotify');
-    location.href = u.toString();
-  });
+  const u = new URL(location.href);
+  u.searchParams.set('only', 'spotify');
+  location.replace(u.toString()); // טעינה מלאה - ולא שינוי pushState
+});
+
 
   /* ---------- Card render (כולל תמונה אם יש) ---------- */
   function renderMetaList(meta, lang){
