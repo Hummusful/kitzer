@@ -1,10 +1,10 @@
-ה<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>הלאה בקיצור - Music News</title>
-  <link rel="icon" href="/favicon.ico/">
+  <link rel="icon" href="/favicon.ico">
 
   <style>
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -120,7 +120,7 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
       <button class="btn active" data-filter="all" aria-pressed="true">הכול</button>
       <button class="btn" data-filter="HE" aria-pressed="false">ישראלי</button>
       <button class="btn" data-filter="EN" aria-pressed="false">בינלאומי</button>
-      <button class="btn" id="onlySpotifyBtn" type="button">רק Spotify</button>
+      <button class="btn" id="onlySpotifyBtn" type="button" aria-pressed="false">רק Spotify</button>
     </div>
 
     <div class="news-feed" id="newsFeed" role="feed" aria-live="polite" aria-busy="true"></div>
@@ -128,15 +128,15 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
 
   <script>
   const AGG_ENDPOINT = "https://music-agrragator.dustrial.workers.dev/";
-  const SPOTIFY_DETAILED_ENDPOINT = "https://spotify-new-releases.dustrial.workers.dev/api/spotify-months-detailed?market=IL&monthsBack=2&limit=50";
+  const SPOTIFY_DETAILED_ENDPOINT = "/api/spotify-months-detailed?market=IL&monthsBack=2&limit=50";
   const MAX_ITEMS_TO_DISPLAY = 30;
   const MAX_ITEMS_PER_SOURCE = 3;
   const BLOCKED_SOURCES = ["al jazeera"].map(s => s.toLowerCase());
   const BLOCKED_DOMAINS = ["aljazeera.com"];
   
   let currentFilter = "all";
-  let cachedData = null; // שמירת הנתונים המלאים
-  let isSpotifyMode = false; // דגל למצב ספוטיפיי
+  let cachedData = null;
+  let isSpotifyMode = false;
 
   function escapeHtml(str){return (str||"").replace(/[&<>"]/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));}
   function safeUrl(href){try{const u=new URL(href); return (u.protocol==='http:'||u.protocol==='https:')?u.href:null;}catch{ return null; }}
@@ -256,14 +256,13 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
   function bindFilters(balanced){
     document.querySelectorAll('.toolbar .btn[data-filter]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
-        // אם אנחנו במצב ספוטיפיי ולוחצים על כפתור רגיל - צריך לטעון מחדש
+        // אם אנחנו במצב ספוטיפיי – לחיצה על פילטר מוציאה מהמצב וחוזרת לפיד הרגיל
         if (isSpotifyMode) {
           const u = new URL(location.href);
           u.searchParams.delete('only');
           location.replace(u.toString());
           return;
         }
-        
         currentFilter = btn.dataset.filter || 'all';
         updateActiveButton();
         renderNews(applyFilter(balanced, currentFilter));
@@ -387,10 +386,14 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
     feed.innerHTML = html;
   }
 
-  // כפתור Spotify - מוסיף דגל ל-URL
+  // כפתור "רק Spotify" כ-toggle (תיקון ה-UX)
   document.getElementById('onlySpotifyBtn').addEventListener('click', () => {
     const u = new URL(location.href);
-    u.searchParams.set('only', 'spotify');
+    if (u.searchParams.get('only') === 'spotify') {
+      u.searchParams.delete('only'); // חזרה לפיד הרגיל
+    } else {
+      u.searchParams.set('only', 'spotify');
+    }
     location.replace(u.toString());
   });
 
@@ -403,12 +406,17 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
       showLoading();
 
       if (onlySpotify) {
+        // הדגשת מצב הכפתור
+        const spBtn = document.getElementById('onlySpotifyBtn');
+        spBtn.classList.add('active');
+        spBtn.setAttribute('aria-pressed', 'true');
+
         // מצב ספוטיפיי בלבד
         const sp = await fetchSpotifyDetailed();
         cachedData = sp;
         renderNews(sp.slice(0, MAX_ITEMS_TO_DISPLAY));
-        
-        // במצב ספוטיפיי, כפתורי הפילטר יטענו מחדש את הדף
+
+        // בזמן only=spotify: לחיצה על אחד מהפילטרים מוציאה מהמצב וחוזרת לפיד הרגיל
         document.querySelectorAll('.toolbar .btn[data-filter]').forEach(btn=>{
           btn.addEventListener('click', ()=>{
             const u = new URL(location.href);
@@ -416,7 +424,7 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
             location.replace(u.toString());
           });
         });
-        
+
       } else {
         // מצב רגיל
         const agg = await fetchAgg();
