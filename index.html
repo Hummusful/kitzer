@@ -347,11 +347,20 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
 }
 
 
-  function renderNews(items){
-    const feed=document.getElementById('newsFeed'); feed.setAttribute('aria-busy','false');
-    if(!items.length){ feed.innerHTML=`<div class="empty-state"><h3>לא נמצאו ידיעות כרגע</h3><p>נסה לרענן בעוד רגע</p></div>`; return; }
-    feed.innerHTML = items.slice(0, MAX_ITEMS_TO_DISPLAY).map(card).join("");
+ function renderNews(items){
+  const feed = document.getElementById('newsFeed');
+  feed.setAttribute('aria-busy', 'false');
+  feed.innerHTML = ""; // אפס מוחלט לפני הכל
+
+  if (!items.length) {
+    feed.innerHTML = `<div class="empty-state"><h3>לא נמצאו ידיעות כרגע</h3><p>נסה לרענן בעוד רגע</p></div>`;
+    return;
   }
+
+  const html = items.slice(0, MAX_ITEMS_TO_DISPLAY).map(card).join("");
+  feed.insertAdjacentHTML("afterbegin", html);
+}
+
 
   // INIT
   (async function init(){
