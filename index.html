@@ -109,7 +109,7 @@ body { background: radial-gradient(1200px 600px at 70% -10%, rgba(255,45,111,0.0
       source: "Spotify",
       link: a.url || "#",
       headline: a.name || "",
-      summary: Array.isArray(a.artists) ? a.artists.map(x=>x.name).join(Artist", ") + (a.total_tracks ? ` • ${a.total_tracks} Tracks` : "") : "",
+      summary: Artist Array.isArray(a.artists) ? a.artists.map(x=>x.name).join(Artist", ") + (a.total_tracks ? ` • ${a.total_tracks} Tracks` : "") : "",
       date: a.release_date || "",
       language: "EN"
     }));
