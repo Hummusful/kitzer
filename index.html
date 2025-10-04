@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>הלאה בקיצור - Music News</title>
   <style>
-/* === ה-CSS הקיים שלך (מקוצר כאן) === */
+/* === ה-CSS המקורי שלך + תוספת thumbnail === */
 * { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:linear-gradient(135deg,#0f0f23,#1a1a2e 50%,#16213e); min-height:100vh; color:#fff; line-height:1.6; }
+body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+  background:linear-gradient(135deg,#0f0f23 0%,#1a1a2e 50%,#16213e 100%); min-height:100vh; color:#fff; line-height:1.6; }
 .container { max-width:1100px; margin:0 auto; padding:20px; }
 .header { text-align:center; margin-bottom:24px; padding:20px 0; }
 .site-title { font-size:2.6rem; font-weight:900; letter-spacing:-1px; margin-bottom:8px;
@@ -16,28 +17,48 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:linea
 .subtitle { font-size:1rem; color:#a0a0a0; font-weight:300; }
 @keyframes gradientShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
 .toolbar { display:flex; gap:12px; align-items:center; justify-content:center; margin:16px 0 10px; flex-wrap:wrap; }
-.btn { border:1px solid rgba(0,229,255,0.25); background:rgba(0,229,255,0.08); color:#fff; padding:9px 16px; border-radius:999px; font-size:.92rem; cursor:pointer; transition:.2s; letter-spacing:.2px; backdrop-filter:blur(6px);}
+.btn { border:1px solid rgba(0,229,255,0.25); background:rgba(0,229,255,0.08); color:#fff; padding:9px 16px; border-radius:999px;
+  font-size:.92rem; cursor:pointer; transition:.2s; letter-spacing:.2px; backdrop-filter:blur(6px); }
 .btn:hover { transform:translateY(-1px); box-shadow:0 0 0 1px rgba(0,229,255,0.35), 0 2px 10px rgba(0,0,0,0.12); }
 .btn.active { background:rgba(0,229,255,0.16); box-shadow:0 0 0 2px rgba(0,229,255,0.22) inset; }
+
 .news-feed { margin-top:16px; }
-.news-item { background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); backdrop-filter:blur(15px);
-  border-radius:16px; padding:26px 22px; margin-bottom:18px; border:1px solid rgba(255,255,255,0.06); transition:border-color .25s, transform .25s; position:relative; overflow:hidden; }
+
+/* כרטיסים */
+.news-item {
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  backdrop-filter:blur(15px);
+  border-radius:16px; padding:26px 22px; margin-bottom:18px;
+  border:1px solid rgba(255,255,255,0.06);
+  transition:border-color .25s, transform .25s; position:relative; overflow:hidden;
+}
 .news-item:hover { transform:translateY(-2px); border-color:rgba(255,255,255,0.14); }
-.news-item::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#ff6b6b,#4ecdc4,#45b7d1); opacity:.55; transition:opacity .25s; border-top-left-radius:16px; border-top-right-radius:16px; }
+.news-item::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:linear-gradient(90deg,#ff6b6b,#4ecdc4,#45b7d1);
+  opacity:.55; transition:opacity .25s; border-top-left-radius:16px; border-top-right-radius:16px;
+}
 .news-item:hover::before { opacity:.7; }
-.news-header { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap; padding-bottom:8px; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.06); }
+
+.news-header { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap;
+  padding-bottom:8px; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.06); }
 .news-meta { display:flex; gap:8px; align-items:center; font-size:.85rem; color:#a0a0a0; }
+
 .language-badge { background:linear-gradient(45deg,#ff6b6b,#4ecdc4); color:#fff; padding:3px 10px; border-radius:12px; font-size:.75rem; font-weight:700; opacity:.9; }
 .source-tag { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.12); padding:4px 10px; border-radius:12px; font-size:.75rem; opacity:.85; }
+
 .news-title { font-size:1.28rem; font-weight:800; margin-bottom:6px; line-height:1.42; letter-spacing:.1px; }
 .news-title::before { content:"•"; margin-left:8px; color:#ff2d6f; text-shadow:0 0 8px rgba(255,45,111,0.5); font-weight:900; }
 .news-title a { color:#fff; text-decoration:none; transition:color .2s, border-color .2s, text-shadow .2s; border-bottom:2px solid transparent; }
 .news-title a:hover { color:#4ecdc4; border-bottom-color:rgba(0,229,255,0.45); text-shadow:none; }
-.news-summary { color:#e8e8e8; line-height:1.75; margin-top:8px; margin-bottom:10px; text-shadow:0 1px 2px rgba(0,0,0,0.3); font-size:1.02rem; }
+
+.news-summary { color:#e8e8e8; line-height:1.75; margin-top:8px; margin-bottom:6px; text-shadow:0 1px 2px rgba(0,0,0,0.3); font-size:1.02rem; }
 .news-date { color:#9aa3b2; font-size:.85rem; white-space:nowrap; }
+
 .empty-state { text-align:center; color:#a0a0a0; padding:50px 16px; }
 .empty-state h3 { font-size:1.35rem; margin-bottom:8px; color:#4ecdc4; }
 .error { color:#ff9c9c; }
+
 @media (max-width:768px){ .container{padding:15px;} .site-title{font-size:2.1rem;} .news-item{padding:20px 18px;} .news-header{flex-direction:column; align-items:flex-start;} }
 @media (min-width:1024px){ .news-feed{display:grid; grid-template-columns:1fr 1fr; gap:18px;} .news-item{margin:0;} }
 @media (prefers-reduced-motion:reduce){ .site-title{animation:none;} .news-item,.btn{transition:none;} }
@@ -47,10 +68,27 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:linea
 .news-item.ltr { direction:ltr; text-align:left; }
 .news-item.ltr .news-title::before { margin-right:8px; margin-left:0; }
 
-/* רשימת פרטים קטנה לאלבום */
+/* ===== Thumbnail layout (לא פוגע בעיצוב הקיים) ===== */
+.news-body {
+  display:flex; gap:14px; align-items:flex-start;
+}
+.news-thumb {
+  flex:0 0 auto; width:84px; aspect-ratio:1/1;
+  border-radius:12px; overflow:hidden;
+  box-shadow:0 6px 18px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06) inset;
+  background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+}
+.news-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+@media (min-width:1024px){ .news-thumb { width:108px; } }
+
+/* רשימת פרטי אלבום */
 .meta-list { margin-top:6px; font-size:.95rem; color:#cfd7df; }
 .meta-list li { margin:2px 0; }
 .meta-label { color:#9fb6c8; }
+
+/* פוקוס נגיש */
+:where(a,button):focus-visible{ outline:none; box-shadow:0 0 0 2px #000, 0 0 0 4px #00e5ff, 0 0 16px #00e5ff; border-radius:10px; }
+@media (forced-colors:active){ :where(a,button):focus-visible{ box-shadow:0 0 0 2px CanvasText; outline:2px solid CanvasText; } }
   </style>
 </head>
 <body>
@@ -73,10 +111,9 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:linea
   <script defer>
   /* ===================== CONFIG ===================== */
   const AGG_ENDPOINT = "https://music-agrragator.dustrial.workers.dev/";
-
-  // שים כאן את ה-URL האמיתי של ה-Worker החדש:
+  // Worker מפורט (עם label/copyrights/images)
   const SPOTIFY_DETAILED_ENDPOINT =
-    "https://YOUR-WORKER.workers.dev/api/spotify-months-detailed?market=IL&monthsBack=2&limit=50";
+    "https://spotify-new-releases.dustrial.workers.dev/api/spotify-months-detailed?market=IL&monthsBack=2&limit=50";
 
   const MAX_ITEMS_TO_DISPLAY = 30;
   const MAX_ITEMS_PER_SOURCE = 3;
@@ -112,29 +149,37 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:linea
   }
   function getQueryFlag(name){return new URLSearchParams(location.search).get(name);}
 
+  // בוחר את תמונת העטיפה הכי קרובה לרוחב מטרה (למשל ~160px)
+  function pickImage(images, target=160){
+    if (!Array.isArray(images) || !images.length) return null;
+    let best = images[0], bestDiff = Math.abs((best.width||target) - target);
+    for (const im of images){
+      const diff = Math.abs((im.width||target) - target);
+      if (diff < bestDiff) { best = im; bestDiff = diff; }
+    }
+    return best?.url || images[0]?.url || null;
+  }
+
   /* ---------- Mappers ---------- */
-  // מפה את ה-JSON המפורט של ה-Worker החדש לכרטיסים + מטה מסודר
   function albumsToNewsFromDetailedAPI(j){
     const arr = Array.isArray(j?.albums) ? j.albums : [];
     return arr.map(a => {
       const artists = Array.isArray(a.artists) ? a.artists.map(x=>x.name).join(", ") : "";
-      const label   = a.label || "";
-      const rel     = a.release_date || "";
-      const tracks  = a.total_tracks || null;
       const type    = a.album_type ? (a.album_type.charAt(0).toUpperCase() + a.album_type.slice(1)) : "";
+      const cover   = pickImage(a.images, 160);
       return {
         source: "Spotify",
         link: a.url || "#",
         headline: a.album_name || "",
-        // נראה את שורת האמן כטקסט מודגש, את השאר כ-bullets ב-meta
         summary: artists ? `Artist: ${artists}` : "",
-        date: rel,
+        date: a.release_date || "",
         language: "EN",
+        cover,                             // <— חדש: URL של העטיפה
         meta: {
           type: type || null,
-          label: label || null,
-          tracks: Number.isFinite(tracks) ? tracks : null,
-          release: rel || null
+          label: a.label || null,
+          tracks: Number.isFinite(a.total_tracks) ? a.total_tracks : null,
+          release: a.release_date || null
         }
       };
     });
@@ -152,11 +197,9 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:linea
       return arr.filter(isAllowed);
     } finally { clearTimeout(to); }
   }
-
   async function fetchSpotifyDetailed(timeoutMs=12000){
     const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(new Error('Timeout')),timeoutMs);
     try{
-      // sanity: לוודא שלא נשאר placeholder
       if (SPOTIFY_DETAILED_ENDPOINT.includes("YOUR-WORKER")) {
         throw new Error("SPOTIFY_DETAILED_ENDPOINT לא עודכן ל-URL האמיתי");
       }
@@ -181,7 +224,6 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:linea
     out.sort((a,b)=> toDateSafe(b.date) - toDateSafe(a.date));
     return out;
   }
-
   function groupAndBalance(items){
     const clean=items.filter(it=> safeUrl(it.link) && (it.headline||it.summary) && !isNaN(Date.parse(it.date)));
     const groups=new Map();
@@ -198,7 +240,7 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:linea
     return deduped;
   }
 
-  /* ---------- Card render ---------- */
+  /* ---------- Card render (with thumbnail) ---------- */
   function renderMetaList(meta, lang){
     if (!meta) return "";
     const items = [];
@@ -225,9 +267,16 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:linea
     const isLTR = (lang === 'EN') || (src.toLowerCase() === 'spotify');
     const anchorAttrs = url ? `href="${link}" target="_blank" rel="noopener noreferrer"` : `href="#" aria-disabled="true"`;
 
-    // Summary מודגש (אמן), ומתחתיו פרטי האלבום (meta-list)
     const metaHtml = renderMetaList(story.meta, lang);
     const summaryHtml = summary ? `<p class="news-summary"><strong>${summary}</strong></p>` : "";
+
+    const thumbHtml = story.cover
+      ? `<a class="news-thumb" ${anchorAttrs} aria-label="Open album">
+           <img src="${escapeHtml(story.cover)}"
+                alt="Album cover"
+                loading="lazy" decoding="async" referrerpolicy="no-referrer" />
+         </a>`
+      : "";
 
     return `
       <article class="news-item ${isLTR ? 'ltr' : ''}" role="article">
@@ -238,9 +287,15 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:linea
           </div>
           <div class="news-date" title="${escapeText(dateAttr)}">${formatDateByLang(story.date, lang)}</div>
         </div>
-        <h2 class="news-title"><a ${anchorAttrs}>${title}</a></h2>
-        ${summaryHtml}
-        ${metaHtml}
+
+        <div class="news-body">
+          ${thumbHtml}
+          <div class="news-main">
+            <h2 class="news-title"><a ${anchorAttrs}>${title}</a></h2>
+            ${summaryHtml}
+            ${metaHtml}
+          </div>
+        </div>
       </article>`;
   }
 
@@ -296,7 +351,6 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:linea
         return;
       }
 
-      // מצב רגיל: Agg + Spotify מפורט (כדי שגם שם יופיע מעושר אם תרצה)
       const [aggRes, spRes] = await Promise.allSettled([
         fetchAgg(),
         fetchSpotifyDetailed().catch(()=>[])
