@@ -77,6 +77,21 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
 /* פוקוס נגיש */
 :where(a,button):focus-visible{ outline:none; box-shadow:0 0 0 2px #000, 0 0 0 4px #00e5ff, 0 0 16px #00e5ff; border-radius:10px; }
 @media (forced-colors:active){ :where(a,button):focus-visible{ box-shadow:0 0 0 2px CanvasText; outline:2px solid CanvasText; } }
+    /* ביטוח כדי שלינקים תמיד יהיו קליקים מעל שכבות */
+.news-item a {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+}
+.news-item .no-link {
+  color: #e8e8e8;
+  text-decoration: none;
+  cursor: default;
+}
+
+/* מוודאים שגם התמונה לא "גולשת" מעל טקסטים */
+.news-thumb { position: relative; z-index: 1; }
+
   </style>
 </head>
 <body>
@@ -272,49 +287,65 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
   }
 
   function card(story){
-    const lang = normLang(story.language);
-    const src  = escapeText(story.source || '');
-    const url  = safeUrl(story.link);
-    const link = url || '#';
-    const title = escapeHtml(story.headline || '');
-    const summary = escapeHtml(story.summary || '');
-    const dateAttr = (lang === 'HE'
-      ? toDateSafe(story.date||Date.now()).toLocaleString('he-IL')
-      : toDateSafe(story.date||Date.now()).toLocaleString('en-GB')
-    );
+  const lang = normLang(story.language);
+  const src  = escapeText(story.source || '');
+  const url  = safeUrl(story.link);          // null אם לא תקין
+  const hasUrl = Boolean(url);
+  const link = url || '';                     // לא נשאיר "#"
+  const title = escapeHtml(story.headline || '');
+  const summary = escapeHtml(story.summary || '');
+  const dateAttr = (lang === 'HE'
+    ? toDateSafe(story.date||Date.now()).toLocaleString('he-IL')
+    : toDateSafe(story.date||Date.now()).toLocaleString('en-GB')
+  );
 
-    const isLTR = (lang === 'EN') || (src.toLowerCase() === 'spotify');
-    const anchorAttrs = url ? `href="${link}" target="_blank" rel="noopener noreferrer"` : `href="#" aria-disabled="true"`;
+  const isLTR = (lang === 'EN') || (src.toLowerCase() === 'spotify');
 
-    const metaHtml = renderMetaList(story.meta, lang);
-    const summaryHtml = summary ? `<p class="news-summary"><strong>${summary}</strong></p>` : "";
+  // אם יש URL – עוגן אמיתי; אם אין – span שאינו קליקבילי
+  const titleHtml = hasUrl
+    ? `<a href="${link}" target="_blank" rel="noopener noreferrer external">${title}</a>`
+    : `<span class="no-link">${title}</span>`;
 
-    const thumbHtml = story.cover
-      ? `<a class="news-thumb" ${anchorAttrs} aria-label="Open link">
-           <img src="${escapeHtml(story.cover)}" alt="Cover" loading="lazy" decoding="async" referrerpolicy="no-referrer" />
-         </a>`
-      : "";
-
-    return `
-      <article class="news-item ${isLTR ? 'ltr' : ''}" role="article">
-        <div class="news-header">
-          <div class="news-meta">
-            <span class="language-badge">${escapeText(lang)}</span>
-            <span class="source-tag">${src}</span>
-          </div>
-          <div class="news-date" title="${escapeText(dateAttr)}">${formatDateByLang(story.date, lang)}</div>
-        </div>
-
-        <div class="news-body">
-          ${thumbHtml}
-          <div class="news-main">
-            <h2 class="news-title"><a ${anchorAttrs}>${title}</a></h2>
-            ${summaryHtml}
-            ${metaHtml}
-          </div>
-        </div>
-      </article>`;
+  // התמונה היא קישור רק אם יש URL
+  let thumbHtml = '';
+  if (story.cover) {
+    if (hasUrl) {
+      thumbHtml = `
+        <a class="news-thumb" href="${link}" target="_blank" rel="noopener noreferrer external" aria-label="Open link">
+          <img src="${escapeHtml(story.cover)}" alt="Cover" loading="lazy" decoding="async" referrerpolicy="no-referrer" />
+        </a>`;
+    } else {
+      thumbHtml = `
+        <div class="news-thumb" aria-hidden="true">
+          <img src="${escapeHtml(story.cover)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" />
+        </div>`;
+    }
   }
+
+  const metaHtml = renderMetaList(story.meta, lang);
+  const summaryHtml = summary ? `<p class="news-summary"><strong>${summary}</strong></p>` : "";
+
+  return `
+    <article class="news-item ${isLTR ? 'ltr' : ''}" role="article">
+      <div class="news-header">
+        <div class="news-meta">
+          <span class="language-badge">${escapeText(lang)}</span>
+          <span class="source-tag">${src}</span>
+        </div>
+        <div class="news-date" title="${escapeText(dateAttr)}">${formatDateByLang(story.date, lang)}</div>
+      </div>
+
+      <div class="news-body">
+        ${thumbHtml}
+        <div class="news-main">
+          <h2 class="news-title">${titleHtml}</h2>
+          ${summaryHtml}
+          ${metaHtml}
+        </div>
+      </div>
+    </article>`;
+}
+
 
   function renderNews(items){
     const feed=document.getElementById('newsFeed'); feed.setAttribute('aria-busy','false');
