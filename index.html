@@ -46,12 +46,12 @@ body {
   letter-spacing: .2px;
   backdrop-filter: blur(6px);
 }
-.btn:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(0,229,255,0.35), 0 2px 10px rgba(0,229,255,0.12); }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(0,229,255,0.35), 0 2px 10px rgba(0,0,0,0.12); }
 .btn.active { background: rgba(0,229,255,0.16); box-shadow: 0 0 0 2px rgba(0,229,255,0.22) inset; }
 
 .news-feed { margin-top: 16px; }
 
-/* כרטיסים — ללא גריד, וריאציית "נשימה" */
+/* כרטיסים */
 .news-item {
   background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
   backdrop-filter: blur(15px);
@@ -112,7 +112,7 @@ body {
   .news-header { flex-direction: column; align-items: flex-start; }
 }
 
-/* שני טורים בדסקטופ, פיד מהיר */
+/* שני טורים בדסקטופ */
 @media (min-width: 1024px) {
   .news-feed {
     display: grid;
@@ -122,69 +122,21 @@ body {
   .news-item { margin: 0; }
 }
 
-/* --- תוספות קטנות --- */
-@media (prefers-reduced-motion: reduce) {
-  .site-title { animation: none; }
-  .news-item, .btn { transition: none; }
-}
+/* נגישות/ביצועים */
+@media (prefers-reduced-motion: reduce) { .site-title { animation: none; } .news-item, .btn { transition: none; } }
 .news-item { content-visibility: auto; contain-intrinsic-size: 200px; }
 
-/* === Cyberpunk Akira/GitS Layer (non-intrusive, מרוסן) === */
-:root {
-  --cp-bg-1: #0f0f23;
-  --cp-bg-2: #111827;
-  --cp-neon-pink: #ff2d6f;
-  --cp-neon-cyan: #00e5ff;
-  --cp-neon-lime: #b4ff39;
-  --cp-edge: rgba(0,229,255,0.15);
-  --cp-glow: 0 0 18px rgba(0,229,255,0.25), 0 0 36px rgba(255,45,111,0.15);
-}
-body {
-  background:
-    radial-gradient(1200px 600px at 70% -10%, rgba(255,45,111,0.06), transparent 50%),
-    radial-gradient(800px 400px at 10% 110%, rgba(0,229,255,0.05), transparent 50%),
-    linear-gradient(135deg, var(--cp-bg-1), var(--cp-bg-2));
-}
-.container {
-  position: relative;
-  border-radius: 24px;
-  padding: 22px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00));
-  box-shadow: 0 0 0 1px var(--cp-edge), 0 10px 30px rgba(0,0,0,0.35);
-}
-.container::before {
-  content: "";
-  position: absolute; inset: -1px;
-  border-radius: 26px;
-  background: linear-gradient(120deg, rgba(0,229,255,0.35), rgba(255,45,111,0.25), transparent 60%);
-  filter: blur(16px);
-  opacity: .35; pointer-events: none;
-}
-@media (max-width: 768px) {
-  .container::before { filter: blur(10px); opacity: .25; }
-}
-.site-title { letter-spacing: 0.5px; text-shadow: var(--cp-glow); animation-duration: 4.8s; }
-.language-badge { background: linear-gradient(45deg, #ff6b6b, #4ecdc4); box-shadow: 0 0 8px rgba(0,229,255,0.35); }
-.source-tag { border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(6px); }
-.news-title::before { content: "•"; margin-left: 8px; color: var(--cp-neon-pink); text-shadow: 0 0 8px rgba(255,45,111,0.5); font-weight: 900; }
-
-:where(a, button):focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px #000, 0 0 0 4px var(--cp-neon-cyan), 0 0 16px var(--cp-neon-cyan);
-  border-radius: 10px;
-}
-@media (forced-colors: active) {
-  :where(a, button):focus-visible { box-shadow: 0 0 0 2px CanvasText; outline: 2px solid CanvasText; }
-}
-@keyframes cp-glitch { 0%,100% { transform: translate(0); filter: hue-rotate(0deg); } 40% { transform: translate(-0.5px, -0.5px); } 60% { transform: translate(0.5px, 0.5px); } }
-.news-item:hover .source-tag { animation: cp-glitch .25s linear 1; }
-body::after {
-  content: ""; position: fixed; inset: 0;
-  background: repeating-linear-gradient(0deg, rgba(0,0,0,0.08) 0, rgba(0,0,0,0.00) 2px, rgba(0,0,0,0.00) 4px);
-  pointer-events: none; opacity: 0.06; z-index: 9999;
-}
-@media (max-width: 768px), (prefers-reduced-motion: reduce) { body::after { display: none; } }
-.subtitle { text-shadow: 0 0 8px rgba(0,229,255,0.25); letter-spacing: 1px; }
+:root { --cp-bg-1:#0f0f23; --cp-bg-2:#111827; --cp-neon-pink:#ff2d6f; --cp-neon-cyan:#00e5ff; --cp-edge:rgba(0,229,255,0.15); --cp-glow:0 0 18px rgba(0,229,255,0.25), 0 0 36px rgba(255,45,111,0.15); }
+body { background: radial-gradient(1200px 600px at 70% -10%, rgba(255,45,111,0.06), transparent 50%), radial-gradient(800px 400px at 10% 110%, rgba(0,229,255,0.05), transparent 50%), linear-gradient(135deg, var(--cp-bg-1), var(--cp-bg-2)); }
+.container { position: relative; border-radius: 24px; padding: 22px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00)); box-shadow: 0 0 0 1px var(--cp-edge), 0 10px 30px rgba(0,0,0,0.35); }
+.container::before { content:""; position:absolute; inset:-1px; border-radius:26px; background:linear-gradient(120deg, rgba(0,229,255,0.35), rgba(255,45,111,0.25), transparent 60%); filter: blur(16px); opacity:.35; pointer-events:none; }
+@media (max-width:768px){ .container::before{ filter:blur(10px); opacity:.25; } }
+.site-title { letter-spacing:.5px; text-shadow: var(--cp-glow); animation-duration: 4.8s; }
+.language-badge { box-shadow:0 0 8px rgba(0,229,255,0.35); }
+.source-tag { border:1px solid rgba(255,255,255,0.12); backdrop-filter: blur(6px); }
+.news-title::before { content:"•"; margin-left:8px; color:var(--cp-neon-pink); text-shadow:0 0 8px rgba(255,45,111,0.5); font-weight:900; }
+:where(a,button):focus-visible{ outline:none; box-shadow:0 0 0 2px #000, 0 0 0 4px var(--cp-neon-cyan), 0 0 16px var(--cp-neon-cyan); border-radius:10px; }
+@media (forced-colors:active){ :where(a,button):focus-visible{ box-shadow:0 0 0 2px CanvasText; outline:2px solid CanvasText; } }
   </style>
 </head>
 <body>
@@ -198,22 +150,18 @@ body::after {
       <button class="btn active" data-filter="all" aria-pressed="true">הכול</button>
       <button class="btn" data-filter="HE" aria-pressed="false">ישראלי</button>
       <button class="btn" data-filter="EN" aria-pressed="false">בינלאומי</button>
+      <!-- כפתור חדש: לא משנה עיצוב, משתמש ב-.btn -->
+      <button class="btn" id="onlySpotifyBtn" type="button">רק Spotify</button>
     </div>
 
-    <!-- aria-live="polite" לנגישות -->
     <div class="news-feed" id="newsFeed" role="feed" aria-live="polite" aria-busy="true"></div>
   </div>
 
   <script defer>
   /* ===================== CONFIG ===================== */
-  // ה-Worker הוותיק שלך (לא נוגעים בו)
   const AGG_ENDPOINT = "https://music-agrragator.dustrial.workers.dev/";
-
-  // ה-Worker של Spotify שלך (עם פרמטרים)
   const SPOTIFY_ENDPOINT = "https://spotify-new-releases.dustrial.workers.dev/api/new-releases?country=IL&limit=20";
-
-  // Debug logs to Console (כבה ל-prod)
-  const DEBUG = true;
+  const DEBUG = false; // שנה ל-true לדיבאג
 
   const MAX_ITEMS_TO_DISPLAY = 30;
   const MAX_ITEMS_PER_SOURCE = 3;
@@ -224,162 +172,67 @@ body::after {
   let currentFilter = "all"; // all | HE | EN
   /* ================================================== */
 
-  function isAllowed(item) {
-    const src = String(item.source||'').toLowerCase();
-    let host = '';
-    try { host = new URL(item.link).hostname.replace(/^www\./,'').toLowerCase(); } catch {}
-    return !BLOCKED_SOURCES.some(b => src.includes(b)) &&
-           !BLOCKED_DOMAINS.some(d => host === d || host.endsWith('.'+d));
-  }
+  // --- helpers UI/i18n/secure ---
+  function escapeHtml(str){return (str||"").replace(/[&<>"]/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));}
+  function escapeText(str){return escapeHtml(String(str||''));}
+  function safeUrl(href){try{const u=new URL(href); if(u.protocol==='http:'||u.protocol==='https:') return u.href; return null;}catch{ return null; }}
+  function normLang(v){const s=String(v||'').trim().toLowerCase(); if(!s) return 'EN'; if(s.startsWith('he')) return 'HE'; if(s.startsWith('en')) return 'EN'; return s.toUpperCase();}
+  function toDateSafe(v){const t=Date.parse(v); return isNaN(t)?new Date():new Date(t);}
+  const rtf=new Intl.RelativeTimeFormat('he-IL',{numeric:'auto'});
+  function formatDate(d){const date=toDateSafe(d),now=new Date(),ms=date-now,sec=Math.round(ms/1000),min=Math.round(sec/60),hr=Math.round(min/60),day=Math.round(hr/24); if(Math.abs(sec)<45) return rtf.format(0,'second'); if(Math.abs(min)<45) return rtf.format(min,'minute'); if(Math.abs(hr)<22) return rtf.format(hr,'hour'); return rtf.format(day,'day');}
+  function isAllowed(item){const src=String(item.source||'').toLowerCase(); let host=''; try{host=new URL(item.link).hostname.replace(/^www\./,'').toLowerCase();}catch{} return !BLOCKED_SOURCES.some(b=>src.includes(b)) && !BLOCKED_DOMAINS.some(d=>host===d||host.endsWith('.'+d));}
+  function getQueryFlag(name){return new URLSearchParams(location.search).get(name);}
 
-  /* ---------- עזרי אבטחה ו-i18n ---------- */
-  function escapeHtml(str){
-    return (str||"").replace(/[&<>"]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));
-  }
-  function escapeText(str){ return escapeHtml(String(str||'')); }
-
-  function safeUrl(href){
-    try{
-      const u = new URL(href);
-      if (u.protocol === 'http:' || u.protocol === 'https:') return u.href;
-      return null;
-    }catch{ return null; }
-  }
-
-  function normLang(v){
-    const s = String(v||'').trim().toLowerCase();
-    if (!s) return 'EN';
-    if (s.startsWith('he')) return 'HE';
-    if (s.startsWith('en')) return 'EN';
-    return s.toUpperCase();
-  }
-
-  function toDateSafe(v){
-    const t = Date.parse(v);
-    return isNaN(t) ? new Date() : new Date(t);
-  }
-
-  const rtf = new Intl.RelativeTimeFormat('he-IL', { numeric: 'auto' });
-  function formatDate(dateInput){
-    const date = toDateSafe(dateInput);
-    const now  = new Date();
-    const diffMs = date - now;
-    const sec = Math.round(diffMs/1000);
-    const min = Math.round(sec/60);
-    const hr  = Math.round(min/60);
-    const day = Math.round(hr/24);
-    if (Math.abs(sec) < 45) return rtf.format(0, 'second'); // "עכשיו"
-    if (Math.abs(min) < 45) return rtf.format(min, 'minute');
-    if (Math.abs(hr)  < 22) return rtf.format(hr,  'hour');
-    return rtf.format(day, 'day');
-  }
-
-  /* ---------- מיפוי Spotify -> מבנה חדשות (שומר על הגרפיקה) ---------- */
+  /* ---------- Mapping Spotify -> existing list structure ---------- */
   function albumsToNews(data){
-    // תומך גם ב-{albums:[...]} וגם בפורמט המקורי של Spotify {albums:{items:[...]}}
-    const rawAlbums =
-      Array.isArray(data?.albums) ? data.albums :
-      Array.isArray(data?.albums?.items) ? data.albums.items :
-      [];
-
+    const rawAlbums = Array.isArray(data?.albums) ? data.albums :
+                      Array.isArray(data?.albums?.items) ? data.albums.items : [];
     if (DEBUG) console.log("[Spotify] albums received:", rawAlbums.length);
-
-    return rawAlbums.map(a => ({
-      source: "Spotify",
-      link: a?.external_urls?.spotify || a?.url || "#",
-      headline: a?.name || "",
-      summary: Array.isArray(a?.artists) ? a.artists.map(x=>x.name).join(", ") + (a?.total_tracks ? ` • ${a.total_tracks} שירים` : "") : "",
-      date: a?.release_date || new Date().toISOString(),
-      language: "EN"
+    return rawAlbums.map(a=>({
+      source:"Spotify",
+      link:a?.external_urls?.spotify || a?.url || "#",
+      headline:a?.name || "",
+      summary:Array.isArray(a?.artists)?a.artists.map(x=>x.name).join(", ")+(a?.total_tracks?` • ${a.total_tracks} שירים`:""):"",
+      date:a?.release_date || new Date().toISOString(),
+      language:"EN"
     }));
   }
 
-  /* ---------- משיכה משני מקורות ואיחוד ---------- */
-  async function fetchNews(timeoutMs = 10000) {
-    const ctrl = new AbortController();
-    const to = setTimeout(()=>ctrl.abort(new Error('Timeout')), timeoutMs);
-    try {
-      const wantsSpotify = SPOTIFY_ENDPOINT && SPOTIFY_ENDPOINT.startsWith("http");
+  /* ---------- Fetch & merge ---------- */
+  async function fetchNews(timeoutMs=10000){
+    const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(new Error('Timeout')),timeoutMs);
+    try{
+      const aggP = fetch(AGG_ENDPOINT,{headers:{accept:"application/json"},signal:ctrl.signal})
+        .then(async r=>{ if(!r.ok) throw new Error(`Agg ${r.status}`); const j=await r.json(); const arr=Array.isArray(j)?j:(Array.isArray(j?.items)?j.items:[]); if(DEBUG) console.log("[Agg] items:",arr.length); return arr; })
+        .catch(e=>{ console.warn("[Agg] failed:",e?.message); return []; });
 
-      const aggPromise = fetch(AGG_ENDPOINT, {
-        headers: { accept: "application/json" }, signal: ctrl.signal
-      }).then(async r => {
-        if (!r.ok) throw new Error(`Aggregator ${r.status}`);
-        const j = await r.json();
-        const arr = Array.isArray(j) ? j : (Array.isArray(j?.items) ? j.items : []);
-        if (DEBUG) console.log("[Agg] items:", arr.length);
-        return arr;
-      }).catch(err => {
-        console.warn("[Agg] failed:", err?.message);
-        return [];
-      });
+      const spP  = fetch(SPOTIFY_ENDPOINT,{headers:{accept:"application/json"},signal:ctrl.signal})
+        .then(async r=>{ if(!r.ok){const t=await r.text().catch(()=> ""); throw new Error(`Spotify ${r.status} ${t.slice(0,120)}`);} const j=await r.json(); const mapped=albumsToNews(j); if(DEBUG) console.log("[Spotify] mapped:",mapped.length); return mapped; })
+        .catch(e=>{ console.warn("[Spotify] failed:",e?.message); return []; });
 
-      const spPromise  = wantsSpotify
-        ? fetch(SPOTIFY_ENDPOINT, { headers: { accept: "application/json" }, signal: ctrl.signal })
-            .then(async r => {
-              if (!r.ok) {
-                const text = await r.text().catch(()=> "");
-                throw new Error(`Spotify ${r.status} ${text?.slice(0,200)}`);
-              }
-              const j = await r.json();
-              const mapped = albumsToNews(j);
-              if (DEBUG) console.log("[Spotify] mapped:", mapped.length);
-              return mapped;
-            })
-            .catch(err => {
-              console.warn("[Spotify] failed:", err?.message);
-              return [];
-            })
-        : Promise.resolve([]);
-
-      const [aggData, spNews] = await Promise.all([aggPromise, spPromise]);
+      const [aggData, spNews] = await Promise.all([aggP, spP]);
       const all = [...aggData, ...spNews].filter(isAllowed);
 
-      // דה-דופליקציה + מיון
-      const seen = new Set();
-      const dedup = [];
-      for (const it of all) {
-        const url = safeUrl(it.link);
-        const key = url || (it.source + "|" + (it.headline||"").trim());
-        if (seen.has(key)) continue;
-        seen.add(key);
-        dedup.push(it);
-      }
-      dedup.sort((a,b)=> toDateSafe(b.date) - toDateSafe(a.date));
-
-      if (DEBUG) {
-        const counts = dedup.reduce((acc,it)=>{ acc[it.source] = (acc[it.source]||0)+1; return acc; }, {});
-        console.log("[Merged] total:", dedup.length, "by source:", counts);
-      }
-
+      // dedup + sort
+      const seen=new Set(); const dedup=[];
+      for(const it of all){ const url=safeUrl(it.link); const key=url || (it.source+"|"+(it.headline||"").trim()); if(seen.has(key)) continue; seen.add(key); dedup.push(it); }
+      dedup.sort((a,b)=> toDateSafe(b.date)-toDateSafe(a.date));
+      if (DEBUG){ const counts=dedup.reduce((m,x)=>(m[x.source]=(m[x.source]||0)+1,m),{}); console.log("[Merged] total:",dedup.length,"by source:",counts); }
       return dedup;
     } finally { clearTimeout(to); }
   }
 
-  /* ---------- תצוגה (ללא שינוי גרפי) ---------- */
-  function renderNews(items) {
-    const feed = document.getElementById('newsFeed');
-    feed.setAttribute('aria-busy','false');
-    if (!items.length) {
-      feed.innerHTML = `<div class="empty-state"><h3>לא נמצאו ידיעות כרגע</h3><p>נסה לרענן בעוד רגע</p></div>`;
-      return;
-    }
+  /* ---------- Render (unchanged visuals) ---------- */
+  function renderNews(items){
+    const feed=document.getElementById('newsFeed'); feed.setAttribute('aria-busy','false');
+    if(!items.length){ feed.innerHTML=`<div class="empty-state"><h3>לא נמצאו ידיעות כרגע</h3><p>נסה לרענן בעוד רגע</p></div>`; return; }
     feed.innerHTML = items.slice(0, MAX_ITEMS_TO_DISPLAY).map(card).join("");
   }
 
-  function card(story) {
-    const lang = normLang(story.language);
-    const src  = escapeText(story.source || '');
-    const url  = safeUrl(story.link);
-    const link = url || '#';
-    const title = escapeHtml(story.headline || '');
-    const summary = escapeHtml(story.summary || '');
-    const dateAttr = toDateSafe(story.date||Date.now()).toLocaleString('he-IL');
-
-    const anchorAttrs = url
-      ? `href="${link}" target="_blank" rel="noopener noreferrer"`
-      : `href="#" aria-disabled="true"`;
-
+  function card(story){
+    const lang=normLang(story.language); const src=escapeText(story.source||''); const url=safeUrl(story.link); const link=url||'#';
+    const title=escapeHtml(story.headline||''); const summary=escapeHtml(story.summary||''); const dateAttr=toDateSafe(story.date||Date.now()).toLocaleString('he-IL');
+    const anchorAttrs = url ? `href="${link}" target="_blank" rel="noopener noreferrer"` : `href="#" aria-disabled="true"`;
     return `
       <article class="news-item" role="article">
         <div class="news-header">
@@ -389,95 +242,66 @@ body::after {
           </div>
           <div class="news-date" title="${escapeText(dateAttr)}">${formatDate(story.date)}</div>
         </div>
-        <h2 class="news-title">
-          <a ${anchorAttrs}>${title}</a>
-        </h2>
+        <h2 class="news-title"><a ${anchorAttrs}>${title}</a></h2>
         <p class="news-summary">${summary}</p>
       </article>`;
   }
 
-  /* ---------- פילטרים ואיזון (כמו שהיה) ---------- */
-  function groupAndBalance(items) {
-    const clean = items.filter(it =>
-      safeUrl(it.link) &&
-      (it.headline || it.summary) &&
-      !isNaN(Date.parse(it.date))
-    );
-
-    const groups = new Map();
-    for (const it of clean) {
-      const k = (it.source || 'Unknown').trim();
-      if (!groups.has(k)) groups.set(k, []);
-      groups.get(k).push(it);
-    }
-
-    const balanced = [];
-    for (const arr of groups.values()) {
-      const topN = arr
-        .slice()
-        .sort((a,b)=> toDateSafe(b.date) - toDateSafe(a.date))
-        .slice(0, MAX_ITEMS_PER_SOURCE);
-      balanced.push(...topN);
-    }
-
-    const seen = new Set();
-    const deduped = [];
-    for (const it of balanced.sort((a,b)=> toDateSafe(b.date) - toDateSafe(a.date))) {
-      const k = safeUrl(it.link) || it.headline;
-      if (!k || seen.has(k)) continue;
-      seen.add(k);
-      deduped.push(it);
-    }
+  /* ---------- Balance & filters (unchanged) ---------- */
+  function groupAndBalance(items){
+    const clean=items.filter(it=> safeUrl(it.link) && (it.headline||it.summary) && !isNaN(Date.parse(it.date)));
+    const groups=new Map(); for(const it of clean){ const k=(it.source||'Unknown').trim(); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(it); }
+    const balanced=[]; for(const arr of groups.values()){ const topN=arr.slice().sort((a,b)=>toDateSafe(b.date)-toDateSafe(a.date)).slice(0,MAX_ITEMS_PER_SOURCE); balanced.push(...topN); }
+    const seen=new Set(); const deduped=[]; for(const it of balanced.sort((a,b)=>toDateSafe(b.date)-toDateSafe(a.date))){ const k=safeUrl(it.link)||it.headline; if(!k||seen.has(k)) continue; seen.add(k); deduped.push(it); }
     return deduped;
   }
-
-  function applyFilter(items, lang) {
-    if (lang === "all") return items;
-    const wanted = String(lang||'').toUpperCase();
-    return items.filter(x => normLang(x.language) === wanted);
-  }
-
-  function bindFilters(balanced) {
-    document.querySelectorAll('.toolbar .btn').forEach(btn => {
-      btn.addEventListener('click', () => {
+  function applyFilter(items, lang){ if(lang==="all") return items; const wanted=String(lang||'').toUpperCase(); return items.filter(x=>normLang(x.language)===wanted); }
+  function bindFilters(balanced){
+    document.querySelectorAll('.toolbar .btn[data-filter]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
         currentFilter = btn.dataset.filter || 'all';
         updateActiveButton();
-        const filtered = applyFilter(balanced, currentFilter);
-        renderNews(filtered);
+        const onlySpotify = getQueryFlag('only') === 'spotify';
+        let list = applyFilter(balanced, currentFilter);
+        if (onlySpotify) list = list.filter(x => x.source === 'Spotify');
+        renderNews(list);
       });
     });
     updateActiveButton();
   }
-
-  function updateActiveButton() {
-    document.querySelectorAll('.toolbar .btn').forEach(btn => {
+  function updateActiveButton(){
+    document.querySelectorAll('.toolbar .btn[data-filter]').forEach(btn=>{
       const active = btn.dataset.filter === currentFilter || (currentFilter==="all" && btn.dataset.filter==="all");
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-pressed', String(active));
     });
   }
 
-  function loading() {
-    const feed = document.getElementById('newsFeed');
-    feed.setAttribute('aria-busy','true');
-    feed.innerHTML = `<div class="empty-state"><h3>טוען חדשות מוזיקה...</h3><p>האוצרות האחרונים מהמקורות המובילים</p></div>`;
-  }
+  function loading(){ const feed=document.getElementById('newsFeed'); feed.setAttribute('aria-busy','true'); feed.innerHTML=`<div class="empty-state"><h3>טוען חדשות מוזיקה...</h3><p>האוצרות האחרונים מהמקורות המובילים</p></div>`; }
+
+  // NEW: כפתור רק-Spotify מוסיף פרמטר ל-URL ומבצע ניווט
+  document.getElementById('onlySpotifyBtn').addEventListener('click', () => {
+    const u = new URL(location.href);
+    u.searchParams.set('only', 'spotify');
+    location.href = u.toString();
+  });
 
   // INIT
   (async function init(){
     try{
       loading();
       const raw = await fetchNews();
-      renderNews(raw); // הצגה ראשונית
-      const balanced = groupAndBalance(raw); // איזון מקורות
+      const balanced = groupAndBalance(raw);
       bindFilters(balanced);
-      currentFilter = "all";
-      updateActiveButton();
-      renderNews(applyFilter(balanced, currentFilter));
 
+      const onlySpotify = getQueryFlag('only') === 'spotify';
+      let list = applyFilter(balanced, currentFilter);
+      if (onlySpotify) list = list.filter(x => x.source === 'Spotify');
+
+      renderNews(list);
       if (DEBUG) console.log("[Init] done");
     }catch(e){
-      const feed = document.getElementById('newsFeed');
+      const feed=document.getElementById('newsFeed');
       feed.setAttribute('aria-busy','false');
       feed.innerHTML = `<div class="empty-state"><h3 class="error">אירעה שגיאה</h3><p>${escapeHtml(e.message||"שגיאה לא צפויה")}</p></div>`;
       console.error(e);
