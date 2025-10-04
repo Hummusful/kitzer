@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>הלאה בקיצור - Music News</title>
   <style>
-/* === ה-CSS המקורי שלך + תוספת thumbnail === */
+/* === ה-CSS המקורי שלך + LTR + thumbnail === */
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
   background:linear-gradient(135deg,#0f0f23 0%,#1a1a2e 50%,#16213e 100%); min-height:100vh; color:#fff; line-height:1.6; }
@@ -24,20 +24,13 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
 
 .news-feed { margin-top:16px; }
 
-/* כרטיסים */
-.news-item {
-  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  backdrop-filter:blur(15px);
-  border-radius:16px; padding:26px 22px; margin-bottom:18px;
-  border:1px solid rgba(255,255,255,0.06);
-  transition:border-color .25s, transform .25s; position:relative; overflow:hidden;
-}
+.news-item { background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  backdrop-filter:blur(15px); border-radius:16px; padding:26px 22px; margin-bottom:18px;
+  border:1px solid rgba(255,255,255,0.06); transition:border-color .25s, transform .25s; position:relative; overflow:hidden; }
 .news-item:hover { transform:translateY(-2px); border-color:rgba(255,255,255,0.14); }
-.news-item::before {
-  content:''; position:absolute; top:0; left:0; right:0; height:3px;
-  background:linear-gradient(90deg,#ff6b6b,#4ecdc4,#45b7d1);
-  opacity:.55; transition:opacity .25s; border-top-left-radius:16px; border-top-right-radius:16px;
-}
+.news-item::before { content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:linear-gradient(90deg,#ff6b6b,#4ecdc4,#45b7d1); opacity:.55; transition:opacity .25s;
+  border-top-left-radius:16px; border-top-right-radius:16px; }
 .news-item:hover::before { opacity:.7; }
 
 .news-header { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap;
@@ -68,20 +61,15 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
 .news-item.ltr { direction:ltr; text-align:left; }
 .news-item.ltr .news-title::before { margin-right:8px; margin-left:0; }
 
-/* ===== Thumbnail layout (לא פוגע בעיצוב הקיים) ===== */
-.news-body {
-  display:flex; gap:14px; align-items:flex-start;
-}
-.news-thumb {
-  flex:0 0 auto; width:84px; aspect-ratio:1/1;
-  border-radius:12px; overflow:hidden;
+/* Thumbnail */
+.news-body { display:flex; gap:14px; align-items:flex-start; }
+.news-thumb { flex:0 0 auto; width:84px; aspect-ratio:1/1; border-radius:12px; overflow:hidden;
   box-shadow:0 6px 18px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06) inset;
-  background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
-}
+  background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); }
 .news-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
 @media (min-width:1024px){ .news-thumb { width:108px; } }
 
-/* רשימת פרטי אלבום */
+/* פרטי אלבום */
 .meta-list { margin-top:6px; font-size:.95rem; color:#cfd7df; }
 .meta-list li { margin:2px 0; }
 .meta-label { color:#9fb6c8; }
@@ -111,9 +99,10 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
   <script defer>
   /* ===================== CONFIG ===================== */
   const AGG_ENDPOINT = "https://music-agrragator.dustrial.workers.dev/";
-  // Worker מפורט (עם label/copyrights/images)
+
+  // כתובת ה-Worker של ספוטיפיי המפורט (מופעלת רק עם ?only=spotify):
   const SPOTIFY_DETAILED_ENDPOINT =
-    "https://spotify-new-releases.dustrial.workers.dev/api/spotify-months-detailed?market=IL&monthsBack=2&limit=50";
+    "https://YOUR-WORKER.workers.dev/api/spotify-months-detailed?market=IL&monthsBack=2&limit=50";
 
   const MAX_ITEMS_TO_DISPLAY = 30;
   const MAX_ITEMS_PER_SOURCE = 3;
@@ -128,7 +117,6 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
   function escapeText(str){return escapeHtml(String(str||''));}
   function safeUrl(href){try{const u=new URL(href); return (u.protocol==='http:'||u.protocol==='https:')?u.href:null;}catch{ return null; }}
   function normLang(v){const s=String(v||'').trim().toLowerCase(); if(!s) return 'EN'; if(s.startsWith('he')) return 'HE'; if(s.startsWith('en')) return 'EN'; return s.toUpperCase();}
-
   const rtfHE=new Intl.RelativeTimeFormat('he-IL',{numeric:'auto'});
   const rtfEN=new Intl.RelativeTimeFormat('en-GB',{numeric:'auto'});
   function toDateSafe(v){const t=Date.parse(v); return isNaN(t)?new Date():new Date(t);}
@@ -149,7 +137,7 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
   }
   function getQueryFlag(name){return new URLSearchParams(location.search).get(name);}
 
-  // בוחר את תמונת העטיפה הכי קרובה לרוחב מטרה (למשל ~160px)
+  // בחירת תמונה/עטיפה אם קיימת
   function pickImage(images, target=160){
     if (!Array.isArray(images) || !images.length) return null;
     let best = images[0], bestDiff = Math.abs((best.width||target) - target);
@@ -160,7 +148,7 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
     return best?.url || images[0]?.url || null;
   }
 
-  /* ---------- Mappers ---------- */
+  /* ---------- Mappers (Spotify) ---------- */
   function albumsToNewsFromDetailedAPI(j){
     const arr = Array.isArray(j?.albums) ? j.albums : [];
     return arr.map(a => {
@@ -174,7 +162,7 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
         summary: artists ? `Artist: ${artists}` : "",
         date: a.release_date || "",
         language: "EN",
-        cover,                             // <— חדש: URL של העטיפה
+        cover,
         meta: {
           type: type || null,
           label: a.label || null,
@@ -211,7 +199,7 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
     } finally { clearTimeout(to); }
   }
 
-  /* ---------- Merge / Balance ---------- */
+  /* ---------- Merge / Balance / Filters ---------- */
   function mergeAndSort(arrays){
     const all = arrays.flat().filter(Boolean);
     const seen = new Set(); const out = [];
@@ -239,8 +227,39 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
     }
     return deduped;
   }
+  function applyFilter(items, lang){ if(lang==="all") return items; const wanted=String(lang||'').toUpperCase(); return items.filter(x=>normLang(x.language)===wanted); }
+  function bindFilters(balanced){
+    document.querySelectorAll('.toolbar .btn[data-filter]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        currentFilter = btn.dataset.filter || 'all';
+        updateActiveButton();
+        // אין ספוטיפיי בפיד הכללי, כך שלא צריך סינון מיוחד כאן
+        renderNews(applyFilter(balanced, currentFilter));
+      });
+    });
+    updateActiveButton();
+  }
+  function updateActiveButton(){
+    document.querySelectorAll('.toolbar .btn[data-filter]').forEach(btn=>{
+      const active = btn.dataset.filter === currentFilter || (currentFilter==="all" && btn.dataset.filter==="all");
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', String(active));
+    });
+  }
+  function loading(){
+    const feed=document.getElementById('newsFeed');
+    feed.setAttribute('aria-busy','true');
+    feed.innerHTML=`<div class="empty-state"><h3>טוען חדשות מוזיקה...</h3><p>האוצרות האחרונים מהמקורות המובילים</p></div>`;
+  }
 
-  /* ---------- Card render (with thumbnail) ---------- */
+  // כפתור רק-Spotify → ?only=spotify
+  document.getElementById('onlySpotifyBtn').addEventListener('click', () => {
+    const u = new URL(location.href);
+    u.searchParams.set('only', 'spotify');
+    location.href = u.toString();
+  });
+
+  /* ---------- Card render (כולל תמונה אם יש) ---------- */
   function renderMetaList(meta, lang){
     if (!meta) return "";
     const items = [];
@@ -271,10 +290,8 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
     const summaryHtml = summary ? `<p class="news-summary"><strong>${summary}</strong></p>` : "";
 
     const thumbHtml = story.cover
-      ? `<a class="news-thumb" ${anchorAttrs} aria-label="Open album">
-           <img src="${escapeHtml(story.cover)}"
-                alt="Album cover"
-                loading="lazy" decoding="async" referrerpolicy="no-referrer" />
+      ? `<a class="news-thumb" ${anchorAttrs} aria-label="Open link">
+           <img src="${escapeHtml(story.cover)}" alt="Cover" loading="lazy" decoding="async" referrerpolicy="no-referrer" />
          </a>`
       : "";
 
@@ -305,40 +322,6 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
     feed.innerHTML = items.slice(0, MAX_ITEMS_TO_DISPLAY).map(card).join("");
   }
 
-  function applyFilter(items, lang){ if(lang==="all") return items; const wanted=String(lang||'').toUpperCase(); return items.filter(x=>normLang(x.language)===wanted); }
-  function bindFilters(balanced){
-    document.querySelectorAll('.toolbar .btn[data-filter]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        currentFilter = btn.dataset.filter || 'all';
-        updateActiveButton();
-        const onlySpotify = getQueryFlag('only') === 'spotify';
-        let list = applyFilter(balanced, currentFilter);
-        if (onlySpotify) list = list.filter(x => x.source === 'Spotify');
-        renderNews(list);
-      });
-    });
-    updateActiveButton();
-  }
-  function updateActiveButton(){
-    document.querySelectorAll('.toolbar .btn[data-filter]').forEach(btn=>{
-      const active = btn.dataset.filter === currentFilter || (currentFilter==="all" && btn.dataset.filter==="all");
-      btn.classList.toggle('active', active);
-      btn.setAttribute('aria-pressed', String(active));
-    });
-  }
-  function loading(){
-    const feed=document.getElementById('newsFeed');
-    feed.setAttribute('aria-busy','true');
-    feed.innerHTML=`<div class="empty-state"><h3>טוען חדשות מוזיקה...</h3><p>האוצרות האחרונים מהמקורות המובילים</p></div>`;
-  }
-
-  // כפתור רק-Spotify → ?only=spotify
-  document.getElementById('onlySpotifyBtn').addEventListener('click', () => {
-    const u = new URL(location.href);
-    u.searchParams.set('only', 'spotify');
-    location.href = u.toString();
-  });
-
   // INIT
   (async function init(){
     try{
@@ -346,20 +329,16 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
       const onlySpotify = getQueryFlag('only') === 'spotify';
 
       if (onlySpotify) {
+        // מצב ספוטיפיי בלבד: טוען רק מ-Worker של ספוטיפיי
         const sp = await fetchSpotifyDetailed();
         renderNews(sp.slice(0, MAX_ITEMS_TO_DISPLAY));
         return;
       }
 
-      const [aggRes, spRes] = await Promise.allSettled([
-        fetchAgg(),
-        fetchSpotifyDetailed().catch(()=>[])
-      ]);
-      const aggData = aggRes.status === "fulfilled" ? aggRes.value : [];
-      const spData  = spRes.status  === "fulfilled" ? spRes.value  : [];
-
-      const merged = mergeAndSort([aggData, spData]);
-      const balanced = groupAndBalance(merged);
+      // מצב רגיל: טוען רק את ה-Aggregator (בלי ספוטיפיי)
+      const agg = await fetchAgg();
+      // איזון קבוצתי + פילטרים HE/EN
+      const balanced = groupAndBalance(agg);
       bindFilters(balanced);
       renderNews(applyFilter(balanced, currentFilter));
     }catch(e){
