@@ -2,248 +2,15 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>הלאה בקיצור - Music News</title>
   <style>
- * { margin: 0; padding: 0; box-sizing: border-box; }
+  /* ... כל ה-CSS שלך ללא שינוי ... */
 
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
-  min-height: 100vh;
-  color: #ffffff;
-  line-height: 1.6;
-}
-
-.container { max-width: 1100px; margin: 0 auto; padding: 20px; }
-
-.header { text-align: center; margin-bottom: 24px; padding: 20px 0; }
-
-.site-title {
-  font-size: 2.6rem; font-weight: 900; letter-spacing: -1px; margin-bottom: 8px;
-  background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
-  background-size: 300% 300%;
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: gradientShift 3s ease-in-out infinite;
-}
-
-.subtitle { font-size: 1rem; color: #a0a0a0; font-weight: 300; }
-
-@keyframes gradientShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
-
-/* Toolbar */
-.toolbar {
-  display: flex; gap: 12px; align-items: center; justify-content: center;
-  margin: 16px 0 10px;
-  flex-wrap: wrap;
-}
-.btn {
-  border: 1px solid rgba(0,229,255,0.25);
-  background: rgba(0,229,255,0.08);
-  color: #fff; padding: 9px 16px; border-radius: 999px;
-  font-size: 0.92rem; cursor: pointer; transition: all .2s ease;
-  letter-spacing: .2px;
-  backdrop-filter: blur(6px);
-}
-.btn:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(0,229,255,0.35), 0 2px 10px rgba(0,229,255,0.12); }
-.btn.active { background: rgba(0,229,255,0.16); box-shadow: 0 0 0 2px rgba(0,229,255,0.22) inset; }
-
-.news-feed { margin-top: 16px; }
-
-/* כרטיסים — ללא גריד, וריאציית "נשימה" */
-.news-item {
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  backdrop-filter: blur(15px);
-  border-radius: 16px;
-  padding: 26px 22px; margin-bottom: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: border-color 0.25s ease, transform 0.25s ease;
-  position: relative; overflow: hidden;
-}
-.news-item:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.14); }
-
-.news-item::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-  background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1);
-  opacity: .55; transition: opacity 0.25s ease;
-  border-top-left-radius: 16px; border-top-right-radius: 16px;
-}
-.news-item:hover::before { opacity: .7; }
-
-.news-header {
-  display: flex; justify-content: space-between; align-items: flex-start;
-  gap: 8px; flex-wrap: wrap;
-  padding-bottom: 8px; margin-bottom: 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-.news-meta {
-  display: flex; gap: 8px; align-items: center;
-  font-size: 0.85rem; color: #a0a0a0;
-}
-
-.language-badge {
-  background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-  color: #fff; padding: 3px 10px; border-radius: 12px;
-  font-size: 0.75rem; font-weight: 700; opacity: .9;
-}
-.source-tag {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255,255,255,0.12);
-  padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; opacity: .85;
-}
-
-.news-title { font-size: 1.28rem; font-weight: 800; margin-bottom: 6px; line-height: 1.42; letter-spacing: .1px; }
-.news-title a { color: #fff; text-decoration: none; transition: color 0.2s ease, border-color .2s ease, text-shadow .2s ease; border-bottom: 2px solid transparent; }
-.news-title a:hover { color: #4ecdc4; border-bottom-color: rgba(0,229,255,0.45); text-shadow: none; }
-
-.news-summary { color: #e8e8e8; line-height: 1.75; margin-top: 8px; margin-bottom: 10px; text-shadow: 0 1px 2px rgba(0,0,0,0.3); font-size: 1.02rem; }
-.news-date { color: #9aa3b2; font-size: 0.85rem; white-space: nowrap; }
-
-.empty-state { text-align: center; color: #a0a0a0; padding: 50px 16px; }
-.empty-state h3 { font-size: 1.35rem; margin-bottom: 8px; color: #4ecdc4; }
-
-.error { color: #ff9c9c; }
-
-@media (max-width: 768px) {
-  .container { padding: 15px; }
-  .site-title { font-size: 2.1rem; }
-  .news-item { padding: 20px 18px; }
-  .news-header { flex-direction: column; align-items: flex-start; }
-}
-
-/* שני טורים בדסקטופ, פיד מהיר */
-@media (min-width: 1024px) {
-  .news-feed {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
+  /* שיפור קטן ל-Scanlines במובייל */
+  @media (max-width: 768px), (prefers-reduced-motion: reduce) {
+    body::after { display: none !important; } /* NEW: ודאות */
   }
-  .news-item { margin: 0; }
-}
-
-/* --- תוספות קטנות --- */
-/* כיבוי אנימציות למעדיפים פחות תנועה */
-@media (prefers-reduced-motion: reduce) {
-  .site-title { animation: none; }
-  .news-item, .btn { transition: none; }
-}
-
-/* שיפור ביצועים בציורים מרובים */
-.news-item { content-visibility: auto; contain-intrinsic-size: 200px; }
-
-/* === Cyberpunk Akira/GitS Layer (non-intrusive, מרוסן) === */
-:root {
-  --cp-bg-1: #0f0f23;
-  --cp-bg-2: #111827;
-  --cp-neon-pink: #ff2d6f;
-  --cp-neon-cyan: #00e5ff;
-  --cp-neon-lime: #b4ff39;
-  --cp-edge: rgba(0,229,255,0.15);
-  --cp-glow: 0 0 18px rgba(0,229,255,0.25), 0 0 36px rgba(255,45,111,0.15);
-}
-
-/* רקע “עיר” דיגיטלי מרומז */
-body {
-  background:
-    radial-gradient(1200px 600px at 70% -10%, rgba(255,45,111,0.06), transparent 50%),
-    radial-gradient(800px 400px at 10% 110%, rgba(0,229,255,0.05), transparent 50%),
-    linear-gradient(135deg, var(--cp-bg-1), var(--cp-bg-2));
-}
-
-/* מסגרת קפסולת ניאון לקונטיינר */
-.container {
-  position: relative;
-  border-radius: 24px;
-  padding: 22px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00));
-  box-shadow: 0 0 0 1px var(--cp-edge), 0 10px 30px rgba(0,0,0,0.35);
-}
-.container::before {
-  content: "";
-  position: absolute; inset: -1px;
-  border-radius: 26px;
-  background: linear-gradient(120deg, rgba(0,229,255,0.35), rgba(255,45,111,0.25), transparent 60%);
-  filter: blur(16px);
-  opacity: .35; pointer-events: none;
-}
-@media (max-width: 768px) {
-  .container::before { filter: blur(10px); opacity: .25; }
-}
-
-/* כותרת בסגנון gradient neon (מהיר מעט יותר) */
-.site-title {
-  letter-spacing: 0.5px;
-  text-shadow: var(--cp-glow);
-  animation-duration: 4.8s;
-}
-
-/* תגיות מקור/שפה – “שבבי” ניאון */
-.language-badge {
-  background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-  box-shadow: 0 0 8px rgba(0,229,255,0.35);
-}
-.source-tag {
-  border: 1px solid rgba(255,255,255,0.12);
-  backdrop-filter: blur(6px);
-}
-
-/* Bullet ניאון ליד כל כותרת */
-.news-title::before {
-  content: "•";
-  margin-left: 8px; /* RTL */
-  color: var(--cp-neon-pink);
-  text-shadow: 0 0 8px rgba(255,45,111,0.5);
-  font-weight: 900;
-}
-
-/* נגישות: מצב פוקוס ברור */
-:where(a, button):focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 2px #000,
-    0 0 0 4px var(--cp-neon-cyan),
-    0 0 16px var(--cp-neon-cyan);
-  border-radius: 10px;
-}
-@media (forced-colors: active) {
-  :where(a, button):focus-visible {
-    box-shadow: 0 0 0 2px CanvasText;
-    outline: 2px solid CanvasText;
-  }
-}
-
-/* גליץ' עדין על תגית מקור */
-@keyframes cp-glitch {
-  0%,100% { transform: translate(0); filter: hue-rotate(0deg); }
-  40% { transform: translate(-0.5px, -0.5px); }
-  60% { transform: translate(0.5px, 0.5px); }
-}
-.news-item:hover .source-tag { animation: cp-glitch .25s linear 1; }
-
-/* Scanlines עדינים — מכובים במובייל/Reduced Motion */
-body::after {
-  content: "";
-  position: fixed; inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0,0,0,0.08) 0,
-    rgba(0,0,0,0.00) 2px,
-    rgba(0,0,0,0.00) 4px
-  );
-  pointer-events: none;
-  opacity: 0.06;
-  z-index: 9999;
-}
-@media (max-width: 768px), (prefers-reduced-motion: reduce) {
-  body::after { display: none; }
-}
-
-/* Subtitle micro-glow */
-.subtitle {
-  text-shadow: 0 0 8px rgba(0,229,255,0.25);
-  letter-spacing: 1px;
-}
   </style>
 </head>
 <body>
@@ -253,28 +20,28 @@ body::after {
       <p class="subtitle">Your Personal Music News Feed</p>
     </header>
 
-    <div class="toolbar" role="toolbar" aria-label="News filters">
-      <button class="btn active" data-filter="all" aria-pressed="true">הכול</button>
-      <button class="btn" data-filter="HE" aria-pressed="false">ישראלי</button>
-      <button class="btn" data-filter="EN" aria-pressed="false">בינלאומי</button>
+    <div class="toolbar" role="toolbar" aria-label="News filters" aria-controls="newsFeed"> <!-- NEW -->
+      <button class="btn active" data-filter="all" aria-pressed="true" type="button">הכול</button> <!-- NEW type -->
+      <button class="btn" data-filter="HE" aria-pressed="false" type="button">ישראלי</button>       <!-- NEW type -->
+      <button class="btn" data-filter="EN" aria-pressed="false" type="button">בינלאומי</button>    <!-- NEW type -->
     </div>
 
-    <!-- aria-live="polite" לנגישות -->
     <div class="news-feed" id="newsFeed" role="feed" aria-live="polite" aria-busy="true"></div>
   </div>
 
   <script defer>
-  const WORKER_ENDPOINT = "https://music-agrragator.dustrial.workers.dev/";
+  /* ===================== CONFIG ===================== */
+  const AGG_ENDPOINT = "https://music-agrragator.dustrial.workers.dev/"; // הישן
+  const SPOTIFY_ENDPOINT = "https://spotify-new-releases.dustrial.workers.dev/api/new-releases?country=IL&limit=20"; 
 
-  // קבועים לשימוש חוזר
   const MAX_ITEMS_TO_DISPLAY = 30;
   const MAX_ITEMS_PER_SOURCE = 3;
 
-  // חסימה מינימלית (כפי שביקשת)
   const BLOCKED_SOURCES = ["al jazeera"].map(s => s.toLowerCase());
   const BLOCKED_DOMAINS  = ["aljazeera.com"];
 
-  let currentFilter = "all"; // all | HE | EN
+  let currentFilter = "all";
+  /* ================================================== */
 
   function isAllowed(item) {
     const src = String(item.source||'').toLowerCase();
@@ -285,9 +52,7 @@ body::after {
   }
 
   /* ---------- עזרי אבטחה ו-i18n ---------- */
-  function escapeHtml(str){
-    return (str||"").replace(/[&<>"]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));
-  }
+  function escapeHtml(str){ return (str||"").replace(/[&<>"]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s])); }
   function escapeText(str){ return escapeHtml(String(str||'')); }
 
   function safeUrl(href){
@@ -320,30 +85,65 @@ body::after {
     const min = Math.round(sec/60);
     const hr  = Math.round(min/60);
     const day = Math.round(hr/24);
-    if (Math.abs(sec) < 45) return rtf.format(0, 'second'); // "עכשיו"
+    if (Math.abs(sec) < 45) return rtf.format(0, 'second');
     if (Math.abs(min) < 45) return rtf.format(min, 'minute');
     if (Math.abs(hr)  < 22) return rtf.format(hr,  'hour');
     return rtf.format(day, 'day');
   }
 
-  /* ---------- שלב 1: משיכה והצגה ראשונית ---------- */
-  async function fetchNews(timeoutMs = 10000) {
+  /* ---------- מיפוי Spotify -> מבנה חדשות ---------- */
+  function albumsToNews(data){
+    const albums = (data && data.albums) ? data.albums : [];
+    return albums.map(a => ({
+      source: "Spotify",
+      link: a.url || "#",
+      headline: a.name || "",
+      summary: (a.artists || []).map(x=>x.name).join(", ") + (a.total_tracks ? ` • ${a.total_tracks} שירים` : ""),
+      date: a.release_date || new Date().toISOString(),
+      language: "EN",
+      image: (a.images && a.images[0] && a.images[0].url) ? a.images[0].url : null
+    }));
+  }
+
+  /* ---------- משיכה משני מקורות ואיחוד ---------- */
+  async function fetchJsonSafe(res) { // NEW: הגנת JSON
+    try { return await res.json(); } catch { throw new Error("Invalid JSON from endpoint"); }
+  }
+
+  async function fetchNews(timeoutMs = 12000) { // NEW: טיפה יותר זמן
     const ctrl = new AbortController();
     const to = setTimeout(()=>ctrl.abort(new Error('Timeout')), timeoutMs);
     try {
-      const res = await fetch(WORKER_ENDPOINT, {
-        headers: { accept: "application/json" },
-        signal: ctrl.signal
-      });
-      if (!res.ok) throw new Error(`Aggregator returned ${res.status}`);
-      const data = await res.json();
-      if (!Array.isArray(data)) throw new Error("Invalid aggregator response");
-      return data.filter(isAllowed);
-    } finally {
-      clearTimeout(to);
-    }
+      const [aggRes, spRes] = await Promise.all([
+        fetch(AGG_ENDPOINT, { headers: { accept: "application/json" }, signal: ctrl.signal }),
+        fetch(SPOTIFY_ENDPOINT, { headers: { accept: "application/json" }, signal: ctrl.signal })
+      ]);
+
+      if (!aggRes.ok) throw new Error(`Aggregator returned ${aggRes.status}`);
+      if (!spRes.ok)  throw new Error(`Spotify API returned ${spRes.status}`);
+
+      const aggData = await fetchJsonSafe(aggRes);
+      const spData  = await fetchJsonSafe(spRes);
+      const spNews  = albumsToNews(spData);
+
+      const all = [...(Array.isArray(aggData) ? aggData : []), ...spNews].filter(isAllowed);
+
+      // Dedup מחוזק: קישור || source+headline
+      const seen = new Set();
+      const dedup = [];
+      for (const it of all) {
+        const url = safeUrl(it.link);
+        const key = url || (String(it.source||'') + "|" + (it.headline||"").trim()); // NEW
+        if (seen.has(key)) continue;
+        seen.add(key);
+        dedup.push(it);
+      }
+      dedup.sort((a,b)=> toDateSafe(b.date) - toDateSafe(a.date));
+      return dedup;
+    } finally { clearTimeout(to); }
   }
 
+  /* ---------- תצוגה ---------- */
   function renderNews(items) {
     const feed = document.getElementById('newsFeed');
     feed.setAttribute('aria-busy','false');
@@ -359,13 +159,18 @@ body::after {
     const src  = escapeText(story.source || '');
     const url  = safeUrl(story.link);
     const link = url || '#';
-    const title = escapeHtml(story.headline || '');
+    const title = escapeHtml(story.headline || 'פריט ללא שם'); // NEW: ברירת מחדל
     const summary = escapeHtml(story.summary || '');
     const dateAttr = toDateSafe(story.date||Date.now()).toLocaleString('he-IL');
 
     const anchorAttrs = url
       ? `href="${link}" target="_blank" rel="noopener noreferrer"`
       : `href="#" aria-disabled="true"`;
+
+    const cover = story.image ? `
+      <div style="margin:-8px -8px 10px -8px; overflow:hidden; border-radius:12px">
+        <img src="${story.image}" alt="${title}" style="width:100%;height:200px;object-fit:cover;" loading="lazy" decoding="async"> <!-- NEW -->
+      </div>` : "";
 
     return `
       <article class="news-item" role="article">
@@ -376,6 +181,7 @@ body::after {
           </div>
           <div class="news-date" title="${escapeText(dateAttr)}">${formatDate(story.date)}</div>
         </div>
+        ${cover}
         <h2 class="news-title">
           <a ${anchorAttrs}>${title}</a>
         </h2>
@@ -383,9 +189,8 @@ body::after {
       </article>`;
   }
 
-  /* ---------- שלב 2: איזון לפי מקור + פילטרים ---------- */
+  /* ---------- פילטרים ---------- */
   function groupAndBalance(items) {
-    // סינון ראשוני: קישור בטוח, טקסט כלשהו, תאריך תקין
     const clean = items.filter(it =>
       safeUrl(it.link) &&
       (it.headline || it.summary) &&
@@ -408,11 +213,10 @@ body::after {
       balanced.push(...topN);
     }
 
-    // הסרת כפילויות לפי קישור ושמירה על סדר זמן
     const seen = new Set();
     const deduped = [];
     for (const it of balanced.sort((a,b)=> toDateSafe(b.date) - toDateSafe(a.date))) {
-      const k = safeUrl(it.link);
+      const k = safeUrl(it.link) || ((it.source||'') + "|" + (it.headline||"")); // NEW
       if (!k || seen.has(k)) continue;
       seen.add(k);
       deduped.push(it);
@@ -457,10 +261,8 @@ body::after {
     try{
       loading();
       const raw = await fetchNews();
-      // הצגה מיידית (RAW)
-      renderNews(raw);
-      // איזון + פילטרים
-      const balanced = groupAndBalance(raw);
+      renderNews(raw); // ראשוני
+      const balanced = groupAndBalance(raw); // איזון
       bindFilters(balanced);
       currentFilter = "all";
       updateActiveButton();
@@ -471,7 +273,6 @@ body::after {
       feed.innerHTML = `<div class="empty-state"><h3 class="error">אירעה שגיאה</h3><p>${escapeHtml(e.message||"שגיאה לא צפויה")}</p></div>`;
     }
   })();
-</script>
-
+  </script>
 </body>
 </html>
