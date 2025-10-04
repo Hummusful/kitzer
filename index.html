@@ -1,38 +1,444 @@
-// חיפוש לפי טווח שנים
-async function searchAlbumsByYearRange(token, yStart, yEnd, desired) {
-  const out = [];
-  let next = `https://api.spotify.com/v1/search?q=${encodeURIComponent(`year:${yStart}-${yEnd}`)}&type=album&market=${market}&limit=${PAGE_LIMIT}`;
-  for (let i = 0; i < 20 && next; i++) {
-    const j = await sp(token, next);
-    out.push(...(j.albums?.items || []));
-    if (out.length >= desired) break;            // <-- עצירה כשהגענו לכמות המבוקשת
-    next = j.albums?.next || null;
-  }
-  return out;
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>הלאה בקיצור - Music News</title>
+  <link rel="icon" href="/favicon.ico">
+
+  <style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+  background:linear-gradient(135deg,#0f0f23 0%,#1a1a2e 50%,#16213e 100%); min-height:100vh; color:#fff; line-height:1.6; }
+.container { max-width:1100px; margin:0 auto; padding:20px; }
+.header { text-align:center; margin-bottom:24px; padding:20px 0; }
+.site-title { font-size:2.6rem; font-weight:900; letter-spacing:-1px; margin-bottom:8px;
+  background:linear-gradient(45deg,#ff6b6b,#4ecdc4,#45b7d1,#96ceb4); background-size:300% 300%;
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; animation:gradientShift 4.8s ease-in-out infinite; }
+.subtitle { font-size:1rem; color:#a0a0a0; font-weight:300; }
+@keyframes gradientShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+
+.skip-link {
+  position:absolute; left:8px; top:-40px;
+  background:#00e5ff; color:#000; padding:8px 12px; border-radius:8px;
+  transition:transform .2s ease; z-index:10000; text-decoration:none; font-weight:600;
+}
+.skip-link:focus { transform: translateY(48px); outline:2px solid #fff; }
+
+.toolbar { display:flex; gap:12px; align-items:center; justify-content:center; margin:16px 0 10px; flex-wrap:wrap; }
+.btn { border:1px solid rgba(0,229,255,0.25); background:rgba(0,229,255,0.08); color:#fff; padding:9px 16px; border-radius:999px;
+  font-size:.92rem; cursor:pointer; transition:.2s; letter-spacing:.2px; backdrop-filter:blur(6px); }
+.btn:hover { transform:translateY(-1px); box-shadow:0 0 0 1px rgba(0,229,255,0.35), 0 2px 10px rgba(0,0,0,0.12); }
+.btn.active { background:rgba(0,229,255,0.16); box-shadow:0 0 0 2px rgba(0,229,255,0.22) inset; }
+
+.news-feed { margin-top:16px; }
+
+.news-item { background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  backdrop-filter:blur(15px); border-radius:16px; padding:26px 22px; margin-bottom:18px;
+  border:1px solid rgba(255,255,255,0.06); transition:border-color .25s, transform .25s; position:relative; overflow:hidden; }
+.news-item:hover { transform:translateY(-2px); border-color:rgba(255,255,255,0.14); }
+.news-item::before { content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:linear-gradient(90deg,#ff6b6b,#4ecdc4,#45b7d1); opacity:.55; transition:opacity .25s;
+  border-top-left-radius:16px; border-top-right-radius:16px; }
+.news-item:hover::before { opacity:.7; }
+
+.news-header { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap;
+  padding-bottom:8px; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.06); }
+.news-meta { display:flex; gap:8px; align-items:center; font-size:.85rem; color:#a0a0a0; }
+
+.language-badge { background:linear-gradient(45deg,#ff6b6b,#4ecdc4); color:#fff; padding:3px 10px; border-radius:12px; font-size:.75rem; font-weight:700; opacity:.9; }
+.source-tag { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.12); padding:4px 10px; border-radius:12px; font-size:.75rem; opacity:.85; }
+
+.news-title { font-size:1.28rem; font-weight:800; margin-bottom:6px; line-height:1.42; letter-spacing:.1px; }
+.news-title::before { content:"•"; margin-left:8px; color:#ff2d6f; text-shadow:0 0 8px rgba(255,45,111,0.5); font-weight:900; }
+.news-title a { color:#fff; text-decoration:none; transition:color .2s, border-color .2s, text-shadow .2s; border-bottom:2px solid transparent; }
+.news-title a:hover { color:#4ecdc4; border-bottom-color:rgba(0,229,255,0.45); text-shadow:none; }
+
+.news-summary { color:#e8e8e8; line-height:1.75; margin-top:8px; margin-bottom:6px; text-shadow:0 1px 2px rgba(0,0,0,0.3); font-size:1.02rem; }
+.news-date { color:#9aa3b2; font-size:.85rem; white-space:nowrap; }
+
+.empty-state { text-align:center; color:#a0a0a0; padding:50px 16px; }
+.empty-state h3 { font-size:1.35rem; margin-bottom:8px; color:#4ecdc4; }
+.error { color:#ff9c9c; }
+
+.spinner {
+  width:40px; height:40px; border-radius:50%;
+  border:4px solid rgba(255,255,255,.15);
+  border-top-color:#4ecdc4; 
+  animation:spin .8s linear infinite; 
+  margin:0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.retry-btn {
+  background:rgba(78,205,196,0.15); 
+  border:1px solid rgba(78,205,196,0.4);
+  color:#4ecdc4; padding:10px 24px; border-radius:8px;
+  cursor:pointer; font-size:.95rem; font-weight:600;
+  transition:.2s; margin-top:12px;
+}
+.retry-btn:hover {
+  background:rgba(78,205,196,0.25);
+  transform:translateY(-1px);
 }
 
-// tag:new
-async function searchAlbumsTagNew(token, desired) {
-  const out = [];
-  let next = `https://api.spotify.com/v1/search?q=${encodeURIComponent(`tag:new`)}&type=album&market=${market}&limit=${PAGE_LIMIT}`;
-  for (let i = 0; i < 20 && next; i++) {
-    const j = await sp(token, next);
-    out.push(...(j.albums?.items || []));
-    if (out.length >= desired) break;            // <-- עצירה לפי desired
-    next = j.albums?.next || null;
-  }
-  return out;
-}
+@media (max-width:768px){ .container{padding:15px;} .site-title{font-size:2.1rem;} .news-item{padding:20px 18px;} .news-header{flex-direction:column; align-items:flex-start;} }
+@media (min-width:1024px){ .news-feed{display:grid; grid-template-columns:1fr 1fr; gap:18px;} .news-item{margin:0;} }
+@media (prefers-reduced-motion:reduce){ .site-title{animation:none;} .news-item,.btn{transition:none;} .spinner{animation:none;} }
 
-// browse/new-releases
-async function browseNewReleases(token, desired) {
-  const out = [];
-  let next = `https://api.spotify.com/v1/browse/new-releases?country=${market}&limit=${PAGE_LIMIT}`;
-  for (let i = 0; i < 20 && next; i++) {
-    const j = await sp(token, next);
-    out.push(...(j.albums?.items || []));
-    if (out.length >= desired) break;            // <-- עצירה לפי desired
-    next = j.albums?.next || null;
+.news-item.ltr { direction:ltr; text-align:left; }
+.news-item.ltr .news-title::before { margin-right:8px; margin-left:0; }
+
+.news-body { display:flex; gap:14px; align-items:flex-start; }
+.news-thumb { flex:0 0 auto; width:84px; aspect-ratio:1/1; border-radius:12px; overflow:hidden;
+  box-shadow:0 6px 18px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06) inset;
+  background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); }
+.news-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+@media (min-width:1024px){ .news-thumb { width:108px; } }
+
+.meta-list { margin-top:6px; font-size:.95rem; color:#cfd7df; }
+.meta-list li { margin:2px 0; }
+.meta-label { color:#9fb6c8; }
+
+.news-item a { position: relative; z-index: 1; }
+.news-item .no-link { color:#e8e8e8; text-decoration:none; cursor:default; }
+.news-thumb { position: relative; z-index: 1; }
+
+:where(a,button):focus-visible{ outline:2px solid #00e5ff; outline-offset:2px; border-radius:4px; }
+  </style>
+</head>
+<body>
+  <a href="#newsFeed" class="skip-link">דלג לתוכן</a>
+  
+  <div class="container">
+    <header class="header" role="banner">
+      <h1 class="site-title">בקיצור</h1>
+      <h2 class="subtitle"><img src="favicon-16x16.png" alt="minilogo" > Dusty's Feed </h2>
+    </header>
+
+    <div class="toolbar" role="toolbar" aria-label="News filters">
+      <button class="btn active" data-filter="all" aria-pressed="true">הכול</button>
+      <button class="btn" data-filter="HE" aria-pressed="false">ישראלי</button>
+      <button class="btn" data-filter="EN" aria-pressed="false">בינלאומי</button>
+      <button class="btn" id="onlySpotifyBtn" type="button" aria-pressed="false">רק Spotify</button>
+    </div>
+
+    <div class="news-feed" id="newsFeed" role="feed" aria-live="polite" aria-busy="true"></div>
+  </div>
+
+  <script>
+  const AGG_ENDPOINT = "https://music-agrragator.dustrial.workers.dev/";
+  const SPOTIFY_DETAILED_ENDPOINT = "https://spotify-new-releases.dustrial.workers.dev/api/spotify-months-detailed?market=IL&monthsBack=2&limit=50";
+  const MAX_ITEMS_TO_DISPLAY = 50;
+  const MAX_ITEMS_PER_SOURCE = 3;
+  const BLOCKED_SOURCES = ["al jazeera"].map(s => s.toLowerCase());
+  const BLOCKED_DOMAINS = ["aljazeera.com"];
+  
+  let currentFilter = "all";
+  let cachedData = null;
+  let isSpotifyMode = false;
+
+  function escapeHtml(str){return (str||"").replace(/[&<>"]/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));}
+  function safeUrl(href){try{const u=new URL(href); return (u.protocol==='http:'||u.protocol==='https:')?u.href:null;}catch{ return null; }}
+  function normLang(v){const s=String(v||'').trim().toLowerCase(); if(!s) return 'EN'; if(s.startsWith('he')) return 'HE'; if(s.startsWith('en')) return 'EN'; return s.toUpperCase();}
+  
+  const rtfHE=new Intl.RelativeTimeFormat('he-IL',{numeric:'auto'});
+  const rtfEN=new Intl.RelativeTimeFormat('en-GB',{numeric:'auto'});
+  
+  function toDateSafe(v){const t=Date.parse(v); return isNaN(t)?new Date():new Date(t);}
+  function formatDateByLang(dateInput, lang){
+    const date=toDateSafe(dateInput), now=new Date();
+    const diffMs=date-now, sec=Math.round(diffMs/1000), min=Math.round(sec/60), hr=Math.round(min/60), day=Math.round(hr/24);
+    const rtf=(lang==='HE')?rtfHE:rtfEN;
+    if(Math.abs(sec)<45) return rtf.format(0,'second');
+    if(Math.abs(min)<45) return rtf.format(min,'minute');
+    if(Math.abs(hr)<22)  return rtf.format(hr,'hour');
+    return rtf.format(day,'day');
   }
-  return out;
-}
+  
+  function isAllowed(item){
+    const src=String(item.source||'').toLowerCase();
+    let host=''; try{host=new URL(item.link).hostname.replace(/^www\./,'').toLowerCase();}catch{}
+    return !BLOCKED_SOURCES.some(b=>src.includes(b)) && !BLOCKED_DOMAINS.some(d=>host===d||host.endsWith('.'+d));
+  }
+  
+  function getQueryFlag(name){return new URLSearchParams(location.search).get(name);}
+  
+  function pickImage(images, target=160){
+    if (!Array.isArray(images) || !images.length) return null;
+    let best = images[0], bestDiff = Math.abs((best.width||target) - target);
+    for (const im of images){
+      const diff = Math.abs((im.width||target) - target);
+      if (diff < bestDiff) { best = im; bestDiff = diff; }
+    }
+    return best?.url || images[0]?.url || null;
+  }
+
+  function albumsToNewsFromDetailedAPI(j){
+    const arr = Array.isArray(j?.albums) ? j.albums : [];
+    return arr.map(a => {
+      const artists = Array.isArray(a.artists) ? a.artists.map(x=>x.name).join(", ") : "";
+      const albumName = a.album_name || "Album";
+      const type = a.album_type ? (a.album_type.charAt(0).toUpperCase() + a.album_type.slice(1)) : "";
+      const cover = pickImage(a.images, 160);
+      return {
+        source: "Spotify",
+        link: a.url || null,
+        headline: albumName,
+        summary: artists ? `Artist: ${artists}` : "",
+        date: a.release_date || "",
+        language: "EN",
+        cover,
+        altText: `${albumName}${artists ? ' by ' + artists : ''}`,
+        meta: {
+          type: type || null,
+          label: a.label || null,
+          tracks: Number.isFinite(a.total_tracks) ? a.total_tracks : null,
+          release: a.release_date || null
+        }
+      };
+    });
+  }
+
+  async function fetchAgg(timeoutMs=10000){
+    const ctrl=new AbortController(); 
+    const to=setTimeout(()=>ctrl.abort(new Error('Timeout')),timeoutMs);
+    try{
+      const r = await fetch(AGG_ENDPOINT, { headers:{accept:"application/json"}, signal: ctrl.signal });
+      if(!r.ok) throw new Error(`Agg ${r.status}`);
+      const j = await r.json();
+      const arr = Array.isArray(j)?j:(Array.isArray(j?.items)?j.items:[]);
+      return arr.filter(isAllowed).map(item => ({...item, altText: item.headline || 'News image'}));
+    } finally { clearTimeout(to); }
+  }
+  
+  async function fetchSpotifyDetailed(timeoutMs=12000){
+    const ctrl=new AbortController(); 
+    const to=setTimeout(()=>ctrl.abort(new Error('Timeout')),timeoutMs);
+    try{
+      const r = await fetch(SPOTIFY_DETAILED_ENDPOINT, { headers:{accept:"application/json"}, signal: ctrl.signal });
+      if(!r.ok) throw new Error(`SpotifyDetailed ${r.status}`);
+      const j = await r.json();
+      return albumsToNewsFromDetailedAPI(j).filter(isAllowed);
+    } finally { clearTimeout(to); }
+  }
+
+  function groupAndBalance(items){
+    const clean=items.filter(it=> safeUrl(it.link) && (it.headline||it.summary) && !isNaN(Date.parse(it.date)));
+    const groups=new Map();
+    for(const it of clean){ 
+      const k=(it.source||'Unknown').trim(); 
+      if(!groups.has(k)) groups.set(k,[]); 
+      groups.get(k).push(it); 
+    }
+    const balanced=[];
+    for(const arr of groups.values()){
+      const topN = arr.slice().sort((a,b)=>toDateSafe(b.date)-toDateSafe(a.date)).slice(0, MAX_ITEMS_PER_SOURCE);
+      balanced.push(...topN);
+    }
+    const seen=new Set(); 
+    const deduped=[];
+    for(const it of balanced.sort((a,b)=>toDateSafe(b.date)-toDateSafe(a.date))){
+      const k=safeUrl(it.link)||it.headline; 
+      if(!k||seen.has(k)) continue; 
+      seen.add(k); 
+      deduped.push(it);
+    }
+    return deduped;
+  }
+  
+  function applyFilter(items, lang){ 
+    if(lang==="all") return items; 
+    const wanted=String(lang||'').toUpperCase(); 
+    return items.filter(x=>normLang(x.language)===wanted); 
+  }
+  
+  function bindFilters(balanced){
+    document.querySelectorAll('.toolbar .btn[data-filter]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        // אם אנחנו במצב ספוטיפיי – לחיצה על פילטר מוציאה מהמצב וחוזרת לפיד הרגיל
+        if (isSpotifyMode) {
+          const u = new URL(location.href);
+          u.searchParams.delete('only');
+          location.replace(u.toString());
+          return;
+        }
+        currentFilter = btn.dataset.filter || 'all';
+        updateActiveButton();
+        renderNews(applyFilter(balanced, currentFilter));
+      });
+    });
+    updateActiveButton();
+  }
+  
+  function updateActiveButton(){
+    document.querySelectorAll('.toolbar .btn[data-filter]').forEach(btn=>{
+      const active = btn.dataset.filter === currentFilter || (currentFilter==="all" && btn.dataset.filter==="all");
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', String(active));
+    });
+  }
+
+  function renderMetaList(meta, lang){
+    if (!meta) return "";
+    const items = [];
+    if (meta.type) items.push(`<li><span class="meta-label">${lang==='HE'?'סוג:':'Type:'}</span> ${escapeHtml(meta.type)}</li>`);
+    if (meta.release) items.push(`<li><span class="meta-label">${lang==='HE'?'תאריך יציאה:':'Release:'}</span> ${escapeHtml(meta.release)}</li>`);
+    if (meta.label) items.push(`<li><span class="meta-label">${lang==='HE'?'לייבל:':'Label:'}</span> ${escapeHtml(meta.label)}</li>`);
+    if (typeof meta.tracks === "number") items.push(`<li><span class="meta-label">${lang==='HE'?'מס׳ שירים:':'Tracks:'}</span> ${meta.tracks}</li>`);
+    if (!items.length) return "";
+    return `<ul class="meta-list">${items.join("")}</ul>`;
+  }
+
+  function card(story){
+    const lang = normLang(story.language);
+    const src = escapeHtml(story.source || '');
+    const url = safeUrl(story.link);
+    const hasUrl = Boolean(url);
+    const link = url || '';
+    const title = escapeHtml(story.headline || '');
+    const summary = escapeHtml(story.summary || '');
+    const altText = escapeHtml(story.altText || story.headline || 'Image');
+    
+    const dateAttr = (lang === 'HE'
+      ? toDateSafe(story.date||Date.now()).toLocaleString('he-IL')
+      : toDateSafe(story.date||Date.now()).toLocaleString('en-GB')
+    );
+
+    const isLTR = (lang === 'EN') || (src.toLowerCase() === 'spotify');
+
+    const titleHtml = hasUrl
+      ? `<a href="${link}" target="_blank" rel="noopener noreferrer external">${title}</a>`
+      : `<span class="no-link">${title}</span>`;
+
+    let thumbHtml = '';
+    if (story.cover) {
+      if (hasUrl) {
+        thumbHtml = `
+          <a class="news-thumb" href="${link}" target="_blank" rel="noopener noreferrer external" aria-label="פתח קישור">
+            <img src="${escapeHtml(story.cover)}" alt="${altText}" loading="lazy" decoding="async" referrerpolicy="no-referrer" />
+          </a>`;
+      } else {
+        thumbHtml = `
+          <div class="news-thumb" aria-hidden="true">
+            <img src="${escapeHtml(story.cover)}" alt="${altText}" loading="lazy" decoding="async" referrerpolicy="no-referrer" />
+          </div>`;
+      }
+    }
+
+    const metaHtml = renderMetaList(story.meta, lang);
+    const summaryHtml = summary ? `<p class="news-summary"><strong>${summary}</strong></p>` : "";
+
+    return `
+      <article class="news-item ${isLTR ? 'ltr' : ''}" role="article">
+        <div class="news-header">
+          <div class="news-meta">
+            <span class="language-badge">${escapeHtml(lang)}</span>
+            <span class="source-tag">${src}</span>
+          </div>
+          <div class="news-date" title="${escapeHtml(dateAttr)}">${formatDateByLang(story.date, lang)}</div>
+        </div>
+
+        <div class="news-body">
+          ${thumbHtml}
+          <div class="news-main">
+            <h2 class="news-title">${titleHtml}</h2>
+            ${summaryHtml}
+            ${metaHtml}
+          </div>
+        </div>
+      </article>`;
+  }
+
+  function showLoading(){
+    const feed = document.getElementById('newsFeed');
+    feed.setAttribute('aria-busy', 'true');
+    feed.innerHTML = `
+      <div class="empty-state">
+        <div class="spinner" role="status" aria-label="טוען"></div>
+        <h3>טוען חדשות מוזיקה...</h3>
+        <p>האוצרות האחרונים מהמקורות המובילים</p>
+      </div>`;
+  }
+
+  function showError(message, canRetry = true){
+    const feed = document.getElementById('newsFeed');
+    feed.setAttribute('aria-busy', 'false');
+    const retryBtn = canRetry ? '<button class="retry-btn" onclick="location.reload()">נסה שוב</button>' : '';
+    feed.innerHTML = `
+      <div class="empty-state">
+        <h3 class="error">אירעה שגיאה</h3>
+        <p>${escapeHtml(message)}</p>
+        ${retryBtn}
+      </div>`;
+  }
+
+  function renderNews(items){
+    const feed = document.getElementById('newsFeed');
+    feed.setAttribute('aria-busy', 'false');
+
+    if (!items.length) {
+      feed.innerHTML = `<div class="empty-state"><h3>לא נמצאו ידיעות כרגע</h3><p>נסה לבחור פילטר אחר</p></div>`;
+      return;
+    }
+
+    const html = items.slice(0, MAX_ITEMS_TO_DISPLAY).map(card).join("");
+    feed.innerHTML = html;
+  }
+
+  // כפתור "רק Spotify" כ-toggle (תיקון ה-UX)
+  document.getElementById('onlySpotifyBtn').addEventListener('click', () => {
+    const u = new URL(location.href);
+    if (u.searchParams.get('only') === 'spotify') {
+      u.searchParams.delete('only'); // חזרה לפיד הרגיל
+    } else {
+      u.searchParams.set('only', 'spotify');
+    }
+    location.replace(u.toString());
+  });
+
+  // אתחול
+  (async function init(){
+    try{
+      const onlySpotify = getQueryFlag('only') === 'spotify';
+      isSpotifyMode = onlySpotify;
+      
+      showLoading();
+
+      if (onlySpotify) {
+        // הדגשת מצב הכפתור
+        const spBtn = document.getElementById('onlySpotifyBtn');
+        spBtn.classList.add('active');
+        spBtn.setAttribute('aria-pressed', 'true');
+
+        // מצב ספוטיפיי בלבד
+        const sp = await fetchSpotifyDetailed();
+        cachedData = sp;
+        renderNews(sp.slice(0, MAX_ITEMS_TO_DISPLAY));
+
+        // בזמן only=spotify: לחיצה על אחד מהפילטרים מוציאה מהמצב וחוזרת לפיד הרגיל
+        document.querySelectorAll('.toolbar .btn[data-filter]').forEach(btn=>{
+          btn.addEventListener('click', ()=>{
+            const u = new URL(location.href);
+            u.searchParams.delete('only');
+            location.replace(u.toString());
+          });
+        });
+
+      } else {
+        // מצב רגיל
+        const agg = await fetchAgg();
+        const balanced = groupAndBalance(agg);
+        cachedData = balanced;
+        bindFilters(balanced);
+        renderNews(applyFilter(balanced, currentFilter));
+      }
+      
+    }catch(e){
+      showError(e.message || "שגיאה לא צפויה");
+      console.error(e);
+    }
+  })();
+  </script>
+</body>
+</html>
