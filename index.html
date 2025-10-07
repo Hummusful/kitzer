@@ -138,7 +138,24 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
   let cachedData = null;
   let isSpotifyMode = false;
 
-  function escapeHtml(str){return (str||"").replace(/[&<>"]/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));}
+  function decodeEntities(str){
+    if (!str) return "";
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = str;
+    return textarea.value;
+  }
+  
+  function escapeHtml(str){
+    if (!str) return "";
+    // קודם נפענח entities קיימים שמגיעים מה-API
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = str;
+    const decoded = textarea.value;
+    // ואז נבצע escape רגיל
+    const div = document.createElement('div');
+    div.textContent = decoded;
+    return div.innerHTML;
+  }
   function safeUrl(href){try{const u=new URL(href); return (u.protocol==='http:'||u.protocol==='https:')?u.href:null;}catch{ return null; }}
   function normLang(v){const s=String(v||'').trim().toLowerCase(); if(!s) return 'EN'; if(s.startsWith('he')) return 'HE'; if(s.startsWith('en')) return 'EN'; return s.toUpperCase();}
   
