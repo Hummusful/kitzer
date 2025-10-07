@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>הלאה בקיצור - Music News</title>
+  <title> בקיצר - Music News</title>
   <link rel="icon" href="/favicon.ico">
 
   <style>
@@ -81,7 +81,6 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
   background:rgba(78,205,196,0.25);
   transform:translateY(-1px);
 }
-
 @media (max-width:768px){ .container{padding:15px;} .site-title{font-size:2.1rem;} .news-item{padding:20px 18px;} .news-header{flex-direction:column; align-items:flex-start;} }
 @media (min-width:1024px){ .news-feed{display:grid; grid-template-columns:1fr 1fr; gap:18px;} .news-item{margin:0;} }
 @media (prefers-reduced-motion:reduce){ .site-title{animation:none;} .news-item,.btn{transition:none;} .spinner{animation:none;} }
@@ -112,10 +111,9 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
   
   <div class="container">
     <header class="header" role="banner">
-      <h1 class="site-title">בקיצור</h1>
+      <h1 class="site-title">בקיצר</h1>
       <h2 class="subtitle"><img src="favicon-16x16.png" alt="minilogo" > Dusty's Feed </h2>
     </header>
-
     <div class="toolbar" role="toolbar" aria-label="News filters">
       <button class="btn active" data-filter="all" aria-pressed="true">הכול</button>
       <button class="btn" data-filter="HE" aria-pressed="false">ישראלי</button>
@@ -125,7 +123,7 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
 
     <div class="news-feed" id="newsFeed" role="feed" aria-live="polite" aria-busy="true"></div>
   </div>
-
+<p></p>
   <script>
   const AGG_ENDPOINT = "https://music-agrragator.dustrial.workers.dev/";
   const SPOTIFY_DETAILED_ENDPOINT = "https://spotify-new-releases.dustrial.workers.dev/api/spotify-months-detailed?market=IL&monthsBack=2&limit=50";
