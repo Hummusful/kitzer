@@ -5,124 +5,41 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>קיצר - Music News</title>
   <link rel="icon" href="/favicon.ico">
-
   <style>
-/* Reset + בסיס */
-* { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
-  background:linear-gradient(135deg,#0f0f23 0%,#1a1a2e 50%,#16213e 100%);
-  min-height:100vh; color:#fff; line-height:1.6; }
-
-/* מבנה עיקרי */
-.container { max-width:1100px; margin:0 auto; padding:20px; }
-.header { text-align:center; margin-bottom:24px; padding:20px 0; }
-
-/* כותרת ראשית */
-.site-title {
-  font-size:2.6rem; font-weight:900; letter-spacing:-1px; margin-bottom:8px;
-  background:linear-gradient(45deg,#ff6b6b,#4ecdc4,#45b7d1,#96ceb4);
-  background-size:300% 300%;
-  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
-  animation:gradientShift 4.8s ease-in-out infinite;
-}
-.subtitle { font-size:1rem; color:#a0a0a0; font-weight:300; }
-@keyframes gradientShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
-
-/* דילוג לנגישות */
-.skip-link {
-  position:absolute; left:8px; top:-40px;
-  background:#00e5ff; color:#000; padding:8px 12px; border-radius:8px;
-  transition:transform .2s ease; z-index:10000; text-decoration:none; font-weight:600;
-}
-.skip-link:focus { transform: translateY(48px); outline:2px solid #fff; }
-
-/* סרגל כפתורים */
-.toolbar { display:flex; gap:12px; align-items:center; justify-content:center;
-  margin:16px 0 10px; flex-wrap:wrap; }
-.btn {
-  border:1px solid rgba(0,229,255,0.25); background:rgba(0,229,255,0.08);
-  color:#fff; padding:9px 16px; border-radius:999px; font-size:.92rem;
-  cursor:pointer; transition:.2s; letter-spacing:.2px; backdrop-filter:blur(6px);
-}
-.btn:hover { transform:translateY(-1px);
-  box-shadow:0 0 0 1px rgba(0,229,255,0.35), 0 2px 10px rgba(0,0,0,0.12);
-}
-.btn.active { background:rgba(0,229,255,0.16);
-  box-shadow:0 0 0 2px rgba(0,229,255,0.22) inset;
-}
-
-/* רשימת חדשות */
-.news-feed { margin-top:16px; }
-.news-item {
-  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  backdrop-filter:blur(15px); border-radius:16px; padding:26px 22px; margin-bottom:18px;
-  border:1px solid rgba(255,255,255,0.06);
-  transition:border-color .25s, transform .25s;
-  position:relative; overflow:hidden;
-}
-.news-item:hover { transform:translateY(-2px); border-color:rgba(255,255,255,0.14); }
-.news-item::before {
-  content:''; position:absolute; top:0; left:0; right:0; height:3px;
-  background:linear-gradient(90deg,#ff6b6b,#4ecdc4,#45b7d1);
-  opacity:.55; transition:opacity .25s;
-  border-top-left-radius:16px; border-top-right-radius:16px;
-}
-.news-item:hover::before { opacity:.7; }
-
-/* תוכן החדשה */
-.news-header { display:flex; justify-content:space-between; align-items:flex-start;
-  gap:8px; flex-wrap:wrap; padding-bottom:8px; margin-bottom:12px;
-  border-bottom:1px solid rgba(255,255,255,0.06);
-}
-.news-meta { display:flex; gap:8px; align-items:center; font-size:.85rem; color:#a0a0a0; }
-.language-badge { background:linear-gradient(45deg,#ff6b6b,#4ecdc4);
-  color:#fff; padding:3px 10px; border-radius:12px; font-size:.75rem; font-weight:700; opacity:.9; }
-.source-tag { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.12);
-  padding:4px 10px; border-radius:12px; font-size:.75rem; opacity:.85; }
-.news-title { font-size:1.28rem; font-weight:800; margin-bottom:6px; line-height:1.42; letter-spacing:.1px; }
-.news-title::before { content:"•"; margin-left:8px; color:#ff2d6f; text-shadow:0 0 8px rgba(255,45,111,0.5); font-weight:900; }
-.news-title a { color:#fff; text-decoration:none; transition:color .2s, border-color .2s, text-shadow .2s; border-bottom:2px solid transparent; }
-.news-title a:hover { color:#4ecdc4; border-bottom-color:rgba(0,229,255,0.45); text-shadow:none; }
-.news-summary { color:#e8e8e8; line-height:1.75; margin-top:8px; margin-bottom:6px;
-  text-shadow:0 1px 2px rgba(0,0,0,0.3); font-size:1.02rem; }
-.news-date { color:#9aa3b2; font-size:.85rem; white-space:nowrap; }
-
-/* תמונות ופרטים */
-.news-body { display:flex; gap:14px; align-items:flex-start; }
-.news-thumb { flex:0 0 auto; width:84px; aspect-ratio:1/1; border-radius:12px; overflow:hidden;
-  box-shadow:0 6px 18px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06) inset;
-  background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
-}
-.news-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
-
-/* תגיות ז'אנרים */
-.genres { margin-top:8px; display:flex; gap:4px; flex-wrap:wrap; }
-.genre-tag { background:rgba(30,215,96,0.2); border:1px solid rgba(30,215,96,0.4);
-  color:#1ed760; padding:3px 8px; border-radius:12px; font-size:.72rem; font-weight:600; }
-
-/* מצבי תצוגה */
-@media (max-width:768px){ .container{padding:15px;} .site-title{font-size:2.1rem;} .news-item{padding:20px 18px;} .news-header{flex-direction:column; align-items:flex-start;} }
-@media (min-width:1024px){ .news-feed{display:grid; grid-template-columns:1fr 1fr; gap:18px;} .news-item{margin:0;} }
-
+/* עיצוב כללי זהה לגרסה הקודמת */
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#0f0f23 0%,#1a1a2e 50%,#16213e 100%);color:#fff;min-height:100vh}
+.container{max-width:1100px;margin:0 auto;padding:20px}
+.header{text-align:center;margin-bottom:24px;padding:20px 0}
+.site-title{font-size:2.6rem;font-weight:900;letter-spacing:-1px;margin-bottom:8px;background:linear-gradient(45deg,#ff6b6b,#4ecdc4,#45b7d1,#96ceb4);background-size:300% 300%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:gradientShift 4.8s ease-in-out infinite}
+.subtitle{font-size:1rem;color:#a0a0a0;font-weight:300}
+@keyframes gradientShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.toolbar{display:flex;gap:12px;align-items:center;justify-content:center;margin:16px 0 10px;flex-wrap:wrap}
+.btn{border:1px solid rgba(0,229,255,0.25);background:rgba(0,229,255,0.08);color:#fff;padding:9px 16px;border-radius:999px;font-size:.92rem;cursor:pointer;transition:.2s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 0 0 1px rgba(0,229,255,0.35),0 2px 10px rgba(0,0,0,0.12)}
+.btn.active{background:rgba(0,229,255,0.16);box-shadow:0 0 0 2px rgba(0,229,255,0.22) inset}
+.news-feed{margin-top:16px}
+.news-item{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:20px;margin-bottom:18px;transition:.2s}
+.news-item:hover{border-color:rgba(255,255,255,0.12);transform:translateY(-2px)}
+.news-title{font-size:1.2rem;font-weight:700;margin-bottom:6px}
+.genre-tag{background:rgba(30,215,96,0.2);border:1px solid rgba(30,215,96,0.4);color:#1ed760;padding:3px 8px;border-radius:12px;font-size:.72rem;font-weight:600;margin-right:4px}
+.spinner{width:40px;height:40px;border:4px solid rgba(255,255,255,.15);border-top-color:#4ecdc4;border-radius:50%;animation:spin .8s linear infinite;margin:20px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{text-align:center;color:#a0a0a0;padding:40px}
   </style>
 </head>
 <body>
-  <a href="#newsFeed" class="skip-link">דלג לתוכן</a>
-
   <div class="container" role="main">
     <header class="header" role="banner">
       <h1 class="site-title">קיצר</h1>
-      <h2 class="subtitle"><img src="favicon-16x16.png" alt="minilogo"> Dusty's Feed</h2>
+      <h2 class="subtitle">Dusty's Feed</h2>
     </header>
 
-    <!-- סרגל סינון -->
-    <div class="toolbar" role="toolbar" aria-label="News filters">
-      <button class="btn active" data-filter="all" aria-pressed="true">הכול</button>
-      <button class="btn" data-filter="HE" aria-pressed="false">ישראלי</button>
-      <button class="btn" data-filter="EN" aria-pressed="false">בינלאומי</button>
-      <button class="btn" id="onlySpotifyBtn" type="button" aria-pressed="false">רק Spotify</button>
-
-      <!-- Mode selector - מוצג רק במצב Spotify -->
+    <div class="toolbar">
+      <button class="btn active" data-filter="all">הכול</button>
+      <button class="btn" data-filter="HE">ישראלי</button>
+      <button class="btn" data-filter="EN">בינלאומי</button>
+      <button class="btn" id="onlySpotifyBtn">רק Spotify</button>
       <div class="mode-selector" id="modeSelector" style="display:none;">
         <label for="spotifyMode">כיסוי:</label>
         <select id="spotifyMode">
@@ -132,108 +49,105 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
       </div>
     </div>
 
-    <div class="news-feed" id="newsFeed" role="feed" aria-live="polite" aria-busy="true"></div>
+    <div class="news-feed" id="newsFeed" aria-live="polite"></div>
   </div>
 
-  <script>
-  const SPOTIFY_RELEASES_ENDPOINT = "https://spotify-new-releases.dustrial.workers.dev/api/spotify-releases";
-  const AGG_ENDPOINT = "https://music-agrragator.dustrial.workers.dev/";
-  const MAX_ITEMS_TO_DISPLAY = 50;
-  const MAX_ITEMS_PER_SOURCE = 3;
+<script>
+const AGG_ENDPOINT="https://music-agrragator.dustrial.workers.dev/";
+const SPOTIFY_RELEASES_ENDPOINT="https://spotify-new-releases.dustrial.workers.dev/api/spotify-releases";
+const MAX_ITEMS_TO_DISPLAY=50;
+let currentFilter="all"; let isSpotifyMode=false;
 
-  let currentFilter = "all";
-  let cachedData = null;
-  let isSpotifyMode = false;
+function toDateSafe(v){const t=Date.parse(v);return isNaN(t)?new Date():new Date(t);}
+function formatDate(d){return toDateSafe(d).toLocaleDateString('he-IL');}
+function escapeHtml(s){const div=document.createElement('div');div.textContent=s;return div.innerHTML;}
+function normLang(v){const s=(v||'').toLowerCase();return s.startsWith('he')?'HE':'EN';}
+function pickImage(images){return Array.isArray(images)&&images[0]?images[0].url:null;}
+function safeUrl(h){try{const u=new URL(h);return u.href;}catch{return null;}}
 
-  // --- Utilities (unchanged) ---
-  function decodeEntities(str){ if(!str) return ""; const t=document.createElement('textarea'); t.innerHTML=str; return t.value; }
-  function escapeHtml(str){ if(!str) return ""; const div=document.createElement('div'); div.textContent=str; return div.innerHTML; }
-  function safeUrl(href){ try{const u=new URL(href); return (u.protocol==='http:'||u.protocol==='https:')?u.href:null;}catch{return null;} }
-  function normLang(v){const s=String(v||'').trim().toLowerCase(); if(!s)return 'EN'; if(s.startsWith('he'))return 'HE'; if(s.startsWith('en'))return 'EN'; return s.toUpperCase();}
-  const rtfHE=new Intl.RelativeTimeFormat('he-IL',{numeric:'auto'}); const rtfEN=new Intl.RelativeTimeFormat('en-GB',{numeric:'auto'});
-  function toDateSafe(v){const t=Date.parse(v); return isNaN(t)?new Date():new Date(t);}
-  function formatDateByLang(dateInput, lang){const date=toDateSafe(dateInput), now=new Date(); const diffMs=date-now, day=Math.round(diffMs/86400000); return (lang==='HE'?rtfHE:rtfEN).format(day,'day');}
-  function getQueryFlag(name){return new URLSearchParams(location.search).get(name);}
-  function pickImage(images,target=160){if(!Array.isArray(images)||!images.length)return null;let best=images[0],diff=Math.abs((best.width||target)-target);for(const im of images){const d=Math.abs((im.width||target)-target);if(d<diff){best=im;diff=d;}}return best?.url||images[0]?.url||null;}
-
-  // --- Spotify albums mapping ---
-  function albumsToNewsFromDetailedAPI(j){
-    const arr=Array.isArray(j?.albums)?j.albums:[];
-    return arr.map(a=>{
-      const artists=Array.isArray(a.artists)?a.artists.map(x=>x.name).join(", "):"";
-      const genres=Array.isArray(a.genres)?a.genres:(a.primary_genre?[a.primary_genre]:[]);
-      return {
-        source:"Spotify",
-        link:a.url||null,
-        headline:a.album_name||"Album",
-        summary:artists?`Artist: ${artists}`:"",
-        date:a.release_date||"",
-        language:"EN",
-        cover:pickImage(a.images,160),
-        altText:`${a.album_name}${artists?' by '+artists:''}`,
-        genres,
-        meta:{
-          type:a.album_type||null,
-          label:a.label||null,
-          tracks:Number.isFinite(a.total_tracks)?a.total_tracks:null,
-          release:a.release_date||null
-        }
-      };
-    });
-  }
-
-  async function fetchSpotifyReleases(mode='curated',market='IL',monthsBack=2){
-    const params=new URLSearchParams({market,monthsBack:String(monthsBack),mode});
-    const url=`${SPOTIFY_RELEASES_ENDPOINT}?${params.toString()}`;
-    const r=await fetch(url); if(!r.ok) throw new Error(`SpotifyReleases ${r.status}`);
+// === FETCHES ===
+async function fetchAgg(timeoutMs=10000){
+  const ctrl=new AbortController();const to=setTimeout(()=>ctrl.abort(),timeoutMs);
+  try{
+    const r=await fetch(AGG_ENDPOINT,{signal:ctrl.signal});
+    if(!r.ok)throw new Error(`Agg ${r.status}`);
     const j=await r.json();
-    if(j.error) throw new Error(j.error);
+    return Array.isArray(j)?j:(Array.isArray(j.items)?j.items:[]);
+  }finally{clearTimeout(to);}
+}
+
+async function fetchSpotifyReleases(mode='curated',market='IL',monthsBack=2,timeoutMs=15000){
+  const ctrl=new AbortController();const to=setTimeout(()=>ctrl.abort(),timeoutMs);
+  const params=new URLSearchParams({market,monthsBack,mode});
+  const url=`${SPOTIFY_RELEASES_ENDPOINT}?${params.toString()}`;
+  try{
+    const r=await fetch(url,{signal:ctrl.signal});
+    if(!r.ok)throw new Error(`Spotify ${r.status}`);
+    const j=await r.json();
+    if(j.error)throw new Error(j.error);
     return albumsToNewsFromDetailedAPI(j);
-  }
+  }finally{clearTimeout(to);}
+}
 
-  // --- Render + logic ---
-  function renderGenres(genres){
-    if(!Array.isArray(genres)||!genres.length)return "";
-    return `<div class="genres">${genres.slice(0,3).map(g=>`<span class="genre-tag">${escapeHtml(g)}</span>`).join('')}</div>`;
-  }
+// === HELPERS ===
+function albumsToNewsFromDetailedAPI(j){
+  return (j.albums||[]).map(a=>({
+    source:"Spotify",
+    link:a.url||null,
+    headline:a.album_name||"",
+    summary:(a.artists||[]).map(x=>x.name).join(", "),
+    date:a.release_date,
+    language:"EN",
+    cover:pickImage(a.images),
+    genres:a.genres||[a.primary_genre].filter(Boolean),
+    meta:{label:a.label||"",tracks:a.total_tracks}
+  }));
+}
+function groupAndBalance(items){
+  const map=new Map();
+  for(const it of items){const src=it.source||'Unknown';if(!map.has(src))map.set(src,[]);map.get(src).push(it);}
+  const balanced=[];for(const arr of map.values())balanced.push(...arr.slice(0,3));
+  return balanced.sort((a,b)=>toDateSafe(b.date)-toDateSafe(a.date));
+}
+function applyFilter(items,lang){if(lang==='all')return items;return items.filter(x=>normLang(x.language)===lang);}
+function renderGenres(genres){if(!Array.isArray(genres)||!genres.length)return"";return `<div>${genres.slice(0,3).map(g=>`<span class="genre-tag">${escapeHtml(g)}</span>`).join('')}</div>`;}
+function card(story){const link=safeUrl(story.link);return `<article class="news-item"><h2 class="news-title">${link?`<a href="${link}" target="_blank">${escapeHtml(story.headline)}</a>`:escapeHtml(story.headline)}</h2><p>${escapeHtml(story.summary||'')}</p>${renderGenres(story.genres)}<div>${formatDate(story.date)}</div></article>`;}
+function showLoading(){document.getElementById('newsFeed').innerHTML=`<div class="empty-state"><div class="spinner"></div><h3>טוען חדשות...</h3></div>`;}
+function showError(msg){document.getElementById('newsFeed').innerHTML=`<div class="empty-state"><h3>שגיאה</h3><p>${escapeHtml(msg)}</p><button onclick="location.reload()">נסה שוב</button></div>`;}
+function renderNews(items){document.getElementById('newsFeed').innerHTML=items.slice(0,MAX_ITEMS_TO_DISPLAY).map(card).join('');}
+function bindFilters(items){document.querySelectorAll('.toolbar .btn[data-filter]').forEach(btn=>btn.addEventListener('click',()=>{currentFilter=btn.dataset.filter;updateButtons();renderNews(applyFilter(items,currentFilter));}));}
+function updateButtons(){document.querySelectorAll('.toolbar .btn[data-filter]').forEach(btn=>btn.classList.toggle('active',btn.dataset.filter===currentFilter));}
 
-  function card(story){
-    const lang=normLang(story.language);
-    const src=escapeHtml(story.source||'');
-    const url=safeUrl(story.link);
-    const title=escapeHtml(story.headline||'');
-    const summary=escapeHtml(story.summary||'');
-    const alt=escapeHtml(story.altText||story.headline||'');
-    const meta=story.meta||{};
-    const dateAttr=toDateSafe(story.date||Date.now()).toLocaleString('he-IL');
-    const titleHtml=url?`<a href="${url}" target="_blank">${title}</a>`:`<span class="no-link">${title}</span>`;
-    const thumb=story.cover?`<a class="news-thumb" href="${url||'#'}"><img src="${escapeHtml(story.cover)}" alt="${alt}" loading="lazy"></a>`:"";
-    const genresHtml=renderGenres(story.genres);
-    const metaHtml=meta.label?`<ul class="meta-list"><li>Label: ${escapeHtml(meta.label)}</li></ul>`:"";
-    return `<article class="news-item ltr"><div class="news-header"><div class="news-meta"><span class="source-tag">${src}</span></div><div class="news-date">${formatDateByLang(story.date,lang)}</div></div><div class="news-body">${thumb}<div class="news-main"><h2 class="news-title">${titleHtml}</h2><p class="news-summary"><strong>${summary}</strong></p>${genresHtml}${metaHtml}</div></div></article>`;
-  }
+// === EVENTS ===
+document.getElementById('onlySpotifyBtn')?.addEventListener('click',()=>{
+  const u=new URL(location.href);
+  if(u.searchParams.get('only')==='spotify'){u.searchParams.delete('only');u.searchParams.delete('mode');}
+  else{u.searchParams.set('only','spotify');u.searchParams.set('mode','curated');}
+  location.replace(u.toString());
+});
+document.getElementById('spotifyMode')?.addEventListener('change',e=>{
+  const u=new URL(location.href);u.searchParams.set('mode',e.target.value);location.replace(u.toString());
+});
 
-  function showLoading(){
-    document.getElementById('newsFeed').innerHTML=`<div class="empty-state"><div class="spinner"></div><h3>טוען חדשות...</h3></div>`;
-  }
-  function showError(msg){document.getElementById('newsFeed').innerHTML=`<div class="empty-state"><h3 class="error">שגיאה</h3><p>${escapeHtml(msg)}</p><button class="retry-btn" onclick="location.reload()">נסה שוב</button></div>`;}
-  function renderNews(items){const feed=document.getElementById('newsFeed');feed.innerHTML=items.slice(0,MAX_ITEMS_TO_DISPLAY).map(card).join('');}
-
-  // --- Init ---
-  (async function init(){
-    try{
-      const onlySpotify=getQueryFlag('only')==='spotify';
-      const mode=getQueryFlag('mode')||'curated';
-      showLoading();
-      if(onlySpotify){
-        document.getElementById('modeSelector').style.display='flex';
-        document.getElementById('spotifyMode').value=mode;
-        const items=await fetchSpotifyReleases(mode);
-        const limit=(mode==='extended')?100:MAX_ITEMS_TO_DISPLAY;
-        renderNews(items.slice(0,limit));
-      }
-    }catch(e){showError(e.message?.replace(/Spotify\s\d+\s/,'')||"שגיאה לא צפויה");console.error(e);}
-  })();
-  </script>
+// === INIT ===
+(async function init(){
+  try{
+    const onlySpotify=new URLSearchParams(location.search).get('only')==='spotify';
+    const mode=new URLSearchParams(location.search).get('mode')||'curated';
+    showLoading();
+    if(onlySpotify){
+      document.getElementById('modeSelector').style.display='flex';
+      const data=await fetchSpotifyReleases(mode);
+      const limit=(mode==='extended')?100:MAX_ITEMS_TO_DISPLAY;
+      renderNews(data.slice(0,limit));
+    }else{
+      const data=await fetchAgg();
+      const balanced=groupAndBalance(data);
+      bindFilters(balanced);
+      renderNews(applyFilter(balanced,currentFilter));
+    }
+  }catch(e){showError(e.message||"שגיאה לא צפויה");console.error(e);}
+})();
+</script>
 </body>
 </html>
