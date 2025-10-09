@@ -161,15 +161,29 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
   function normLang(v){const s=String(v||'').trim().toLowerCase(); if(!s) return 'EN'; if(s.startsWith('he')) return 'HE'; if(s.startsWith('en')) return 'EN'; return s.toUpperCase();}
   const rtfHE=new Intl.RelativeTimeFormat('he-IL',{numeric:'auto'}); const rtfEN=new Intl.RelativeTimeFormat('en-GB',{numeric:'auto'});
   function toDateSafe(v){const t=Date.parse(v); return isNaN(t)?new Date():new Date(t);}
+
+  // ---- תאריך עמיד לפורמטים חלקיים (YYYY, YYYY-MM, YYYY-MM-DD) ----
+  function dateToTs(s) {
+    const v = String(s || '').trim();
+    if (!v) return NaN;
+    if (/^\d{4}$/.test(v)) return Date.UTC(Number(v), 11, 31); // סוף שנה
+    if (/^\d{4}-\d{2}$/.test(v)) { const [y, m] = v.split('-').map(Number); return Date.UTC(y, m - 1, 15); } // אמצע חודש
+    const t = Date.parse(v); return isNaN(t) ? NaN : t; // יום מדויק
+  }
+
   function formatDateByLang(dateInput, lang){
-    const date=toDateSafe(dateInput), now=new Date();
-    const diffMs=date-now, sec=Math.round(diffMs/1000), min=Math.round(sec/60), hr=Math.round(min/60), day=Math.round(hr/24);
+    // מציג יחסי: משתמש ב-dateToTs כדי לייצב גם תאריכים חלקיים
+    const ts = dateToTs(dateInput);
+    const date = isNaN(ts) ? new Date() : new Date(ts);
+    const now = new Date();
+    const diffMs = date - now, sec = Math.round(diffMs/1000), min = Math.round(sec/60), hr = Math.round(min/60), day = Math.round(hr/24);
     const rtf=(lang==='HE')?rtfHE:rtfEN;
     if(Math.abs(sec)<45) return rtf.format(0,'second');
     if(Math.abs(min)<45) return rtf.format(min,'minute');
     if(Math.abs(hr)<22)  return rtf.format(hr,'hour');
     return rtf.format(day,'day');
   }
+
   function getQueryFlag(name){return new URLSearchParams(location.search).get(name);}
   function pickImage(images, target=160){
     if (!Array.isArray(images) || !images.length) return null;
@@ -215,7 +229,7 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
 
   /* ========= FETCHERS עם TIMEOUT ========= */
   async function fetchAgg(timeoutMs=10000){
-    const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(new Error('Timeout')),timeoutMs);
+    const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(),timeoutMs);
     try{
       const r = await fetch(AGG_ENDPOINT, { headers:{accept:"application/json"}, signal: ctrl.signal });
       if(!r.ok) throw new Error(`Agg ${r.status}`);
@@ -226,31 +240,50 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
   }
 
   async function fetchSpotifyReleases(mode='curated', market='IL', monthsBack=2, timeoutMs=15000){
-    const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(new Error('Timeout')),timeoutMs);
+    const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(),timeoutMs);
     try{
       const params = new URLSearchParams({ market, monthsBack:String(monthsBack), mode });
       const url = `${SPOTIFY_RELEASES_ENDPOINT}?${params.toString()}`;
       const r = await fetch(url, { headers:{accept:"application/json"}, signal: ctrl.signal });
-      if(!r.ok) throw new Error(`Spotify ${r.status}`);
+      if(!r.ok) {
+        const body = await r.text().catch(()=> '');
+        throw new Error(`Spotify ${r.status} ${body.slice(0,200)}`);
+      }
       const j = await r.json();
       if (j.error) throw new Error(String(j.error));
       return albumsToNewsFromDetailedAPI(j).filter(isAllowed);
     } finally { clearTimeout(to); }
   }
 
-  /* ========= קיבוץ/איזון ========= */
+  /* ========= קיבוץ/איזון (עם dateToTs) ========= */
   function groupAndBalance(items){
-    const clean=items.filter(it=> safeUrl(it.link) && (it.headline||it.summary) && !isNaN(Date.parse(it.date||'')));
-    const groups=new Map();
-    for(const it of clean){ const k=(it.source||'Unknown').trim(); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(it); }
-    const balanced=[];
-    for(const arr of groups.values()){
-      const topN = arr.slice().sort((a,b)=>toDateSafe(b.date)-toDateSafe(a.date)).slice(0, MAX_ITEMS_PER_SOURCE);
+    const clean = items.filter(it => {
+      const okUrl = safeUrl(it.link);
+      const hasText = (it.headline || it.summary);
+      const ts = dateToTs(it.date);
+      return okUrl && hasText && !isNaN(ts);
+    });
+
+    const groups = new Map();
+    for (const it of clean){
+      const k = (it.source || 'Unknown').trim();
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(it);
+    }
+
+    const balanced = [];
+    for (const arr of groups.values()){
+      const topN = arr.slice().sort((a,b)=> dateToTs(b.date) - dateToTs(a.date)).slice(0, MAX_ITEMS_PER_SOURCE);
       balanced.push(...topN);
     }
-    const seen=new Set(); const deduped=[];
-    for(const it of balanced.sort((a,b)=>toDateSafe(b.date)-toDateSafe(a.date))){
-      const k=safeUrl(it.link)||it.headline; if(!k||seen.has(k)) continue; seen.add(k); deduped.push(it);
+
+    const seen = new Set();
+    const deduped = [];
+    for (const it of balanced.sort((a,b)=> dateToTs(b.date) - dateToTs(a.date))){
+      const k = safeUrl(it.link) || it.headline;
+      if (!k || seen.has(k)) continue;
+      seen.add(k);
+      deduped.push(it);
     }
     return deduped;
   }
@@ -281,10 +314,11 @@ body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
     const title = escapeHtml(story.headline || '');
     const summary = escapeHtml(story.summary || '');
     const altText = escapeHtml(story.altText || story.headline || 'Image');
-    
+
+    const dateTs = dateToTs(story.date||Date.now());
     const dateAttr = (lang === 'HE'
-      ? toDateSafe(story.date||Date.now()).toLocaleString('he-IL')
-      : toDateSafe(story.date||Date.now()).toLocaleString('en-GB')
+      ? (isNaN(dateTs)? new Date(): new Date(dateTs)).toLocaleString('he-IL')
+      : (isNaN(dateTs)? new Date(): new Date(dateTs)).toLocaleString('en-GB')
     );
 
     const isLTR = (lang === 'EN') || (src.toLowerCase() === 'spotify');
