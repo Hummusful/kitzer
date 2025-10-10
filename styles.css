@@ -1,29 +1,51 @@
-/* בסיס */
-:root{
-  --bg:#0f0f23;
-  --panel:#141a2a;
-  --muted:#9aa3b2;
-  --accent:#3b82f6;
-  --tag:#2a3550;
-  --text:#eaf0ff;
+/* styles.css - אופטימיזציה מלאה */
+:root {
+  --bg: #0f0f23;
+  --panel: #141a2a;
+  --muted: #9aa3b2;
+  --accent: #3b82f6;
+  --tag: #2a3550;
+  --text: #eaf0ff;
 }
 
-*{ box-sizing:border-box; }
-html,body{ height:100%; }
-body{
-  margin:0; padding:0;
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
   background: radial-gradient(1200px 800px at 80% -10%, #19223b 0%, #0f0f23 60%), #0f0f23;
-  color:var(--text);
+  color: var(--text);
   font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-  line-height:1.5;
+  line-height: 1.5;
 }
 
-a{ color:inherit; text-decoration:none; }
-a:hover{ text-decoration:underline; }
+a {
+  color: inherit;
+  text-decoration: none;
+}
 
-.container{ max-width:980px; margin:0 auto; padding:16px; }
+a:hover {
+  text-decoration: underline;
+}
 
-.header{ margin:6px 0 10px; }
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* Header */
+.header {
+  margin: 6px 0 10px;
+}
+
 .site-title {
   font-size: 2.6rem;
   font-weight: 900;
@@ -32,90 +54,38 @@ a:hover{ text-decoration:underline; }
   background-size: 300% 300%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
   animation: titleGradient 5s ease infinite;
+  will-change: background-position;
 }
 
 @keyframes titleGradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
-.subtitle{ margin:4px 0 0; color:var(--muted); display:flex; align-items:center; gap:6px; }
-
-/* מיקרו־נגישות */
-:where(a,button):focus-visible { outline: 2px solid #00e5ff; outline-offset: 2px; border-radius: 4px; }
-
-/* --- עיצוב קטגוריות וז'אנרים --- */
-.toolbar{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:8px 0 14px; }
-.btn-group{ display:inline-flex; gap:.5rem; margin-inline-end:1rem; }
-.btn{
-  background:#1b2340; color:#dbe6ff; border:1px solid #283358;
-  border-radius:10px; padding:8px 12px; cursor:pointer;
-  transition:transform .08s ease, background .2s ease, border-color .2s ease;
-}
-.btn:hover{ transform: translateY(-1px); background:#202c4d; }
-.btn:active{ transform: translateY(0); }
-.btn.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
-.btn.ghost{ background:transparent; border-color:#2a375f; color:#b9c4df; }
-.spacer{ flex:1; }
-
-/* פיד */
-.news-feed{ min-height:40vh; }
-.news-card{
-  background:var(--panel);
-  padding:16px; border-radius:14px;
-  box-shadow:0 2px 10px rgba(0,0,0,.25);
-  margin:12px 0;
-}
-.news-cover{ width:100%; height:auto; border-radius:10px; margin-bottom:8px; }
-.news-title{ font-size:1.1rem; margin:6px 0; }
-
-/* מטא */
-.news-meta{ font-size:.85rem; color:var(--muted); margin-bottom:6px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
-
-/* זמן: יחסי RTL + שעון LTR יציב */
-.news-date{ direction: rtl; color:#9aa3b2; font-size:.85rem; white-space:nowrap; }
-.news-date .clock{ direction: ltr; unicode-bidi: embed; }  /* 23:19 לא יתהפך */
-.news-meta .sep{ opacity:.65; }                            /* הנקודה המפרידה */
-
-/* תגיות */
-.tag{ border:1px solid var(--tag); border-radius:8px; padding:2px 8px; font-size:.75rem; color:#bdc8e6; text-transform: lowercase; }
-
-/* גריד בדסקטופ – בלי רווח כפול */
-@media (min-width: 1024px){
-  .news-feed{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
-  .news-feed > .news-card{ margin:0; }
+.subtitle {
+  margin: 4px 0 0;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-/* שלד טעינה (Skeleton) */
-.skeleton{
-  background: linear-gradient(90deg, #1f2a44 25%, #2a3550 50%, #1f2a44 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite linear;
-  border-radius:14px;
-  height:140px; margin:12px 0;
-}
-@keyframes shimmer{
-  100%{ background-position:-200% 0; }
+/* Accessibility */
+:where(a, button):focus-visible {
+  outline: 2px solid #00e5ff;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
-/* ספינר גיבוי */
-.spinner{
-  width:44px; height:44px; border:4px solid #2a3550; border-top-color:var(--accent);
-  border-radius:50%; animation:spin 1s linear infinite; margin:18px auto;
-}
-@keyframes spin{ to{ transform:rotate(360deg); } }
-
-/* אלמנטים קטנים */
-.muted{ color:#99a1b5; }
-.error{ color:#ff6b6b; }
-
-/* פוטר */
-.footer{ margin:18px 0 8px; color:var(--muted); }
-.footer img{ vertical-align:middle; margin-inline-end:8px; }
-
-/* === Skip Link נגישות === */
 .skip-link {
   position: absolute;
   top: -40px;
@@ -124,14 +94,249 @@ a:hover{ text-decoration:underline; }
   color: #fff;
   padding: 8px 16px;
   border-radius: 8px;
-  font-size: .9rem;
+  font-size: 0.9rem;
   text-decoration: none;
   z-index: 9999;
-  transition: top .3s ease;
+  transition: top 0.3s ease;
 }
+
 .skip-link:focus {
-  top: 10px; /* מופיע רק כשמגיעים אליו עם TAB */
+  top: 10px;
 }
 
+/* Toolbar */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 8px 0 14px;
+}
 
+.btn-group {
+  display: inline-flex;
+  gap: 0.5rem;
+  margin-inline-end: 1rem;
+}
 
+.btn {
+  background: #1b2340;
+  color: #dbe6ff;
+  border: 1px solid #283358;
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: transform 0.08s ease, background 0.2s ease, border-color 0.2s ease;
+  font-size: 0.95rem;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  background: #202c4d;
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.btn.ghost {
+  background: transparent;
+  border-color: #2a375f;
+  color: #b9c4df;
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* Feed */
+.news-feed {
+  min-height: 40vh;
+}
+
+.news-card {
+  background: var(--panel);
+  padding: 16px;
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  margin: 12px 0;
+  will-change: transform;
+}
+
+.news-cover {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  content-visibility: auto;
+}
+
+.news-title {
+  font-size: 1.1rem;
+  margin: 6px 0;
+}
+
+.news-title a {
+  color: var(--text);
+}
+
+.news-title a:hover {
+  color: var(--accent);
+}
+
+/* Meta */
+.news-meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.news-date {
+  direction: rtl;
+  color: #9aa3b2;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.news-date .clock {
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+.news-meta .sep {
+  opacity: 0.65;
+}
+
+.news-source {
+  color: var(--muted);
+}
+
+.news-summary {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #c5d0e6;
+  margin: 8px 0 0;
+}
+
+/* Tags */
+.tag {
+  border: 1px solid var(--tag);
+  border-radius: 8px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  color: #bdc8e6;
+  text-transform: lowercase;
+}
+
+/* Grid בדסקטופ */
+@media (min-width: 1024px) {
+  .news-feed {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  
+  .news-feed > .news-card {
+    margin: 0;
+  }
+}
+
+/* Skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #1f2a44 25%, #2a3550 50%, #1f2a44 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+  border-radius: 14px;
+  height: 140px;
+  margin: 12px 0;
+  will-change: background-position;
+}
+
+@keyframes shimmer {
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Spinner */
+.spinner {
+  width: 44px;
+  height: 44px;
+  border: 4px solid #2a3550;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 18px auto;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Utility */
+.muted {
+  color: #99a1b5;
+}
+
+.error {
+  color: #ff6b6b;
+  text-align: center;
+  padding: 20px;
+}
+
+/* Footer */
+.footer {
+  margin: 18px 0 8px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.footer img {
+  vertical-align: middle;
+  margin-inline-end: 8px;
+}
+
+.footer p {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* Performance optimizations */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  .toolbar,
+  .footer,
+  .skip-link {
+    display: none;
+  }
+  
+  .news-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
