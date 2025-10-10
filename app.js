@@ -1,5 +1,5 @@
 // app.js — Genres only, fast-first-load, safe links
-const FEED_ENDPOINT = 'https://music-aggregator.dustico.workers.dev/api/music';
+const FEED_ENDPOINT = 'https://music-aggregator.dustrial.workers.dev/api/music';
 
 const feedEl = document.getElementById('newsFeed');
 const refreshBtn = document.getElementById('refreshBtn');
@@ -142,3 +142,4 @@ document.addEventListener('DOMContentLoaded', ()=>{
     }).catch(()=>{});
   }
 });
+
