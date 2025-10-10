@@ -3,7 +3,7 @@
   --bg: #0f0f23;
   --panel: #141a2a;
   --muted: #9aa3b2;
-  --accent: #FFC700; /* צהוב ניאון */
+  --accent: #FFFF5C; /* צהוב ניאון */
   --tag: #2a3550;
   --text: #eaf0ff;
 }
@@ -75,7 +75,7 @@ a:hover {
   line-height: 0.9;
   
   /* אפקט גרדיאנט נושם */
-  background: linear-gradient(90deg, #ffc700, #ff6b6b, #ffc700);
+  background: linear-gradient(90deg, #ffc700, #ff6b6b, #FFFF5C, #ffc700);
   background-size: 200% auto;
   color: transparent;
   -webkit-background-clip: text;
@@ -455,3 +455,4 @@ body::after {
     page-break-inside: avoid;
   }
 }
+
