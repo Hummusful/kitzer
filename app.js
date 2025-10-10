@@ -98,8 +98,14 @@ function renderNews(items){
     const cover = it.cover ? `<img class="news-cover" src="${it.cover}" alt="" loading="lazy" decoding="async">` : '';
 
     const absClock = it.date ? clockIL(it.date) : '';
-    const relTime  = it.date ? timeAgo(it.date) : '';
-    const date  = it.date ? `<time class="news-date" dir="ltr" datetime="${it.date}" title="${new Date(it.date).toLocaleString('he-IL', { timeZone: TZ })}">${relTime}${absClock ? ' · ' + absClock : ''}</time>` : '';
+const relTime  = it.date ? timeAgo(it.date) : '';
+
+const dateHTML = it.date
+  ? `<time class="news-date" datetime="${it.date}">
+       <span class="rel" dir="rtl">${relTime}</span>
+       ${absClock ? `<span class="sep"> · </span><bdi class="clock" dir="ltr">${absClock}\u200E</bdi>` : ''}
+     </time>`
+  : '';
 
     const tags = makeTags(it)
       .map(t => `<span class="tag">${t}</span>`)
@@ -175,3 +181,4 @@ document.addEventListener('DOMContentLoaded', ()=>{
     }).catch(()=>{});
   }
 });
+
