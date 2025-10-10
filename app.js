@@ -1,6 +1,6 @@
 /* ====== CONFIG ====== */
 /* חשוב: שים את הנתיב המדויק של ה־Worker שלך */
-const AGG_ENDPOINT = "https://music-agrragator.dustrial.workers.dev/api/music";
+const AGG_ENDPOINT = "https://music-aggregator.dustrial.workers.dev/api/music";
 /* כמות מקסימלית לתצוגה */
 const MAX_ITEMS = 50;
 /* הפעלת debug: הוסף ?debug=1 לכתובת הדף */
@@ -245,3 +245,4 @@ function renderDiag(diag){
       showError(err.message || String(err), help);
     });
 })();
+
