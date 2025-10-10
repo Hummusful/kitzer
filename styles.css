@@ -24,7 +24,23 @@ a:hover{ text-decoration:underline; }
 .container{ max-width:980px; margin:0 auto; padding:16px; }
 
 .header{ margin:6px 0 10px; }
-.site-title{ margin:0; font-size:clamp(22px, 3vw, 34px); letter-spacing:1px; }
+.site-title {
+  font-size: 2.6rem;
+  font-weight: 900;
+  letter-spacing: -1px;
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #3b82f6);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: titleGradient 5s ease infinite;
+}
+
+@keyframes titleGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 .subtitle{ margin:4px 0 0; color:var(--muted); display:flex; align-items:center; gap:6px; }
 
 /* מיקרו־נגישות */
@@ -116,5 +132,6 @@ a:hover{ text-decoration:underline; }
 .skip-link:focus {
   top: 10px; /* מופיע רק כשמגיעים אליו עם TAB */
 }
+
 
 
