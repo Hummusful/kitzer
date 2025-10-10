@@ -130,7 +130,7 @@ function renderNews(items) {
       el.className = 'news-card';
 
       const cover = it.cover
-        ? `<img class="news-cover" src="${it.cover}" alt="" loading="lazy" decoding="async">`
+        ? `<div class="news-image-wrapper"><img class="news-cover" src="${it.cover}" alt="" loading="lazy" decoding="async"></div>`
         : '';
 
       const absClock = it.date ? clockIL(it.date) : '';
@@ -147,15 +147,17 @@ function renderNews(items) {
         .map(t => `<span class="tag">${t}</span>`)
         .join(' ');
         
-      el.innerHTML = `
-        ${cover}
-        <h3 class="news-title"><a href="${safeUrl(it.link)}" target="_blank" rel="noopener noreferrer">${it.headline || ''}</a></h3>
-        <div class="news-meta">
-          ${dateHTML}
-          ${it.source ? `<span class="news-source"> · ${it.source}</span>` : ''}
-          ${tagsHTML ? tagsHTML : ''}
+   el.innerHTML = `
+        <div class="news-content">
+          <h3 class="news-title"><a href="${safeUrl(it.link)}" target="_blank" rel="noopener noreferrer">${it.headline || ''}</a></h3>
+          <div class="news-meta">
+            ${dateHTML}
+            ${it.source ? `<span class="news-source"> · ${it.source}</span>` : ''}
+            ${tags ? tags : ''}
+          </div>
+          ${it.summary ? `<p class="news-summary">${it.summary}</p>` : ''}
         </div>
-        ${it.summary ? `<p class="news-summary">${it.summary}</p>` : ''}
+        ${cover}
       `;
       frag.appendChild(el);
     }
@@ -286,3 +288,4 @@ document.addEventListener('DOMContentLoaded', () => {
   loadNews(); 
   warmupAPI();
 });
+
