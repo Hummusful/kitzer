@@ -167,7 +167,7 @@ a:hover {
   min-height: 40vh;
 }
 
-/* -------------------- NEWS CARD LAYOUT FIX -------------------- */
+/* -------------------- NEWS CARD LAYOUT -------------------- */
 
 .news-card {
   display: flex; /* הפוך את הכרטיס ל-Flex Container (דו-טורי) */
@@ -280,41 +280,11 @@ a:hover {
   }
 }
 
-/* תצוגת מובייל (כרטיס אנכי מלא) */
+/* -------------------- MOBILE OPTIMIZATION (max-width: 768px) -------------------- */
 @media (max-width: 768px) {
-  /* ... (כל הכללים הקודמים) ... */
-
-  /* כפתורי הניווט (כדי למנוע שבירה) */
-  .toolbar {
-    flex-wrap: wrap; /* מאפשר לכפתורים לעבור שורה */
-    padding-bottom: 0; /* כדי שיתאים לבאג גלילה שצריך לתקן */
+  .news-card {
+    flex-direction: column; 
   }
-
-  .btn-group {
-    order: 2; /* מוודא שהכפתורים יופיעו בשורה נפרדת מתחת לכפתור ספוטיפיי */
-    margin-top: 10px;
-    width: 100%;
-    
-    /* 💡 התיקון העיקרי: הפוך את הקבוצה לגלילה אופקית! */
-    overflow-x: auto; 
-    white-space: nowrap; /* ודא שהכפתורים נשארים בשורה אחת בתוך ה-Overflow */
-    padding-bottom: 5px; /* מרווח קטן כדי שסרגל הגלילה יהיה נוח */
-  }
-  
-  /* הסתרת סרגל הגלילה ברוב הדפדפנים (למעט iOS) */
-  .btn-group::-webkit-scrollbar {
-    display: none;
-  }
-  
-  .spacer {
-    display: none;
-  }
-  
-  /* מוודא שהכפתורים בתוך הקבוצה אינם גמישים (כדי שיגללו) */
-  .btn-group .btn {
-      flex-shrink: 0;
-  }
-}
 
   .news-cover {
     width: 100%;
@@ -330,7 +300,7 @@ a:hover {
     font-size: 1.1rem; /* גופן קטן יותר */
   }
 
-  /* תיקון סופי: הסתרת הסיכום במובייל */
+  /* 💡 הסתרת הסיכום במובייל כדי לחסוך מקום */
   .news-summary {
     display: none;
   }
@@ -341,19 +311,27 @@ a:hover {
     font-size: 0.8rem;
   }
 
-  /* כפתורי הניווט (כדי למנוע שבירה) */
+  /* כפתורי הניווט - פתרון גלילה אופקית */
   .toolbar {
-    flex-wrap: wrap;
+    flex-wrap: wrap; 
+    padding-bottom: 0;
   }
 
   .btn-group {
-    order: 2;
+    order: 2; /* מוודא שהכפתורים יופיעו בשורה נפרדת */
     margin-top: 10px;
     width: 100%;
+    
+    /* 🛠️ התיקון לגלילה: מאפשר גלילה אופקית מוגבלת */
     overflow-x: auto; 
-    padding-bottom: 5px;
+    white-space: nowrap; 
+    padding-bottom: 5px; 
   }
   
+  .btn-group .btn {
+      flex-shrink: 0; /* מונע מהכפתורים להצטמק */
+  }
+
   .btn-group::-webkit-scrollbar {
     display: none;
   }
@@ -362,6 +340,8 @@ a:hover {
     display: none;
   }
 }
+/* -------------------- END MOBILE OPTIMIZATION -------------------- */
+
 
 /* Spotify Button - ירוק המותג של ספוטיפיי */
 .btn.spotify-btn {
@@ -397,7 +377,7 @@ body::after {
   width: 100%;
   height: 100%;
   /* תמונת Base64 של רעש */
-  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKkFgAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyFpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzowMTowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXCvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHJlZiNvcmciIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNSBXaW5kb3dzIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuasJpZDpGMkRGRDcxRTM5QUUxMUU2ODU4MUUyQTkyNzgzQTcxRCIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDpGMkRGRDcxRTM5QUUxMUU2ODU4MUUyQTkyNzgzQTcxRCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuasJpZDpGMkRGRDcxQzM5QUUxMUU2ODU4MUUyQTkyNzgzQTcxRCIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDpGMkRGRDcxRDM5QUUxMUU2ODU4MUUyQTkyNzgzQTcxRCIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0idyI/Pl5oG+sAAAAWSURBVHjaYmBgYGBiYkADWAgQWACgAADr8AGtT6+8AAAAAElFTkSuQmCC');
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKkFgAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyFpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzowMTowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXCvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHJlZiNvcmciIHhtcDpDcmVhdG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNSBXaW5kb3dzIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuasJpZDpGMkRGRDcxRTM5QUUxMUU2ODU4MUUyQTkyNzgzQTcxRCIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDpGMkRGRDcxRTM5QUUxMUU2ODU4MUUyQTkyNzgzQTcxRCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuasJpZDpGMkRGRDcxQzM5QUUxMUU2ODU4MUUyQTkyNzgzQTcxRCIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDpGMkRGRDcxRDM5QUUxMUU2ODU4MUUyQTkyNzgzQTcxRCIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0idyI/Pl5oG+sAAAAWSURBVHjaYmBgYGBiYkADWAgQWACgAADr8AGtT6+8AAAAAElFTkSuQmCC');
   pointer-events: none;
   opacity: 0.05;
   mix-blend-mode: overlay;
@@ -485,4 +465,3 @@ body::after {
     page-break-inside: avoid;
   }
 }
-
