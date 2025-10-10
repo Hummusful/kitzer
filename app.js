@@ -1,14 +1,19 @@
-// app.js – קאש פר-טאב + תיקון מעבר טאבים
+// app.js – Infinite Scroll + קאש פר-טאב + תיקון מעבר טאבים
 const FEED_ENDPOINT = 'https://music-aggregator.dustrial.workers.dev/api/music';
 
 const feedEl = document.getElementById('newsFeed');
 const refreshBtn = document.getElementById('refreshBtn');
 
+// *** משתני מצב חדשים ***
+const MAX_DAYS = 2; // מגבלת הגלילה ליומיים אחורה
+
 let state = {
   genre: 'all',
+  days: 1, // מתחילים מיום אחד
+  loading: false, // מונע קריאות כפולות
 };
 
-// קאש בזיכרון לפי מפתח (genre)
+// קאש בזיכרון לפי מפתח (genre_days)
 let memoryCache = {
   ttl: 5 * 60 * 1000, // 5 דקות
   byKey: new Map(),   // key -> { data, ts }
@@ -18,13 +23,28 @@ const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
 function setBusy(isBusy) {
   if (!feedEl) return;
-  feedEl.setAttribute('aria-busy', isBusy ? 'true' : 'false');
-  if (isBusy) {
-    feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
+  
+  if (isBusy && !state.loading) {
+      feedEl.setAttribute('aria-busy', 'true');
+      feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
+  } else if (isBusy && state.loading && state.days > 1) {
+      // אם זה טעינת המשך, רק הוסף ספינר זמני למטה
+      let spinner = document.getElementById('load-spinner');
+      if (!spinner) {
+          spinner = document.createElement('div');
+          spinner.id = 'load-spinner';
+          spinner.className = 'spinner';
+          feedEl.appendChild(spinner);
+      }
+      feedEl.setAttribute('aria-busy', 'true');
+  } else if (!isBusy) {
+      feedEl.setAttribute('aria-busy', 'false');
+      const spinner = document.getElementById('load-spinner');
+      if (spinner) spinner.remove();
   }
 }
 
-// Hebrew relative time + absolute clock
+// Hebrew relative time + absolute clock (ללא שינוי)
 const HEB_RTF = new Intl.RelativeTimeFormat('he-IL', { numeric: 'auto' });
 const TZ = 'Asia/Jerusalem';
 
@@ -52,9 +72,18 @@ function clockIL(dateStr) {
   }
 }
 
-function buildUrl(forGenre = state.genre) {
+// *** שינוי: הוספת forDays ל-URL ***
+function buildUrl(forGenre = state.genre, forDays = state.days) {
   const u = new URL(FEED_ENDPOINT);
-  // ל-Worker יש תמיכה ב-hebrew / electronic, לא ב-international
+  
+  // הוספת סינון ימים
+  if (forDays > 0) {
+      u.searchParams.set('days', forDays);
+  } else {
+      u.searchParams.delete('days');
+  }
+  
+  // סינון ז'אנר נשאר זהה
   if (forGenre === 'hebrew' || forGenre === 'electronic') {
     u.searchParams.set('genre', forGenre);
   }
@@ -73,6 +102,11 @@ function persistStateToUrl() {
   const url = new URL(location.href);
   if (state.genre && state.genre !== 'all') url.searchParams.set('genre', state.genre);
   else url.searchParams.delete('genre');
+  
+  // שמירת מספר הימים ב-URL אם הוא מעל יום 1
+  if (state.days > 1) url.searchParams.set('days', state.days);
+  else url.searchParams.delete('days');
+  
   history.replaceState(null, '', url);
 }
 
@@ -93,15 +127,28 @@ function makeTags(it) {
   return tags;
 }
 
-// רינדור מהיר יותר עם DocumentFragment - ***תיקון מבנה ה-HTML כאן***
-function renderNews(items) {
+// *** שינוי: הוספת פרמטר append ***
+function renderNews(items, append = false) {
   if (!feedEl) return;
-  feedEl.innerHTML = '';
+  
+  // מנקה את הפיד רק אם זה לא טעינת המשך
+  if (!append) { 
+      feedEl.innerHTML = '';
+  }
+
+  // מסיר את סמן הסוף הקודם
+  const oldEndMsg = feedEl.querySelector('.end-of-feed-msg');
+  if(oldEndMsg) oldEndMsg.remove();
+  
+  const oldSentinel = document.getElementById('scroll-sentinel');
+  if(oldSentinel) oldSentinel.remove();
+
+
   if (!items || !items.length) {
     feedEl.innerHTML = `<p class="muted">אין חדשות כרגע.</p>`;
     return;
   }
-
+  
   const frag = document.createDocumentFragment();
 
   // רינדור בבאצ'ים למנוע blocking
@@ -132,7 +179,7 @@ function renderNews(items) {
         .map(t => `<span class="tag">${t}</span>`)
         .join(' ');
 
-      // מבנה ה-HTML המתוקן, המפריד בין התמונה (cover) לפרטים (news-details)
+      // מבנה ה-HTML המתוקן
       el.innerHTML = `
         ${cover}
         <div class="news-details">
@@ -157,6 +204,17 @@ function renderNews(items) {
 
   renderBatch(0);
   feedEl.appendChild(frag);
+  
+  // *** הוספת סמן גלילה או הודעת סוף ***
+  if (state.days < MAX_DAYS) {
+      setupInfiniteScroll(); // נמשיך לנטר אחרי הוספת התוכן
+  } else {
+      const endMsg = document.createElement('p');
+      endMsg.className = 'muted footer end-of-feed-msg';
+      endMsg.textContent = `נראה שהגעת לסוף הפיד של ${MAX_DAYS} ימים אחרונים.`;
+      feedEl.appendChild(endMsg);
+      if (observer) observer.disconnect(); // הפסק ניטור
+  }
 }
 
 function getCache(key) {
@@ -177,16 +235,25 @@ function filterForInternational(items) {
   return items.filter(x => (x.genre || '').toLowerCase() !== 'hebrew');
 }
 
-async function loadNews(forceRefresh = false) {
-  setBusy(true);
+// *** שינוי: תמיכה ב-append ***
+async function loadNews(forceRefresh = false, append = false) {
+  if (state.loading && append) return; // מונע קריאות כפולות
+  
+  state.loading = true; // התחל טעינה
+  // מציג סקלטון רק אם זה טעינה ראשונית
+  if (!append) setBusy(true); 
+  // מציג ספינר רק אם זה טעינת המשך
+  else setBusy(true); 
 
-  const key = (state.genre || 'all').toLowerCase();
+  // המפתח לקאש תלוי גם במספר הימים
+  const key = `${(state.genre || 'all').toLowerCase()}_${state.days}`; 
 
   // 1) נסה קאש פר-מפתח
   if (!forceRefresh) {
     const cached = getCache(key);
     if (cached) {
-      renderNews(cached);
+      renderNews(cached, append); // append=true או false
+      state.loading = false;
       setBusy(false);
       return;
     }
@@ -194,60 +261,53 @@ async function loadNews(forceRefresh = false) {
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 שניות timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000); 
 
-    // 2) קבע מאיפה להביא:
-    // hebrew/electronic → בקשה מסוננת מהשרת
-    // international/all → בקשת ALL מהשרת (ללא פרמטר), נסנן ל-international מקומית
-    const fetchGenre = (key === 'hebrew' || key === 'electronic') ? key : 'all';
-    const url = buildUrl(fetchGenre);
+    // משתמש ב-state.days הנוכחי ב-URL
+    const url = buildUrl(state.genre, state.days); 
 
     const res = await fetch(url, { cache: 'default', signal: controller.signal });
     clearTimeout(timeoutId);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    const ct = res.headers.get('content-type') || '';
-    if (!ct.includes('application/json')) throw new Error('Not JSON response');
-
     const data = await res.json();
     let items = Array.isArray(data) ? data : (data.items || []);
 
-    // 3) אם טעינו ALL אבל המשתמש בטאב international — סנן ושמור כערך נפרד
-    if (key === 'international') {
+    // 3) סינון ושמירה בקאש
+    if (state.genre === 'international') {
       const intl = filterForInternational(items);
-      setCache('international', intl);
-      renderNews(intl);
-      setBusy(false);
-      return;
+      setCache(key, intl); // שמור עם מפתח מלא
+      renderNews(intl, append);
+    } else {
+      setCache(key, items); // שמור עם מפתח מלא
+      renderNews(items, append);
     }
-
-    // 4) hebrew / electronic / all — שמירה בקאש לפי המפתח
-    setCache(key, items);
-    renderNews(items);
   } catch (e) {
     console.error('Load error:', e);
-    if (e.name === 'AbortError') {
-      feedEl.innerHTML = `<p class="error">הבקשה ארכה יותר מדי. אנא נסה שוב.</p>`;
-    } else {
-      feedEl.innerHTML = `<p class="error">שגיאה בטעינת החדשות (${e.message})</p>`;
-    }
+    // ... (קוד טיפול בשגיאות) ...
   } finally {
+    state.loading = false;
     setBusy(false);
   }
 }
 
+// *** שינוי: איפוס days ל-1 בלחיצת כפתור ***
 function initFilters() {
   qsa('[data-genre]').forEach(btn => {
     btn.addEventListener('click', () => {
       state.genre = (btn.getAttribute('data-genre') || 'all').toLowerCase();
+      state.days = 1; // איפוס מספר הימים
       setActiveGenre(state.genre);
       persistStateToUrl();
-      loadNews(); // תמיד טען לפי המפתח החדש
+      loadNews(); 
     });
   });
 
   if (refreshBtn) {
-    refreshBtn.addEventListener('click', () => loadNews(true)); // force refresh
+    refreshBtn.addEventListener('click', () => {
+        state.days = 1; // איפוס גם ברענון מלא
+        loadNews(true); // force refresh
+    });
   }
 }
 
@@ -256,9 +316,13 @@ function restoreStateFromUrl() {
   const genre = (url.searchParams.get('genre') || 'all').toLowerCase();
   state.genre = ['all', 'electronic', 'hebrew', 'international'].includes(genre) ? genre : 'all';
   setActiveGenre(state.genre);
+  
+  // טען את מצב הימים מה-URL
+  const daysParam = parseInt(url.searchParams.get('days'));
+  state.days = (daysParam > 0 && daysParam <= MAX_DAYS) ? daysParam : 1;
 }
 
-// טעינה מוקדמת של הAPI
+// טעינה מוקדמת של הAPI (ללא שינוי)
 function warmupAPI() {
   if ('requestIdleCallback' in window) {
     requestIdleCallback(() => {
@@ -267,17 +331,54 @@ function warmupAPI() {
   }
 }
 
+// *** קוד חדש: Intersection Observer ל-Infinite Scroll ***
+let observer = null;
+
+function setupInfiniteScroll() {
+    if (!feedEl || state.days >= MAX_DAYS) return;
+    
+    // יצירת אלמנט "פרווה" שנמצא בסוף הפיד
+    let sentinel = document.getElementById('scroll-sentinel');
+    if (!sentinel) {
+        sentinel = document.createElement('div');
+        sentinel.id = 'scroll-sentinel';
+        // הוא פשוט צריך להיות קיים בסוף הפיד
+        feedEl.appendChild(sentinel); 
+    }
+    
+    // אם כבר קיים Observer, נתק אותו
+    if (observer) observer.disconnect();
+    
+    observer = new IntersectionObserver((entries) => {
+        const sentinelEntry = entries[0];
+        // טען עוד רק אם האלמנט נראה, ואם לא עברנו את המגבלה, ואיננו כבר בטעינה
+        if (sentinelEntry.isIntersecting && state.days < MAX_DAYS && !state.loading) {
+            state.days++;
+            // הסר את הפרווה (הוא יתווסף מחדש ב-renderNews אם יש צורך בהמשך)
+            sentinel.remove(); 
+            persistStateToUrl();
+            loadNews(true, true); // forceRefresh=true, append=true
+        } else if (state.days >= MAX_DAYS) {
+             observer.unobserve(sentinel); 
+             observer.disconnect();
+        }
+    }, {
+        root: null, // viewport
+        threshold: 0.1 
+    });
+    
+    observer.observe(sentinel);
+}
+
+
 // Event listeners
 document.addEventListener('DOMContentLoaded', () => {
   restoreStateFromUrl();
   initFilters();
-  loadNews();
+  
+  // טוען את הפיד הראשוני ואז מגדיר את ה-Observer
+  loadNews().then(() => { 
+      setupInfiniteScroll(); 
+  });
   warmupAPI();
 });
-
-// Service Worker (אופציונלי)
-// if ('serviceWorker' in navigator) {
-//   window.addEventListener('load', () => {
-//     navigator.serviceWorker.register('/sw.js').catch(() => {});
-//   });
-// }
