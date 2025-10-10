@@ -1,9 +1,9 @@
-/* styles.css - אופטימיזציה מלאה */
+/* styles.css */
 :root {
   --bg: #0f0f23;
   --panel: #141a2a;
   --muted: #9aa3b2;
-  --accent: #FFC700; /* צהוב ניאון */
+  --accent: #FFF44F; 
   --tag: #2a3550;
   --text: #eaf0ff;
 }
@@ -438,3 +438,4 @@ body::after {
     page-break-inside: avoid;
   }
 }
+
