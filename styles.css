@@ -78,6 +78,10 @@ body {
 .news-summary { color: #e8e8e8; font-size: 1rem; margin-top: 4px; }
 .news-date { color: #9aa3b2; font-size: .85rem; white-space: nowrap; }
 
+/* Fix bidi for time label (prevents 'minutes ago 6' reversal) */
+.news-date[dir="ltr"] { direction: ltr; unicode-bidi: isolate; }
+.news-date[dir="rtl"] { direction: rtl; unicode-bidi: isolate; }
+
 .meta-list { margin-top: 6px; font-size: .92rem; color:#cfd7df; }
 .meta-label { color:#9fb6c8; margin-inline-start: .25rem; }
 
@@ -106,3 +110,4 @@ body {
 
 /* מיקרו־נגישות */
 :where(a,button):focus-visible { outline: 2px solid #00e5ff; outline-offset: 2px; border-radius: 4px; }
+
