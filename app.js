@@ -2,7 +2,7 @@
 /* החלף לכתובת ה־Worker שלך */
 const AGG_ENDPOINT = "https://music-agrragator.dustrial.workers.dev/api/music";
 /* כמה קלפים להציג */
-const MAX_ITEMS = 50;
+const MAX_ITEMS = 80;
 
 /* ====== STATE ====== */
 let currentFilter = (getParam('lang') || 'all').toUpperCase();
@@ -143,3 +143,4 @@ function applyFilter(items, lang){
     .then(items => { window.__DATA__ = items; render(applyFilter(items, currentFilter)); })
     .catch(err  => { showError(err.message || String(err)); console.error(err); });
 })();
+
