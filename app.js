@@ -2,12 +2,16 @@
 /* חשוב: שים את הנתיב המדויק של ה־Worker שלך */
 const AGG_ENDPOINT = "https://music-aggregator.dustrial.workers.dev/api/music";
 /* כמות מקסימלית לתצוגה */
-const MAX_ITEMS = 50;
+const MAX_ITEMS = 80;
 /* הפעלת debug: הוסף ?debug=1 לכתובת הדף */
 const DEBUG = new URLSearchParams(location.search).get("debug") === "1";
+function normalizeFilter(v){ 
+  const s = String(v||'').trim().toUpperCase();
+  return (s==='HE'||s==='EN') ? s : 'all';
+}
 
 /* ====== STATE ====== */
-let currentFilter = (getParam('lang') || 'all').toUpperCase();
+let currentFilter = normalizeFilter(getParam('lang'));
 let __DATA__ = null;
 
 /* ====== UTILS ====== */
@@ -71,7 +75,9 @@ function render(items){
 }
 function updateActiveButtons(){
   $$('.toolbar .btn[data-filter]').forEach(btn=>{
-    const active = (btn.dataset.filter||'all').toUpperCase() === currentFilter;
+    const val = (btn.dataset.filter || 'all');
+    const active = (val === 'all' && currentFilter === 'all') ||
+                   (val.toUpperCase() === currentFilter);
     btn.classList.toggle('active', active);
     btn.setAttribute('aria-pressed', String(active));
   });
@@ -211,7 +217,7 @@ function renderDiag(diag){
   // כפתורי פילטר
   $$('.toolbar .btn[data-filter]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      currentFilter = (btn.dataset.filter || 'all').toUpperCase();
+      currentFilter = normalizeFilter(btn.dataset.filter || 'all');
       updateActiveButtons();
       if (__DATA__) render(applyFilter(__DATA__, currentFilter));
     });
@@ -245,4 +251,5 @@ function renderDiag(diag){
       showError(err.message || String(err), help);
     });
 })();
+
 
