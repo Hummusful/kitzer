@@ -20,7 +20,10 @@ const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 function setBusy(isBusy) {
   if (!feedEl) return;
   feedEl.setAttribute('aria-busy', isBusy ? 'true' : 'false');
-  // לא מחליף skeleton - הוא כבר בHTML!
+  if (isBusy) {
+    // הצג skeletons בזמן טעינה
+    feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
+  }
 }
 
 // Hebrew relative time + absolute clock
@@ -153,6 +156,8 @@ function renderNews(items) {
 }
 
 async function loadNews(forceRefresh = false) {
+  setBusy(true); // הצג skeleton מיד!
+  
   // בדוק memory cache
   if (!forceRefresh && memoryCache.data && (Date.now() - memoryCache.timestamp) < memoryCache.ttl) {
     let items = memoryCache.data;
@@ -163,8 +168,6 @@ async function loadNews(forceRefresh = false) {
     setBusy(false);
     return;
   }
-
-  setBusy(true);
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 שניות timeout
