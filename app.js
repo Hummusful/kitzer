@@ -4,13 +4,13 @@ const FEED_ENDPOINT = 'https://music-aggregator.dustrial.workers.dev/api/music';
 const feedEl = document.getElementById('newsFeed');
 const refreshBtn = document.getElementById('refreshBtn');
 
-// *** משתני מצב חדשים ***
-const MAX_DAYS = 2; // מגבלת הגלילה ליומיים אחורה
+// *** משתני מצב חדשים לגלילה אינסופית ***
+const MAX_DAYS = 3; // מגבלת הגלילה ל-3 ימים אחורה (תואם לברירת המחדל של ה-Worker)
 
 let state = {
   genre: 'all',
   days: 1, // מתחילים מיום אחד
-  loading: false, // מונע קריאות כפולות (חיוני למניעת לולאת אינסוף)
+  loading: false, // מונע קריאות כפולות בזמן טעינה
 };
 
 // קאש בזיכרון לפי מפתח (genre_days)
@@ -32,23 +32,26 @@ function setBusy(isBusy, isLoadMore = false) {
           feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
       } else {
           // גלילה: הצג ספינר זמני
-          let spinner = document.getElementById('load-spinner');
+          let spinner = document.getElementById('scroll-spinner');
           if (!spinner) {
               spinner = document.createElement('div');
-              spinner.id = 'load-spinner';
+              spinner.id = 'scroll-spinner';
               spinner.className = 'spinner';
+              // הוסף את הספינר בסוף הפיד
               feedEl.appendChild(spinner);
           }
       }
   } else {
       // הסר את מצב ה-busy והספינר
       feedEl.setAttribute('aria-busy', 'false');
-      const spinner = document.getElementById('load-spinner');
+      const spinner = document.getElementById('scroll-spinner');
       if (spinner) spinner.remove();
   }
 }
 
-// ... (timeAgo, clockIL - נשארים זהים) ...
+// Hebrew relative time + absolute clock (נשאר זהה)
+const HEB_RTF = new Intl.RelativeTimeFormat('he-IL', { numeric: 'auto' });
+const TZ = 'Asia/Jerusalem';
 
 function timeAgo(dateStr) {
   if (!dateStr) return '';
@@ -74,39 +77,69 @@ function clockIL(dateStr) {
   }
 }
 
-// *** שינוי: הוספת forDays ל-URL ***
+// *** תיקון: buildUrl כולל days ***
 function buildUrl(forGenre = state.genre, forDays = state.days) {
   const u = new URL(FEED_ENDPOINT);
   
-  // הוספת סינון ימים
-  if (forDays > 0) {
+  // הוספת סינון ימים (חיוני לגלילה אינסופית)
+  if (forDays > 1) { // 1 הוא ברירת מחדל
       u.searchParams.set('days', forDays);
   } else {
       u.searchParams.delete('days');
   }
   
+  // ל-Worker יש תמיכה ב-hebrew / electronic, לא ב-international
   if (forGenre === 'hebrew' || forGenre === 'electronic') {
     u.searchParams.set('genre', forGenre);
   }
   return u.toString();
 }
 
-// ... (setActiveGenre, persistStateToUrl, safeUrl, makeTags - נשארים זהים) ...
+// setActiveGenre (נשאר זהה)
+function setActiveGenre(value) {
+  qsa('[data-genre]').forEach(btn => {
+    const active = (btn.getAttribute('data-genre') || '').toLowerCase() === value.toLowerCase();
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
 
-// *** תיקון: renderNews תמיד מנקה ומחליפה את הכל ***
+// *** תיקון: persistStateToUrl כולל days ***
+function persistStateToUrl() {
+  const url = new URL(location.href);
+  if (state.genre && state.genre !== 'all') url.searchParams.set('genre', state.genre);
+  else url.searchParams.delete('genre');
+  
+  if (state.days > 1) url.searchParams.set('days', state.days);
+  else url.searchParams.delete('days');
+  
+  history.replaceState(null, '', url);
+}
+
+function safeUrl(href) {
+  try {
+    const u = new URL(href);
+    return (u.protocol === 'http:' || u.protocol === 'https:') ? u.toString() : '#';
+  } catch {
+    return '#';
+  }
+}
+
+function makeTags(it) {
+  const tags = [];
+  if (it.language) tags.push((it.language || '').toUpperCase());
+  const g = (it.genre || '').toLowerCase();
+  if (g && g !== 'hebrew') tags.push(g);
+  return tags;
+}
+
+// *** תיקון: renderNews תמיד מנקה ומחליפה את הכל + הגדרת סנטינל ***
 function renderNews(items) {
   if (!feedEl) return;
   
-  // נקה את הפיד תמיד (מבטל את בעיית הכפילויות בגלילה)
+  // נקה את הפיד ואת אלמנטי הטעינה והסוף
   feedEl.innerHTML = ''; 
-
-  // מסיר את סמן הסוף הקודם
-  const oldEndMsg = feedEl.querySelector('.end-of-feed-msg');
-  if(oldEndMsg) oldEndMsg.remove();
-  
-  const oldSentinel = document.getElementById('scroll-sentinel');
-  if(oldSentinel) oldSentinel.remove();
-
+  if (observer) observer.disconnect();
 
   if (!items || !items.length) {
     feedEl.innerHTML = `<p class="muted">אין חדשות כרגע.</p>`;
@@ -143,20 +176,16 @@ function renderNews(items) {
         .map(t => `<span class="tag">${t}</span>`)
         .join(' ');
         
-      // מבנה ה-HTML המתוקן (כמו ב-styles.css)
       el.innerHTML = `
         ${cover}
-        <div class="news-details">
-          <span class="news-source">${it.source || ''}</span>
-          <h3 class="news-title"><a href="${safeUrl(it.link)}" target="_blank" rel="noopener noreferrer">${it.headline || ''}</a></h3>
-          ${it.summary ? `<p class="news-summary">${it.summary}</p>` : ''}
-          <div class="news-footer-meta">
-            ${dateHTML}
-            ${tagsHTML ? `<div class="news-tags">${tagsHTML}</div>` : ''}
-          </div>
+        <h3 class="news-title"><a href="${safeUrl(it.link)}" target="_blank" rel="noopener noreferrer">${it.headline || ''}</a></h3>
+        <div class="news-meta">
+          ${dateHTML}
+          ${it.source ? `<span class="news-source"> · ${it.source}</span>` : ''}
+          ${tagsHTML ? tagsHTML : ''}
         </div>
+        ${it.summary ? `<p class="news-summary">${it.summary}</p>` : ''}
       `;
-
       frag.appendChild(el);
     }
 
@@ -176,13 +205,30 @@ function renderNews(items) {
       endMsg.className = 'muted footer end-of-feed-msg';
       endMsg.textContent = `נראה שהגעת לסוף הפיד של ${MAX_DAYS} ימים אחרונים.`;
       feedEl.appendChild(endMsg);
-      if (observer) observer.disconnect(); // הפסק ניטור
+      // אם הגענו לסוף המגבלה - אין צורך ב-observer
   }
 }
 
-// ... (getCache, setCache, filterForInternational - נשארים זהים) ...
+function getCache(key) {
+  const rec = memoryCache.byKey.get(key);
+  if (!rec) return null;
+  if ((Date.now() - rec.ts) > memoryCache.ttl) {
+    memoryCache.byKey.delete(key);
+    return null;
+  }
+  return rec.data;
+}
 
-// *** תיקון: loadNews משתמשת ב-isLoadMore במקום append ***
+function setCache(key, data) {
+  memoryCache.byKey.set(key, { data, ts: Date.now() });
+}
+
+function filterForInternational(items) {
+  // מסנן החוצה כל מה שמסומן כ-hebrew, משאיר את השאר (כולל אלה ללא תג ז'אנר)
+  return items.filter(x => (x.genre || '').toLowerCase() !== 'hebrew');
+}
+
+// *** תיקון: loadNews משתמש ב-isLoadMore ו-state.loading ***
 async function loadNews(forceRefresh = false, isLoadMore = false) {
   if (state.loading) return; // מונע קריאה נוספת עד לסיום
   
@@ -206,28 +252,39 @@ async function loadNews(forceRefresh = false, isLoadMore = false) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); 
 
+    // קבע מאיפה להביא (כולל ימים)
+    const fetchGenre = (state.genre === 'hebrew' || state.genre === 'electronic') ? state.genre : 'all';
     // שולח את state.days הנוכחי ל-Worker
-    const url = buildUrl(state.genre, state.days); 
+    const url = buildUrl(fetchGenre, state.days); 
 
     const res = await fetch(url, { cache: 'default', signal: controller.signal });
     clearTimeout(timeoutId);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) throw new Error('Not JSON response');
+
     const data = await res.json();
     let items = Array.isArray(data) ? data : (data.items || []);
 
     // 3) סינון ושמירה בקאש
+    let finalItems;
     if (state.genre === 'international') {
-      const intl = filterForInternational(items);
-      setCache(key, intl); 
-      renderNews(intl); // רנדר החלפה מלאה
+      finalItems = filterForInternational(items);
     } else {
-      setCache(key, items); 
-      renderNews(items); // רנדר החלפה מלאה
+      finalItems = items;
     }
+    
+    setCache(key, finalItems); 
+    renderNews(finalItems); // רנדר החלפה מלאה (תמיד)
+
   } catch (e) {
     console.error('Load error:', e);
-    // ... (קוד טיפול בשגיאות) ...
+    if (e.name === 'AbortError') {
+      feedEl.innerHTML = `<p class="error">הבקשה ארכה יותר מדי. אנא נסה שוב.</p>`;
+    } else {
+      feedEl.innerHTML = `<p class="error">שגיאה בטעינת החדשות (${e.message})</p>`;
+    }
   } finally {
     state.loading = false;
     setBusy(false);
@@ -254,7 +311,7 @@ function initFilters() {
   }
 }
 
-// ... (restoreStateFromUrl, warmupAPI - נשארים זהים) ...
+// *** תיקון: restoreStateFromUrl כולל days ***
 function restoreStateFromUrl() {
   const url = new URL(location.href);
   const genre = (url.searchParams.get('genre') || 'all').toLowerCase();
@@ -266,7 +323,17 @@ function restoreStateFromUrl() {
   state.days = (daysParam > 0 && daysParam <= MAX_DAYS) ? daysParam : 1;
 }
 
-// *** תיקון: Intersection Observer ל-Infinite Scroll (הטריגר) ***
+// טעינה מוקדמת של הAPI (נשאר זהה)
+function warmupAPI() {
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      fetch(FEED_ENDPOINT, { method: 'HEAD' }).catch(() => {});
+    });
+  }
+}
+
+
+// *** הוספת: Intersection Observer ל-Infinite Scroll (הטריגר) ***
 let observer = null;
 
 function setupInfiniteScroll() {
@@ -277,6 +344,13 @@ function setupInfiniteScroll() {
     if (!sentinel) {
         sentinel = document.createElement('div');
         sentinel.id = 'scroll-sentinel';
+        // עיצוב מינימלי כך ש-Observer יראה אותו
+        sentinel.style.height = '1px';
+        sentinel.style.margin = '10px 0';
+        sentinel.style.pointerEvents = 'none';
+        feedEl.appendChild(sentinel); 
+    } else {
+        // ודא שהסנטינל נמצא בסוף
         feedEl.appendChild(sentinel); 
     }
     
@@ -287,9 +361,10 @@ function setupInfiniteScroll() {
         // טען רק אם האלמנט נראה, ואם לא עברנו את המגבלה, ואיננו כבר בטעינה
         if (sentinelEntry.isIntersecting && state.days < MAX_DAYS && !state.loading) {
             state.days++;
+            // הסר את הסנטינל כדי ש-loadNews יוכל להוסיף ספינר במקומו
             sentinel.remove(); 
             persistStateToUrl();
-            // 💡 loadNews(forceRefresh=true, isLoadMore=true)
+            // loadNews(forceRefresh=true, isLoadMore=true)
             loadNews(true, true); 
         } else if (state.days >= MAX_DAYS) {
              observer.unobserve(sentinel); 
@@ -315,3 +390,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   warmupAPI();
 });
+
+// Service Worker (אופציונלי)
+// if ('serviceWorker' in navigator) {
+//   window.addEventListener('load', () => {
+//     navigator.serviceWorker.register('/sw.js').catch(() => {});
+//   });
+// }
