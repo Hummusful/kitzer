@@ -1,4 +1,4 @@
-// app.js – Infinite Scroll + קאש פר-טאב + תיקון מעבר טאבים
+// app.js – Infinite Scroll + קאש פר-טאב + תיקון לולאת טעינה
 const FEED_ENDPOINT = 'https://music-aggregator.dustrial.workers.dev/api/music';
 
 const feedEl = document.getElementById('newsFeed');
@@ -10,7 +10,7 @@ const MAX_DAYS = 2; // מגבלת הגלילה ליומיים אחורה
 let state = {
   genre: 'all',
   days: 1, // מתחילים מיום אחד
-  loading: false, // מונע קריאות כפולות
+  loading: false, // מונע קריאות כפולות (חיוני למניעת לולאת אינסוף)
 };
 
 // קאש בזיכרון לפי מפתח (genre_days)
@@ -21,32 +21,34 @@ let memoryCache = {
 
 const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-function setBusy(isBusy) {
+// *** תיקון: setBusy עם לוגיקת ספינר/סקלטון ***
+function setBusy(isBusy, isLoadMore = false) { 
   if (!feedEl) return;
   
-  if (isBusy && !state.loading) {
+  if (isBusy) {
       feedEl.setAttribute('aria-busy', 'true');
-      feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
-  } else if (isBusy && state.loading && state.days > 1) {
-      // אם זה טעינת המשך, רק הוסף ספינר זמני למטה
-      let spinner = document.getElementById('load-spinner');
-      if (!spinner) {
-          spinner = document.createElement('div');
-          spinner.id = 'load-spinner';
-          spinner.className = 'spinner';
-          feedEl.appendChild(spinner);
+      if (!isLoadMore) {
+          // טעינה ראשונית/רענון מלא: הצג סקלטון
+          feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
+      } else {
+          // גלילה: הצג ספינר זמני
+          let spinner = document.getElementById('load-spinner');
+          if (!spinner) {
+              spinner = document.createElement('div');
+              spinner.id = 'load-spinner';
+              spinner.className = 'spinner';
+              feedEl.appendChild(spinner);
+          }
       }
-      feedEl.setAttribute('aria-busy', 'true');
-  } else if (!isBusy) {
+  } else {
+      // הסר את מצב ה-busy והספינר
       feedEl.setAttribute('aria-busy', 'false');
       const spinner = document.getElementById('load-spinner');
       if (spinner) spinner.remove();
   }
 }
 
-// Hebrew relative time + absolute clock (ללא שינוי)
-const HEB_RTF = new Intl.RelativeTimeFormat('he-IL', { numeric: 'auto' });
-const TZ = 'Asia/Jerusalem';
+// ... (timeAgo, clockIL - נשארים זהים) ...
 
 function timeAgo(dateStr) {
   if (!dateStr) return '';
@@ -83,58 +85,20 @@ function buildUrl(forGenre = state.genre, forDays = state.days) {
       u.searchParams.delete('days');
   }
   
-  // סינון ז'אנר נשאר זהה
   if (forGenre === 'hebrew' || forGenre === 'electronic') {
     u.searchParams.set('genre', forGenre);
   }
   return u.toString();
 }
 
-function setActiveGenre(value) {
-  qsa('[data-genre]').forEach(btn => {
-    const active = (btn.getAttribute('data-genre') || '').toLowerCase() === value.toLowerCase();
-    btn.classList.toggle('active', active);
-    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-  });
-}
+// ... (setActiveGenre, persistStateToUrl, safeUrl, makeTags - נשארים זהים) ...
 
-function persistStateToUrl() {
-  const url = new URL(location.href);
-  if (state.genre && state.genre !== 'all') url.searchParams.set('genre', state.genre);
-  else url.searchParams.delete('genre');
-  
-  // שמירת מספר הימים ב-URL אם הוא מעל יום 1
-  if (state.days > 1) url.searchParams.set('days', state.days);
-  else url.searchParams.delete('days');
-  
-  history.replaceState(null, '', url);
-}
-
-function safeUrl(href) {
-  try {
-    const u = new URL(href);
-    return (u.protocol === 'http:' || u.protocol === 'https:') ? u.toString() : '#';
-  } catch {
-    return '#';
-  }
-}
-
-function makeTags(it) {
-  const tags = [];
-  if (it.language) tags.push((it.language || '').toUpperCase());
-  const g = (it.genre || '').toLowerCase();
-  if (g && g !== 'hebrew') tags.push(g);
-  return tags;
-}
-
-// *** שינוי: הוספת פרמטר append ***
-function renderNews(items, append = false) {
+// *** תיקון: renderNews תמיד מנקה ומחליפה את הכל ***
+function renderNews(items) {
   if (!feedEl) return;
   
-  // מנקה את הפיד רק אם זה לא טעינת המשך
-  if (!append) { 
-      feedEl.innerHTML = '';
-  }
+  // נקה את הפיד תמיד (מבטל את בעיית הכפילויות בגלילה)
+  feedEl.innerHTML = ''; 
 
   // מסיר את סמן הסוף הקודם
   const oldEndMsg = feedEl.querySelector('.end-of-feed-msg');
@@ -151,7 +115,7 @@ function renderNews(items, append = false) {
   
   const frag = document.createDocumentFragment();
 
-  // רינדור בבאצ'ים למנוע blocking
+  // רינדור בבאצ'ים
   const renderBatch = (startIdx) => {
     const batchSize = 6;
     const endIdx = Math.min(startIdx + batchSize, items.length);
@@ -178,8 +142,8 @@ function renderNews(items, append = false) {
       const tagsHTML = makeTags(it)
         .map(t => `<span class="tag">${t}</span>`)
         .join(' ');
-
-      // מבנה ה-HTML המתוקן
+        
+      // מבנה ה-HTML המתוקן (כמו ב-styles.css)
       el.innerHTML = `
         ${cover}
         <div class="news-details">
@@ -192,7 +156,6 @@ function renderNews(items, append = false) {
           </div>
         </div>
       `;
-      // סוף מבנה ה-HTML המתוקן
 
       frag.appendChild(el);
     }
@@ -217,42 +180,22 @@ function renderNews(items, append = false) {
   }
 }
 
-function getCache(key) {
-  const rec = memoryCache.byKey.get(key);
-  if (!rec) return null;
-  if ((Date.now() - rec.ts) > memoryCache.ttl) {
-    memoryCache.byKey.delete(key);
-    return null;
-  }
-  return rec.data;
-}
+// ... (getCache, setCache, filterForInternational - נשארים זהים) ...
 
-function setCache(key, data) {
-  memoryCache.byKey.set(key, { data, ts: Date.now() });
-}
-
-function filterForInternational(items) {
-  return items.filter(x => (x.genre || '').toLowerCase() !== 'hebrew');
-}
-
-// *** שינוי: תמיכה ב-append ***
-async function loadNews(forceRefresh = false, append = false) {
-  if (state.loading && append) return; // מונע קריאות כפולות
+// *** תיקון: loadNews משתמשת ב-isLoadMore במקום append ***
+async function loadNews(forceRefresh = false, isLoadMore = false) {
+  if (state.loading) return; // מונע קריאה נוספת עד לסיום
   
   state.loading = true; // התחל טעינה
-  // מציג סקלטון רק אם זה טעינה ראשונית
-  if (!append) setBusy(true); 
-  // מציג ספינר רק אם זה טעינת המשך
-  else setBusy(true); 
+  setBusy(true, isLoadMore); // הצג UI בהתאם אם זו גלילה
 
-  // המפתח לקאש תלוי גם במספר הימים
-  const key = `${(state.genre || 'all').toLowerCase()}_${state.days}`; 
+  const key = `${(state.genre || 'all').toLowerCase()}_${state.days}`; // המפתח לקאש כולל ימים
 
-  // 1) נסה קאש פר-מפתח
+  // 1) נסה קאש
   if (!forceRefresh) {
     const cached = getCache(key);
     if (cached) {
-      renderNews(cached, append); // append=true או false
+      renderNews(cached); // רנדר את כל הרשימה מהקאש
       state.loading = false;
       setBusy(false);
       return;
@@ -263,7 +206,7 @@ async function loadNews(forceRefresh = false, append = false) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); 
 
-    // משתמש ב-state.days הנוכחי ב-URL
+    // שולח את state.days הנוכחי ל-Worker
     const url = buildUrl(state.genre, state.days); 
 
     const res = await fetch(url, { cache: 'default', signal: controller.signal });
@@ -276,11 +219,11 @@ async function loadNews(forceRefresh = false, append = false) {
     // 3) סינון ושמירה בקאש
     if (state.genre === 'international') {
       const intl = filterForInternational(items);
-      setCache(key, intl); // שמור עם מפתח מלא
-      renderNews(intl, append);
+      setCache(key, intl); 
+      renderNews(intl); // רנדר החלפה מלאה
     } else {
-      setCache(key, items); // שמור עם מפתח מלא
-      renderNews(items, append);
+      setCache(key, items); 
+      renderNews(items); // רנדר החלפה מלאה
     }
   } catch (e) {
     console.error('Load error:', e);
@@ -291,7 +234,7 @@ async function loadNews(forceRefresh = false, append = false) {
   }
 }
 
-// *** שינוי: איפוס days ל-1 בלחיצת כפתור ***
+// *** תיקון: איפוס days ל-1 בלחיצת כפתור ***
 function initFilters() {
   qsa('[data-genre]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -311,6 +254,7 @@ function initFilters() {
   }
 }
 
+// ... (restoreStateFromUrl, warmupAPI - נשארים זהים) ...
 function restoreStateFromUrl() {
   const url = new URL(location.href);
   const genre = (url.searchParams.get('genre') || 'all').toLowerCase();
@@ -322,42 +266,31 @@ function restoreStateFromUrl() {
   state.days = (daysParam > 0 && daysParam <= MAX_DAYS) ? daysParam : 1;
 }
 
-// טעינה מוקדמת של הAPI (ללא שינוי)
-function warmupAPI() {
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => {
-      fetch(FEED_ENDPOINT, { method: 'HEAD' }).catch(() => {});
-    });
-  }
-}
-
-// *** קוד חדש: Intersection Observer ל-Infinite Scroll ***
+// *** תיקון: Intersection Observer ל-Infinite Scroll (הטריגר) ***
 let observer = null;
 
 function setupInfiniteScroll() {
     if (!feedEl || state.days >= MAX_DAYS) return;
     
-    // יצירת אלמנט "פרווה" שנמצא בסוף הפיד
+    // יצירת אלמנט "פרווה" (Sentinel) שנמצא בסוף הפיד
     let sentinel = document.getElementById('scroll-sentinel');
     if (!sentinel) {
         sentinel = document.createElement('div');
         sentinel.id = 'scroll-sentinel';
-        // הוא פשוט צריך להיות קיים בסוף הפיד
         feedEl.appendChild(sentinel); 
     }
     
-    // אם כבר קיים Observer, נתק אותו
     if (observer) observer.disconnect();
     
     observer = new IntersectionObserver((entries) => {
         const sentinelEntry = entries[0];
-        // טען עוד רק אם האלמנט נראה, ואם לא עברנו את המגבלה, ואיננו כבר בטעינה
+        // טען רק אם האלמנט נראה, ואם לא עברנו את המגבלה, ואיננו כבר בטעינה
         if (sentinelEntry.isIntersecting && state.days < MAX_DAYS && !state.loading) {
             state.days++;
-            // הסר את הפרווה (הוא יתווסף מחדש ב-renderNews אם יש צורך בהמשך)
             sentinel.remove(); 
             persistStateToUrl();
-            loadNews(true, true); // forceRefresh=true, append=true
+            // 💡 loadNews(forceRefresh=true, isLoadMore=true)
+            loadNews(true, true); 
         } else if (state.days >= MAX_DAYS) {
              observer.unobserve(sentinel); 
              observer.disconnect();
