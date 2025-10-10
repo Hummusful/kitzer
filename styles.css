@@ -316,7 +316,7 @@ a:hover {
   }
 }
 
-/* Spotify Button - ירוק המותג של ספוטיפיי */
+/* Spotify Button*/
 .btn.spotify-btn {
   background: #1DB954;
   border: 1px solid #1DB954;
@@ -438,4 +438,5 @@ body::after {
     page-break-inside: avoid;
   }
 }
+
 
