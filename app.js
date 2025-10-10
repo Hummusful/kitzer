@@ -1,4 +1,4 @@
-// app.js – קאש פר-טאב + תיקון מעבר טאבים (גרסה יציבה)
+// app.js – גרסה סופית: יציבה, קאש פר-טאב ומבנה HTML מתוקן
 const FEED_ENDPOINT = 'https://music-aggregator.dustrial.workers.dev/api/music';
 
 const feedEl = document.getElementById('newsFeed');
@@ -6,7 +6,6 @@ const refreshBtn = document.getElementById('refreshBtn');
 
 let state = {
   genre: 'all',
-  // state.days הוסר
 };
 
 // קאש בזיכרון לפי מפתח (genre)
@@ -17,7 +16,7 @@ let memoryCache = {
 
 const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-// *** setBusy: מציג סקלטון מלא (טעינה רגילה) ***
+// setBusy: מציג סקלטון מלא (טעינה רגילה)
 function setBusy(isBusy) {
   if (!feedEl) return;
   feedEl.setAttribute('aria-busy', isBusy ? 'true' : 'false');
@@ -26,7 +25,7 @@ function setBusy(isBusy) {
     feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
   } else {
      // הסר סקלטון
-     const spinner = document.getElementById('scroll-spinner'); // לוודא שלא נשאר ספינר
+     const spinner = document.getElementById('scroll-spinner');
      if (spinner) spinner.remove();
   }
 }
@@ -59,18 +58,16 @@ function clockIL(dateStr) {
   }
 }
 
-// *** buildUrl: ללא days ***
+// buildUrl: ללא days דינמי
 function buildUrl(forGenre = state.genre) {
   const u = new URL(FEED_ENDPOINT);
   
   if (forGenre === 'hebrew' || forGenre === 'electronic') {
     u.searchParams.set('genre', forGenre);
   }
-  // days הוסר - ה-Worker יביא את ברירת המחדל (יום 1 או 3, תלוי בו)
   return u.toString();
 }
 
-// setActiveGenre (נשאר זהה)
 function setActiveGenre(value) {
   qsa('[data-genre]').forEach(btn => {
     const active = (btn.getAttribute('data-genre') || '').toLowerCase() === value.toLowerCase();
@@ -79,12 +76,10 @@ function setActiveGenre(value) {
   });
 }
 
-// persistStateToUrl (נשאר זהה)
 function persistStateToUrl() {
   const url = new URL(location.href);
   if (state.genre && state.genre !== 'all') url.searchParams.set('genre', state.genre);
   else url.searchParams.delete('genre');
-  // days הוסר
   history.replaceState(null, '', url);
 }
 
@@ -105,12 +100,11 @@ function makeTags(it) {
   return tags;
 }
 
-// *** renderNews: רנדור רגיל (ללא סנטינל או הודעת סוף) ***
+// *** renderNews: עדכון מבנה ה-HTML להתאמה ל-CSS החדש ***
 function renderNews(items) {
   if (!feedEl) return;
   
   feedEl.innerHTML = ''; // נקה
-  // הוסר ניתוק ה-Observer והוספת הסנטינל/הודעת סוף
 
   if (!items || !items.length) {
     feedEl.innerHTML = `<p class="muted">אין חדשות כרגע.</p>`;
@@ -130,7 +124,7 @@ function renderNews(items) {
       el.className = 'news-card';
 
       const cover = it.cover
-        ? `<div class="news-image-wrapper"><img class="news-cover" src="${it.cover}" alt="" loading="lazy" decoding="async"></div>`
+        ? `<img class="news-cover" src="${it.cover}" alt="" loading="lazy" decoding="async">`
         : '';
 
       const absClock = it.date ? clockIL(it.date) : '';
@@ -147,17 +141,18 @@ function renderNews(items) {
         .map(t => `<span class="tag">${t}</span>`)
         .join(' ');
         
-   el.innerHTML = `
-        <div class="news-content">
-          <h3 class="news-title"><a href="${safeUrl(it.link)}" target="_blank" rel="noopener noreferrer">${it.headline || ''}</a></h3>
-          <div class="news-meta">
-            ${dateHTML}
-            ${it.source ? `<span class="news-source"> · ${it.source}</span>` : ''}
-            ${tags ? tags : ''}
-          </div>
-          ${it.summary ? `<p class="news-summary">${it.summary}</p>` : ''}
-        </div>
+      // מבנה HTML חדש: התמונה, ואז div.news-details
+      el.innerHTML = `
         ${cover}
+        <div class="news-details">
+          <span class="news-source">${it.source || ''}</span>
+          <h3 class="news-title"><a href="${safeUrl(it.link)}" target="_blank" rel="noopener noreferrer">${it.headline || ''}</a></h3>
+          ${it.summary ? `<p class="news-summary">${it.summary}</p>` : ''}
+          <div class="news-footer-meta">
+            ${dateHTML}
+            <div class="news-tags">${tagsHTML}</div>
+          </div>
+        </div>
       `;
       frag.appendChild(el);
     }
@@ -189,7 +184,7 @@ function filterForInternational(items) {
   return items.filter(x => (x.genre || '').toLowerCase() !== 'hebrew');
 }
 
-// *** loadNews: ללא isLoadMore או state.loading ***
+// loadNews: ללא לוגיקת גלילה אינסופית
 async function loadNews(forceRefresh = false) {
   setBusy(true);
 
@@ -245,14 +240,13 @@ async function loadNews(forceRefresh = false) {
   }
 }
 
-// *** initFilters: ללא איפוס days ***
 function initFilters() {
   qsa('[data-genre]').forEach(btn => {
     btn.addEventListener('click', () => {
       state.genre = (btn.getAttribute('data-genre') || 'all').toLowerCase();
       setActiveGenre(state.genre);
       persistStateToUrl();
-      loadNews(); // תמיד טען לפי המפתח החדש
+      loadNews(); 
     });
   });
 
@@ -261,7 +255,6 @@ function initFilters() {
   }
 }
 
-// restoreStateFromUrl (ללא days)
 function restoreStateFromUrl() {
   const url = new URL(location.href);
   const genre = (url.searchParams.get('genre') || 'all').toLowerCase();
@@ -278,9 +271,6 @@ function warmupAPI() {
   }
 }
 
-// *** הוסר: Intersection Observer ו-setupInfiniteScroll ***
-
-
 // Event listeners
 document.addEventListener('DOMContentLoaded', () => {
   restoreStateFromUrl();
@@ -288,4 +278,3 @@ document.addEventListener('DOMContentLoaded', () => {
   loadNews(); 
   warmupAPI();
 });
-
