@@ -1,70 +1,85 @@
-// app.js — resilient wiring (supports old data-filter and new data-genre/lang)
-const FEED_ENDPOINT = 'https://music-aggregator.dustrial.workers.dev/api/music';
+// app.js — Dustico Production version (Worker endpoint fixed)
+
+// ✅ הנתיב הנכון ל־Worker שלך:
+const FEED_ENDPOINT = 'https://music-aggregator.dustico.workers.dev/api/music';
+
 const feedEl = document.getElementById('newsFeed');
 const refreshBtn = document.getElementById('refreshBtn');
 
 let state = {
-  genre: 'all',   // all|electronic|hebrew
-  lang:  'ALL',   // ALL|HE|EN
+  genre: 'all', // all | electronic | hebrew
+  lang:  'ALL', // ALL | HE | EN
 };
 
-// ---- utils ----
-const qs = (s, r=document) => r.querySelector(s);
-const qsa = (s, r=document) => Array.from(r.querySelectorAll(s));
-const safeForEach = (list, fn) => Array.isArray(list) ? list.forEach(fn) : (list && list.forEach && list.forEach(fn));
+// ---------- UTILITIES ----------
+const qs = (sel, root = document) => root.querySelector(sel);
+const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-function setBusy(b){ if(feedEl) feedEl.setAttribute('aria-busy', b?'true':'false'); }
-
-function timeAgo(d){
-  const t = Date.parse(d); if (Number.isNaN(t)) return '';
-  const diff = Date.now()-t, m = diff/60000, h=m/60, day=h/24;
-  if (m<1) return 'לפני רגע';
-  if (m<60) return `לפני ${Math.round(m)} ד׳`;
-  if (h<24) return `לפני ${Math.round(h)} שע׳`;
-  return `לפני ${Math.round(day)} ימ׳`;
+function setBusy(isBusy) {
+  if (feedEl) feedEl.setAttribute('aria-busy', isBusy ? 'true' : 'false');
 }
 
-function buildUrl(){
-  const u = new URL(FEED_ENDPOINT, location.origin);
-  if (state.genre && state.genre!=='all') u.searchParams.set('genre', state.genre);
-  if (state.lang  && state.lang!=='ALL') u.searchParams.set('lang',  state.lang);
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const t = Date.parse(dateStr);
+  if (Number.isNaN(t)) return '';
+  const diff = Date.now() - t;
+  const sec = Math.floor(diff / 1000);
+  const min = Math.floor(sec / 60);
+  const hr  = Math.floor(min / 60);
+  const day = Math.floor(hr / 24);
+  if (sec < 60) return 'לפני רגע';
+  if (min < 60) return `לפני ${min} ד׳`;
+  if (hr < 24) return `לפני ${hr} שע׳`;
+  return `לפני ${day} ימ׳`;
+}
+
+function buildUrl() {
+  const u = new URL(FEED_ENDPOINT);
+  if (state.genre && state.genre !== 'all') u.searchParams.set('genre', state.genre);
+  if (state.lang && state.lang !== 'ALL') u.searchParams.set('lang', state.lang);
   return u.toString();
 }
 
-function setActiveButtons(groupRoot, attr, val){
-  const root = qs(groupRoot) || document;
-  qsa(`[${attr}]`, root).forEach(btn=>{
-    const isActive = (btn.getAttribute(attr)||'').toLowerCase()===val.toLowerCase();
-    btn.classList.toggle('active', isActive);
-    btn.setAttribute('aria-pressed', isActive?'true':'false');
+function setActiveButtons(groupSelector, attr, value) {
+  qsa(`${groupSelector} .btn`).forEach(btn => {
+    const active = (btn.getAttribute(attr) || '').toLowerCase() === value.toLowerCase();
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
   });
 }
 
-// reflect state in URL (optional)
-function persistState(){
+function persistStateToUrl() {
   const url = new URL(location.href);
-  (state.genre && state.genre!=='all') ? url.searchParams.set('genre', state.genre) : url.searchParams.delete('genre');
-  (state.lang  && state.lang!=='ALL') ? url.searchParams.set('lang',  state.lang)  : url.searchParams.delete('lang');
-  history.replaceState(null,'',url);
+  if (state.genre && state.genre !== 'all') url.searchParams.set('genre', state.genre);
+  else url.searchParams.delete('genre');
+  if (state.lang && state.lang !== 'ALL') url.searchParams.set('lang', state.lang);
+  else url.searchParams.delete('lang');
+  history.replaceState(null, '', url);
 }
 
-// ---- render ----
-function renderNews(items){
+// ---------- RENDER ----------
+function renderNews(items) {
   if (!feedEl) return;
-  feedEl.innerHTML='';
-  if (!items || !items.length){
+  feedEl.innerHTML = '';
+
+  if (!items || !items.length) {
     feedEl.innerHTML = `<p class="muted">אין חדשות כרגע.</p>`;
     return;
   }
+
   const frag = document.createDocumentFragment();
-  for (const it of items){
+
+  for (const it of items) {
     const card = document.createElement('article');
-    card.className='news-card';
-    const cover = it.cover ? `<img class="news-cover" src="${it.cover}" alt="" loading="lazy" decoding="async">` : '';
+    card.className = 'news-card';
+
+    const cover = it.cover ? `<img class="news-cover" src="${it.cover}" alt="" loading="lazy">` : '';
     const date  = it.date ? `<time class="news-date" datetime="${it.date}" title="${new Date(it.date).toLocaleString('he-IL')}">${timeAgo(it.date)}</time>` : '';
+
     card.innerHTML = `
       ${cover}
-      <h3 class="news-title"><a href="${it.link}" target="_blank" rel="noopener noreferrer">${it.headline||''}</a></h3>
+      <h3 class="news-title"><a href="${it.link}" target="_blank" rel="noopener noreferrer">${it.headline || ''}</a></h3>
       <div class="news-meta">
         ${date}
         ${it.source ? `<span class="news-source"> · ${it.source}</span>` : ''}
@@ -75,76 +90,73 @@ function renderNews(items){
     `;
     frag.appendChild(card);
   }
+
   feedEl.appendChild(frag);
 }
 
-// ---- load ----
-async function loadNews(){
+// ---------- LOAD ----------
+async function loadNews() {
   setBusy(true);
-  try{
-    const res = await fetch(buildUrl(), { cache: 'no-store' });
+  try {
+    const url = buildUrl();
+    const res = await fetch(url, { cache: 'no-store' });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} - ${res.statusText}`);
+    }
+
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      throw new Error('Not JSON response');
+    }
+
     const data = await res.json();
-    renderNews(Array.isArray(data)?data:(data.items||[]));
-  }catch(e){
-    console.error(e);
-    if (feedEl) feedEl.innerHTML = `<p class="error">שגיאה בטעינת החדשות.</p>`;
-  }finally{
+    const items = Array.isArray(data) ? data : data.items || [];
+    renderNews(items);
+  } catch (e) {
+    console.error('Load error:', e);
+    feedEl.innerHTML = `<p class="error">שגיאה בטעינת החדשות (${e.message})</p>`;
+  } finally {
     setBusy(false);
   }
 }
 
-// ---- wiring (supports both old and new HTML) ----
-function wireFilters(){
-  // New genre buttons
-  safeForEach(qsa('[data-genre]'), btn=>{
-    btn.addEventListener('click', ()=>{
-      state.genre = (btn.getAttribute('data-genre')||'all').toLowerCase();
-      setActiveButtons('nav[aria-label]', 'data-genre', state.genre);
-      persistState(); loadNews();
+// ---------- EVENTS ----------
+function initFilters() {
+  qsa('[data-genre]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.genre = btn.getAttribute('data-genre') || 'all';
+      setActiveButtons('[aria-label="Genre"]', 'data-genre', state.genre);
+      persistStateToUrl();
+      loadNews();
     });
   });
 
-  // New language buttons
-  safeForEach(qsa('[data-lang]'), btn=>{
-    btn.addEventListener('click', ()=>{
-      state.lang = (btn.getAttribute('data-lang')||'ALL').toUpperCase();
-      setActiveButtons('nav[aria-label]', 'data-lang', state.lang);
-      persistState(); loadNews();
+  qsa('[data-lang]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.lang = btn.getAttribute('data-lang') || 'ALL';
+      setActiveButtons('[aria-label="Language"]', 'data-lang', state.lang);
+      persistStateToUrl();
+      loadNews();
     });
   });
 
-  // Legacy buttons (your original HTML with data-filter="HE|EN|all")
-  safeForEach(qsa('[data-filter]'), btn=>{
-    btn.addEventListener('click', ()=>{
-      const v = (btn.getAttribute('data-filter')||'all').toUpperCase();
-      if (v==='HE' || v==='EN'){ state.lang = v; }
-      else { state.genre = 'all'; state.lang = 'ALL'; } // "הכול"
-      qsa('[data-filter]').forEach(b=>{
-        const active = b===btn;
-        b.classList.toggle('active', active);
-        b.setAttribute('aria-pressed', active?'true':'false');
-      });
-      persistState(); loadNews();
-    });
-  });
-
-  if (refreshBtn) refreshBtn.addEventListener('click', ()=>loadNews());
+  if (refreshBtn) refreshBtn.addEventListener('click', () => loadNews());
 }
 
-function restoreStateFromUrl(){
+function restoreStateFromUrl() {
   const url = new URL(location.href);
-  const genre = (url.searchParams.get('genre')||'all').toLowerCase();
-  const lang  = (url.searchParams.get('lang') ||'ALL').toUpperCase();
-  state.genre = ['all','electronic','hebrew'].includes(genre)?genre:'all';
-  state.lang  = ['ALL','HE','EN'].includes(lang)?lang:'ALL';
-  setActiveButtons('nav[aria-label]', 'data-genre', state.genre);
-  setActiveButtons('nav[aria-label]', 'data-lang',  state.lang);
+  const genre = (url.searchParams.get('genre') || 'all').toLowerCase();
+  const lang  = (url.searchParams.get('lang') || 'ALL').toUpperCase();
+  state.genre = ['all', 'electronic', 'hebrew'].includes(genre) ? genre : 'all';
+  state.lang  = ['ALL', 'HE', 'EN'].includes(lang) ? lang : 'ALL';
+  setActiveButtons('[aria-label="Genre"]', 'data-genre', state.genre);
+  setActiveButtons('[aria-label="Language"]', 'data-lang', state.lang);
 }
 
-// ---- init ----
-document.addEventListener('DOMContentLoaded', ()=>{
+// ---------- INIT ----------
+document.addEventListener('DOMContentLoaded', () => {
   restoreStateFromUrl();
-  wireFilters();
+  initFilters();
   loadNews();
 });
-
