@@ -3,39 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>קיצר — Music News</title>
-  <link rel="icon" href="/favicon.ico" />
-  <link rel="stylesheet" href="./styles.css" />
+  <title>קיצר — חדשות מוזיקה</title>
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <a href="#newsFeed" class="skip-link">דלג לתוכן</a>
+  <a class="skip-link" href="#newsFeed">דלג לתוכן</a>
 
   <div class="container">
     <header class="header" role="banner">
       <h1 class="site-title">קיצר</h1>
-      <h2 class="subtitle"><img src="favicon-16x16.png" alt="minilogo" /> Dusty's Feed</h2>
+      <p class="subtitle"><img src="favicon-16x16.png" alt="" aria-hidden="true"> חדשות מוזיקה - הפיד של דאסטי</p>
     </header>
 
-    <div class="toolbar" role="toolbar" aria-label="News filters">
-      <!-- פילטרים למצב אגרגטור -->
+    <nav class="toolbar" role="toolbar" aria-label="מסנני שפה">
       <button class="btn active" data-filter="all" aria-pressed="true">הכול</button>
       <button class="btn" data-filter="HE" aria-pressed="false">ישראלי</button>
       <button class="btn" data-filter="EN" aria-pressed="false">בינלאומי</button>
+      <div class="spacer"></div>
+      <button id="refreshBtn" class="btn ghost" type="button" title="רענן">רענון</button>
+    </nav>
 
-      <!-- מצב Spotify -->
-      <button class="btn" id="onlySpotifyBtn" type="button" aria-pressed="false">רק Spotify</button>
+    <main id="newsFeed" class="news-feed" role="feed" aria-live="polite" aria-busy="true"></main>
 
-      <!-- בורר מצב קירוב (curated/extended) — מוצג רק במצב Spotify -->
-      <div class="mode-selector" id="modeSelector" hidden>
-        <label for="spotifyMode">כיסוי:</label>
-        <select id="spotifyMode">
-          <option value="curated">מומלצים</option>
-          <option value="extended">מורחב</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="news-feed" id="newsFeed" role="feed" aria-live="polite" aria-busy="true"></div>
+    <footer class="footer">
+      <small>מקור: אגרגטור RSS — מתעדכן מדי כמה דקות.</small>
+    </footer>
   </div>
 
   <script src="./app.js" defer></script>
