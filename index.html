@@ -7,11 +7,28 @@
   <meta name="theme-color" content="#0f0f23" />
   <link rel="icon" href="/favicon.ico">
 
-  <!-- חיבור מוקדם ל-Worker להאצת בקשה ראשונה (תואם ל-FEED_ENDPOINT) -->
+  <!-- Critical CSS inline למהירות מקסימלית -->
+  <style>
+    :root{--bg:#0f0f23;--panel:#141a2a;--muted:#9aa3b2;--accent:#3b82f6;--tag:#2a3550;--text:#eaf0ff;}
+    *{box-sizing:border-box;}
+    html,body{height:100%;margin:0;padding:0;}
+    body{background:radial-gradient(1200px 800px at 80% -10%,#19223b 0%,#0f0f23 60%),#0f0f23;color:var(--text);font-family:system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans";line-height:1.5;}
+    .container{max-width:980px;margin:0 auto;padding:16px;}
+    .skeleton{background:linear-gradient(90deg,#1f2a44 25%,#2a3550 50%,#1f2a44 75%);background-size:200% 100%;animation:shimmer 1.5s infinite linear;border-radius:14px;height:140px;margin:12px 0;}
+    @keyframes shimmer{100%{background-position:-200% 0;}}
+    .news-feed{min-height:40vh;}
+  </style>
+
+  <!-- חיבור מוקדם ל-Worker -->
   <link rel="preconnect" href="https://music-aggregator.dustrial.workers.dev">
   <link rel="dns-prefetch" href="https://music-aggregator.dustrial.workers.dev">
+  
+  <!-- Prefetch של הAPI -->
+  <link rel="prefetch" href="https://music-aggregator.dustrial.workers.dev/api/music" as="fetch" crossorigin>
 
-  <link rel="stylesheet" href="./styles.css">
+  <!-- טעינת CSS מאוחרת -->
+  <link rel="preload" href="./styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="./styles.css"></noscript>
 </head>
 <body>
   <a class="skip-link" href="#newsFeed">דלג לתוכן</a>
@@ -23,10 +40,9 @@
     </header>
 
     <nav class="toolbar" role="toolbar" aria-label="מסנני תוכן">
-      <!-- ז'אנרים בלבד -->
       <div class="btn-group" role="group" aria-label="Genre">
         <button class="btn active" data-genre="all" aria-pressed="true">הכול</button>
-                <button class="btn" data-genre="hebrew" aria-pressed="false">ישראלי</button>
+        <button class="btn" data-genre="hebrew" aria-pressed="false">ישראלי</button>
         <button class="btn" data-genre="international" aria-pressed="false">בינלאומי</button>
         <button class="btn" data-genre="electronic" aria-pressed="false">Electronic Music</button>
       </div>
@@ -35,8 +51,14 @@
       <button id="refreshBtn" class="btn ghost" type="button" title="רענן">רענון</button>
     </nav>
 
+    <!-- Skeleton מובנה בHTML - נראה מיד! -->
     <main id="newsFeed" class="news-feed" role="feed" aria-live="polite" aria-busy="true">
-      <!-- שלד טעינה יופיע כאן אוטומטית -->
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
     </main>
 
     <footer class="footer" role="contentinfo">
@@ -50,4 +72,3 @@
   <script src="./app.js" defer></script>
 </body>
 </html>
-
