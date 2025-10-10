@@ -47,7 +47,11 @@ function clockIL(dateStr){
 
 function buildUrl(){
   const u = new URL(FEED_ENDPOINT);
-  if (state.genre && state.genre !== 'all') u.searchParams.set('genre', state.genre);
+  // שלח פרמטר genre רק כשזה באמת פילטר קיים בצד השרת
+  if (state.genre === 'hebrew' || state.genre === 'electronic') {
+    u.searchParams.set('genre', state.genre);
+  }
+  // ל-international לא שולחים פרמטר, נסנן בצד הלקוח
   return u.toString();
 }
 
@@ -139,8 +143,8 @@ async function loadNews(){
 
     // “בינלאומי” = כל מה שלא מסומן כ-hebrew
     if (state.genre === 'international'){
-      items = items.filter(x => (x.genre || '').toLowerCase() !== 'hebrew');
-    }
+  items = items.filter(x => (x.genre || '').toLowerCase() !== 'hebrew');
+}
 
     renderNews(items);
   }catch(e){
@@ -182,6 +186,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     }).catch(()=>{});
   }
 });
+
 
 
 
