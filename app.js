@@ -1,5 +1,5 @@
 // app.js — resilient wiring (supports old data-filter and new data-genre/lang)
-const FEED_ENDPOINT = '/api/music';
+const FEED_ENDPOINT = 'https://music-aggregator.dustrial.workers.dev/api/music';
 const feedEl = document.getElementById('newsFeed');
 const refreshBtn = document.getElementById('refreshBtn');
 
@@ -147,3 +147,4 @@ document.addEventListener('DOMContentLoaded', ()=>{
   wireFilters();
   loadNews();
 });
+
