@@ -1,16 +1,23 @@
 /* ====== CONFIG ====== */
-/* חשוב: שים את הנתיב המדויק של ה־Worker שלך */
+/* חשוב: הנתיב המדויק של ה־Worker שלך */
 const AGG_ENDPOINT = "https://music-aggregator.dustrial.workers.dev/api/music";
 /* כמות מקסימלית לתצוגה */
 const MAX_ITEMS = 80;
 /* הפעלת debug: הוסף ?debug=1 לכתובת הדף */
 const DEBUG = new URLSearchParams(location.search).get("debug") === "1";
+
+/* כמה ימים אחורה להציג בפיד (HE/EN כללי; ניתן לשנות) */
+const MAX_AGE_DAYS = 30;
+/* מעבר לתאריך מוחלט (במקום יחסי) אחרי: */
+const ABSOLUTE_AFTER_DAYS = 14;
+/* אם התאריך "בעתיד" ביותר מ-36 שעות — נציג תאריך מוחלט */
+const FUTURE_HARD_LIMIT_HOURS = 36;
+
+/* ====== STATE ====== */
 function normalizeFilter(v){ 
   const s = String(v||'').trim().toUpperCase();
   return (s==='HE'||s==='EN') ? s : 'all';
 }
-
-/* ====== STATE ====== */
 let currentFilter = normalizeFilter(getParam('lang'));
 let __DATA__ = null;
 
@@ -20,6 +27,8 @@ const $$ = (s) => [...document.querySelectorAll(s)];
 const log = (...a) => DEBUG && console.log("[app]", ...a);
 
 function getParam(name){ return new URLSearchParams(location.search).get(name); }
+
+/* ניקוי ישויות HTML + דחיסת רווחים */
 function escapeHtml(s){
   if(!s) return "";
   let t = String(s)
@@ -42,6 +51,14 @@ function safeUrl(href){
     return /^(https?):$/.test(u.protocol) ? u.href : null;
   } catch { return null; }
 }
+
+function sanitizeImg(url){
+  if (!url) return null;
+  return String(url)
+    .replace(/^\/\//, 'https://')     // //cdn → https://cdn
+    .replace(/^http:\/\//, 'https://'); // upgrade http→https
+}
+
 function normLang(v){
   const s = String(v||'').trim().toUpperCase();
   return (s==='HE'||s==='EN') ? s : 'EN';
@@ -49,27 +66,42 @@ function normLang(v){
 
 const rtfHE = new Intl.RelativeTimeFormat('he-IL',{numeric:'auto'});
 const rtfEN = new Intl.RelativeTimeFormat('en-GB',{numeric:'auto'});
+
 function toTs(s){
   // תומך גם ב-null/undefined
   const t = Date.parse(s || '');
   return isNaN(t) ? 0 : t;
 }
+
+/* תצוגת זמן היברידית: יחסי עד 14 יום, אחרת תאריך מוחלט */
 function relDate(date, lang){
-  const ts  = toTs(date);
+  const ts = toTs(date);
   if (!ts) return (lang==='HE') ? "ללא תאריך" : "No date";
-  const d   = new Date(ts), now = new Date();
-  const diff= d - now, s = Math.round(diff/1000), m=Math.round(s/60), h=Math.round(m/60), day=Math.round(h/24);
+
+  const now = Date.now();
+  const diff = ts - now; // שלילי = עבר, חיובי = עתיד
+  const absMs = Math.abs(diff);
+  const absDays = absMs / (24*60*60*1000);
+
+  if (absDays > ABSOLUTE_AFTER_DAYS || (diff > FUTURE_HARD_LIMIT_HOURS*60*60*1000)) {
+    return new Date(ts).toLocaleDateString(lang==='HE'?'he-IL':'en-GB', {
+      day: '2-digit', month: '2-digit', year: 'numeric'
+    });
+  }
+
   const rtf = (lang==='HE')?rtfHE:rtfEN;
+  const s = Math.round(diff/1000), m=Math.round(s/60), h=Math.round(m/60), d=Math.round(h/24);
   if (Math.abs(s)<45) return rtf.format(0,'second');
   if (Math.abs(m)<45) return rtf.format(m,'minute');
   if (Math.abs(h)<22) return rtf.format(h,'hour');
-  return rtf.format(day,'day');
+  return rtf.format(d,'day');
 }
 
 function showLoading(){
   const feed = $('#newsFeed'); feed.setAttribute('aria-busy', 'true');
   feed.innerHTML = `<div class="empty-state"><div class="spinner" role="status" aria-label="טוען"></div><h3>טוען חדשות...</h3><p>מרענן מקורות</p></div>`;
 }
+
 function showError(message, diagHtml = ""){
   const feed = $('#newsFeed'); feed.setAttribute('aria-busy', 'false');
   feed.innerHTML = `
@@ -77,9 +109,10 @@ function showError(message, diagHtml = ""){
       <h3 class="error">אירעה שגיאה</h3>
       <p>${escapeHtml(message||'שגיאה לא צפויה')}</p>
       ${diagHtml}
-      <button class="btn ghost" onclick="location.reload()">נסה שוב</button>
+      <button class="retry-btn" onclick="location.reload()">נסה שוב</button>
     </div>`;
 }
+
 function render(items){
   const feed = $('#newsFeed'); feed.setAttribute('aria-busy','false');
   if (!items.length){
@@ -88,6 +121,7 @@ function render(items){
   }
   feed.innerHTML = items.slice(0, MAX_ITEMS).map(card).join('');
 }
+
 function updateActiveButtons(){
   $$('.toolbar .btn[data-filter]').forEach(btn=>{
     const val = (btn.dataset.filter || 'all');
@@ -110,12 +144,16 @@ function card(it){
   const title= escapeHtml(it.headline || '');
   const rawSummary = String(it.summary || '').replace(/&nbsp;/gi, ' ');
   const cleanSummary = escapeHtml(rawSummary.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim());
-  const cover= it.cover || pickImageFromSummary(rawSummary) || null;
+  const cover= sanitizeImg(it.cover || pickImageFromSummary(rawSummary) || null);
   const isLTR = (lang === 'EN');
 
-  const altDate = toTs(it.date) ? new Date(toTs(it.date)).toLocaleString(lang==='HE'?'he-IL':'en-GB') : (lang==='HE'?'ללא תאריך':'No date');
+  const ts = toTs(it.date);
+  const altDate = ts ? new Date(ts).toLocaleString(lang==='HE'?'he-IL':'en-GB') : (lang==='HE'?'ללא תאריך':'No date');
   const linkHtml = url ? `<a href="${url}" target="_blank" rel="noopener noreferrer external">${title}</a>` : `<span>${title}</span>`;
-  const imgHtml  = cover ? `<a class="news-thumb" href="${url||'#'}" ${url?`target="_blank" rel="noopener noreferrer external"`:""} aria-label="פתח"><img src="${escapeHtml(cover)}" alt="${title}" loading="lazy" decoding="async" referrerpolicy="no-referrer"></a>` : '';
+  const imgHtml  = cover ? `
+    <a class="news-thumb" href="${url||'#'}" ${url?`target="_blank" rel="noopener noreferrer external"`:""} aria-label="פתח">
+      <img src="${escapeHtml(cover)}" alt="${title}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.closest('.news-thumb')?.remove()">
+    </a>` : '';
 
   return `
   <article class="news-item ${isLTR?'ltr':''}" role="article">
@@ -171,19 +209,27 @@ async function fetchAgg(timeoutMs=15000){
   }
 }
 
+/* דה־דופ + סינון פריטי עבר ישנים מדי + מיון */
 function normalize(arr){
-  // סינון בסיסי + דה-דופ לפי link; אם אין link — fallback לכותרת
   const byKey = new Map();
+  const now = Date.now();
+  const maxAgeMs = MAX_AGE_DAYS * 24*60*60*1000;
+
   for (const it of arr){
     const link = safeUrl(it.link);
     const hasText = Boolean(it.headline || it.summary);
     if (!hasText) continue;
+
+    const ts = toTs(it.date);
+    // אם יש תאריך והוא ישן מדי — מדלגים; אם אין תאריך — נשאיר (יופיע בסוף)
+    if (ts && (now - ts) > maxAgeMs) continue;
 
     const key = link || (it.headline ? `title:${it.headline}` : null);
     if (!key || byKey.has(key)) continue;
 
     byKey.set(key, it);
   }
+
   return [...byKey.values()].sort((a,b)=> toTs(b.date) - toTs(a.date));
 }
 
@@ -195,8 +241,8 @@ function applyFilter(items, lang){
 /* ====== DEBUG PANEL (אופציונלי) ====== */
 function renderDiag(diag){
   if (!DEBUG || !diag) return "";
-  const rowsFeeds = Object.entries(diag.feeds||{}).map(([k,v]) => `<tr><td>${escapeHtml(k)}</td><td>${v.count||0}</td></tr>`).join('');
-  const rowsG     = Object.entries(diag.gnews||{}).map(([k,v]) => `<tr><td>${escapeHtml(k)}</td><td>${v.count||0}</td></tr>`).join('');
+  const rowsFeeds = Object.entries(diag.feeds||{}).map(([k,v]) => `<tr><td>${escapeHtml(k)}</td><td style="text-align:right">${v.count||0}</td></tr>`).join('');
+  const rowsG     = Object.entries(diag.gnews||{}).map(([k,v]) => `<tr><td>${escapeHtml(k)}</td><td style="text-align:right">${v.count||0}</td></tr>`).join('');
   const errs      = (diag.errors||[]).map(e => `<li><code>${escapeHtml(e.type)} / ${escapeHtml(String(e.id))}</code> — ${escapeHtml(e.msg||'error')}</li>`).join('');
   return `
     <details open style="margin:10px 0; background:#ffffff0f; border:1px solid #ffffff1f; border-radius:8px; padding:8px;">
@@ -239,9 +285,8 @@ function renderDiag(diag){
   });
   updateActiveButtons();
 
-  // כפתור רענון
-  const refreshBtn = $('#refreshBtn');
-  if (refreshBtn) refreshBtn.addEventListener('click', ()=> location.reload());
+  // כפתור רענון (אם קיים ב־HTML)
+  $('#refreshBtn')?.addEventListener('click', ()=> location.reload());
 
   // שליפה
   fetchAgg()
@@ -266,6 +311,3 @@ function renderDiag(diag){
       showError(err.message || String(err), help);
     });
 })();
-
-
-
