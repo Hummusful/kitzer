@@ -54,9 +54,16 @@ a:hover{ text-decoration:underline; }
 }
 .news-cover{ width:100%; height:auto; border-radius:10px; margin-bottom:8px; }
 .news-title{ font-size:1.1rem; margin:6px 0; }
+
+/* מטא */
 .news-meta{ font-size:.85rem; color:var(--muted); margin-bottom:6px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
-.news-date{ color:#9aa3b2; font-size:.85rem; white-space:nowrap; }
-.news-date[dir="ltr"]{ direction:ltr; unicode-bidi:bidi-override; }
+
+/* זמן: יחסי RTL + שעון LTR יציב */
+.news-date{ direction: rtl; color:#9aa3b2; font-size:.85rem; white-space:nowrap; }
+.news-date .clock{ direction: ltr; unicode-bidi: embed; }  /* 23:19 לא יתהפך */
+.news-meta .sep{ opacity:.65; }                            /* הנקודה המפרידה */
+
+/* תגיות */
 .tag{ border:1px solid var(--tag); border-radius:8px; padding:2px 8px; font-size:.75rem; color:#bdc8e6; text-transform: lowercase; }
 
 /* גריד בדסקטופ – בלי רווח כפול */
@@ -91,3 +98,4 @@ a:hover{ text-decoration:underline; }
 /* פוטר */
 .footer{ margin:18px 0 8px; color:var(--muted); }
 .footer img{ vertical-align:middle; margin-inline-end:8px; }
+
