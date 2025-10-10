@@ -36,6 +36,22 @@ function hostFromUrl(href){
 
 function getParam(name){ return new URLSearchParams(location.search).get(name); }
 
+function decodeEntities(str=""){
+  if (!str) return "";
+  // ממיר ישויות מספריות עשרוניות: &#8217; -> ’
+  str = str.replace(/&#(\d+);/g, (_, dec) => {
+    try { return String.fromCharCode(parseInt(dec, 10)); } catch { return _; }
+  });
+  // ממיר ישויות הקסדצימליות: &#x2019; -> ’
+  str = str.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+    try { return String.fromCharCode(parseInt(hex, 16)); } catch { return _; }
+  });
+  // כמה ישויות נפוצות בשמות
+  const named = { nbsp: " ", amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
+  str = str.replace(/&([a-zA-Z]+);/g, (m, name) => (named[name] ?? m));
+  return str;
+}
+
 /* ניקוי ישויות HTML + דחיסת רווחים */
 function escapeHtml(s){
   if(!s) return "";
@@ -149,8 +165,9 @@ function card(it){
   const lang = normLang(it.language);
   const src  = escapeHtml(it.source || hostFromUrl(it.link) || 'News');
   const url  = safeUrl(it.link);
-  const title= escapeHtml(it.headline || '');
-  const rawSummary = String(it.summary || '').replace(/&nbsp;/gi, ' ');
+  const titleRaw   = decodeEntities(it.headline || '');
+  const title      = escapeHtml(titleRaw);
+  const rawSummary = decodeEntities(String(it.summary || ''));
   const cleanSummary = escapeHtml(rawSummary.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim());
   const cover= sanitizeImg(it.cover || pickImageFromSummary(rawSummary) || null);
   const isLTR = (lang === 'EN');
@@ -319,4 +336,5 @@ function renderDiag(diag){
       showError(err.message || String(err), help);
     });
 })();
+
 
