@@ -16,24 +16,41 @@
       <p class="subtitle"><img src="favicon-16x16.png" alt="" aria-hidden="true">Dusty's Feed</p>
     </header>
 
-    <nav class="toolbar" role="toolbar" aria-label="מסנני שפה">
-      <button class="btn active" data-filter="all" aria-pressed="true">הכול</button>
-      <button class="btn" data-filter="HE" aria-pressed="false">ישראלי</button>
-      <button class="btn" data-filter="EN" aria-pressed="false">בינלאומי</button>
-      <div class="spacer"></div>
-      <button id="refreshBtn" class="btn ghost" type="button" title="רענן">רענון</button>
-    </nav>
+    <nav class="toolbar" role="toolbar" aria-label="מסנני תוכן">
+  <!-- פילטר לפי ז'אנר -->
+  <div class="btn-group" role="group" aria-label="Genre">
+    <button class="btn active" data-genre="all" aria-pressed="true">הכול</button>
+    <button class="btn" data-genre="electronic" aria-pressed="false">Electronic Music</button>
+    <button class="btn" data-genre="hebrew" aria-pressed="false">ישראלי (ז'אנר)</button>
+  </div>
 
-    <main id="newsFeed" class="news-feed" role="feed" aria-live="polite" aria-busy="true"></main>
+  <!-- פילטר לפי שפה -->
+  <div class="btn-group" role="group" aria-label="Language">
+    <button class="btn" data-lang="ALL" aria-pressed="true">כל השפות</button>
+    <button class="btn" data-lang="HE"  aria-pressed="false">עברית</button>
+    <button class="btn" data-lang="EN"  aria-pressed="false">English</button>
+  </div>
 
-    <footer class="footer">
-      <p><img src="favicon-16x16.png" alt="logo"קיצר - הפיד של דאסטי"> </p>
-    </footer>
+  <div class="spacer"></div>
+  <button id="refreshBtn" class="btn ghost" type="button" title="רענן">רענון</button>
+</nav>
+
+<main id="newsFeed" class="news-feed" role="feed" aria-live="polite" aria-busy="true"></main>
+
+<footer class="footer">
+  <p>
+    <img src="favicon-16x16.png" alt="לוגו קיצר" />
+    קיצר - הפיד של דאסטי
+  </p>
+</footer>
+
+
   </div>
 
   <script src="./app.js" defer></script>
 </body>
 </html>
+
 
 
 
