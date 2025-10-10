@@ -99,3 +99,22 @@ a:hover{ text-decoration:underline; }
 .footer{ margin:18px 0 8px; color:var(--muted); }
 .footer img{ vertical-align:middle; margin-inline-end:8px; }
 
+/* === Skip Link נגישות === */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #1b2340;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: .9rem;
+  text-decoration: none;
+  z-index: 9999;
+  transition: top .3s ease;
+}
+.skip-link:focus {
+  top: 10px; /* מופיע רק כשמגיעים אליו עם TAB */
+}
+
+
