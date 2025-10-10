@@ -1,6 +1,6 @@
 /* ====== CONFIG ====== */
 /** את זה תשנה ל-URL של ה-Aggregator שלך (ה-root מחזיר JSON של פריטים). אם אין — השאר "" ואז הדף יעבוד ב"מצב Spotify" אוטומטית. */
-const AGG_ENDPOINT = "https://music-aggregator.dustrial.workers.dev/"; // למשל: "https://music-aggregator.dustrial.workers.dev/"
+const AGG_ENDPOINT = "https://music-agrragator.dustrial.workers.dev/api/music"; // למשל: "https://music-aggregator.dustrial.workers.dev/"
 
 /** Worker של Spotify */
 const SPOTIFY_RELEASES_ENDPOINT = "https://spotify-new-releases.dustrial.workers.dev/api/spotify-releases";
@@ -334,5 +334,6 @@ function showDebug(obj){
     console.error(e);
   }
 })();
+
 
 
