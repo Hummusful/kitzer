@@ -20,7 +20,22 @@ const $$ = (s) => [...document.querySelectorAll(s)];
 const log = (...a) => DEBUG && console.log("[app]", ...a);
 
 function getParam(name){ return new URLSearchParams(location.search).get(name); }
-function escapeHtml(s){ if(!s) return ""; const d=document.createElement('div'); d.textContent=String(s); return d.innerHTML; }
+function escapeHtml(s){
+  if(!s) return "";
+  let t = String(s)
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#039;/gi, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+  const d = document.createElement('div');
+  d.textContent = t;
+  return d.innerHTML;
+}
+
 function safeUrl(href){
   try{
     const u = new URL(href);
@@ -93,7 +108,7 @@ function card(it){
   const src  = escapeHtml(it.source || '');
   const url  = safeUrl(it.link);
   const title= escapeHtml(it.headline || '');
-  const rawSummary = String(it.summary || '');
+  const rawSummary = String(it.summary || '').replace(/&nbsp;/gi, ' ');
   const cleanSummary = escapeHtml(rawSummary.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim());
   const cover= it.cover || pickImageFromSummary(rawSummary) || null;
   const isLTR = (lang === 'EN');
@@ -251,5 +266,6 @@ function renderDiag(diag){
       showError(err.message || String(err), help);
     });
 })();
+
 
 
