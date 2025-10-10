@@ -93,7 +93,7 @@ function makeTags(it) {
   return tags;
 }
 
-// רינדור מהיר יותר עם DocumentFragment
+// רינדור מהיר יותר עם DocumentFragment - ***תיקון מבנה ה-HTML כאן***
 function renderNews(items) {
   if (!feedEl) return;
   feedEl.innerHTML = '';
@@ -128,20 +128,25 @@ function renderNews(items) {
            </time>`
         : '';
 
-      const tags = makeTags(it)
+      const tagsHTML = makeTags(it)
         .map(t => `<span class="tag">${t}</span>`)
         .join(' ');
 
+      // מבנה ה-HTML המתוקן, המפריד בין התמונה (cover) לפרטים (news-details)
       el.innerHTML = `
         ${cover}
-        <h3 class="news-title"><a href="${safeUrl(it.link)}" target="_blank" rel="noopener noreferrer">${it.headline || ''}</a></h3>
-        <div class="news-meta">
-          ${dateHTML}
-          ${it.source ? `<span class="news-source"> · ${it.source}</span>` : ''}
-          ${tags ? tags : ''}
+        <div class="news-details">
+          <span class="news-source">${it.source || ''}</span>
+          <h3 class="news-title"><a href="${safeUrl(it.link)}" target="_blank" rel="noopener noreferrer">${it.headline || ''}</a></h3>
+          ${it.summary ? `<p class="news-summary">${it.summary}</p>` : ''}
+          <div class="news-footer-meta">
+            ${dateHTML}
+            ${tagsHTML ? `<div class="news-tags">${tagsHTML}</div>` : ''}
+          </div>
         </div>
-        ${it.summary ? `<p class="news-summary">${it.summary}</p>` : ''}
       `;
+      // סוף מבנה ה-HTML המתוקן
+
       frag.appendChild(el);
     }
 
