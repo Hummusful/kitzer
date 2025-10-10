@@ -47,23 +47,30 @@ a:hover {
 }
 
 .site-title {
-  font-size: 2.6rem;
+  font-size: 3.2rem;
   font-weight: 900;
-  letter-spacing: -1px;
-  background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #3b82f6);
+  font-family: 'Rubik', 'Heebo', system-ui, sans-serif;
+  letter-spacing: -2px;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #ff006e 0%, #8338ec 35%, #3a86ff 70%, #06ffa5 100%);
   background-size: 300% 300%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: titleGradient 5s ease infinite;
+  animation: titleGradient 4s ease infinite;
   will-change: background-position;
+  text-shadow: 0 0 40px rgba(255, 0, 110, 0.3);
+  line-height: 0.9;
 }
 
 @keyframes titleGradient {
   0% {
     background-position: 0% 50%;
   }
-  50% {
+  33% {
+    background-position: 50% 100%;
+  }
+  66% {
     background-position: 100% 50%;
   }
   100% {
