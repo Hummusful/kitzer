@@ -3,7 +3,7 @@
   --bg: #0f0f23;
   --panel: #141a2a;
   --muted: #9aa3b2;
-  --accent: #FFC700;
+  --accent: #FFC700; /* שינוי לצהוב ניאוני */
   --tag: #2a3550;
   --text: #eaf0ff;
 }
@@ -20,6 +20,7 @@ body {
 body {
   margin: 0;
   padding: 0;
+  /* הרקע נשאר מעולה - מוסיפים רק את טקסטורת הרעש בסוף הקובץ */
   background: radial-gradient(1200px 800px at 80% -10%, #19223b 0%, #0f0f23 60%), #0f0f23;
   color: var(--text);
   font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
@@ -41,224 +42,260 @@ a:hover {
   padding: 16px;
 }
 
-/* Header */
-.header {
-  margin: 6px 0 10px;
-}
-
-.site-title {
-  font-size: 3.2rem;
-  font-weight: 900;
-  font-family: 'Rubik', 'Heebo', system-ui, sans-serif;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  background: linear-gradient(135deg, #ff006e 0%, #8338ec 35%, #3a86ff 70%, #06ffa5 100%);
-  background-size: 300% 300%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: titleGradient 4s ease infinite;
-  will-change: background-position;
-  text-shadow: 0 0 40px rgba(255, 0, 110, 0.3);
-  line-height: 0.9;
-}
-
-@keyframes titleGradient {
-  0% {
-    background-position: 0% 50%;
-  }
-  33% {
-    background-position: 50% 100%;
-  }
-  66% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-.subtitle {
-  margin: 4px 0 0;
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* Accessibility */
-:where(a, button):focus-visible {
-  outline: 2px solid #00e5ff;
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
+/* Skip link - נגישות */
 .skip-link {
   position: absolute;
   top: -40px;
   left: 0;
-  background: #1b2340;
-  color: #fff;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  text-decoration: none;
-  z-index: 9999;
-  transition: top 0.3s ease;
+  background: var(--accent);
+  color: var(--bg);
+  padding: 8px;
+  z-index: 1000;
 }
-
 .skip-link:focus {
-  top: 10px;
+  top: 0;
 }
 
-/* Toolbar */
-.toolbar {
+/* כותרת - ה-Vibe המוזיקלי */
+.header {
+  text-align: center;
+  margin: 40px 0 30px;
+}
+
+.site-title {
+  font-family: 'Rubik', sans-serif;
+  font-size: 5rem;
+  font-weight: 900;
+  margin: 0;
+  padding: 0;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  
+  /* אפקט גרדיאנט נושם */
+  background: linear-gradient(90deg, #ffc700, #ff6b6b, #ffc700); /* שיניתי צבעי גרדיאנט לשילובי צהוב/אדום */
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: titleGradient 4s linear infinite;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: var(--muted);
+  margin-top: 5px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin: 8px 0 14px;
+  justify-content: center;
+  gap: 8px;
+}
+
+@keyframes titleGradient {
+  to {
+    background-position: 200% center;
+  }
+}
+
+/* ניווט וכלים */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  margin-bottom: 20px;
+}
+
+.spacer {
+  flex-grow: 1;
 }
 
 .btn-group {
-  display: inline-flex;
-  gap: 0.5rem;
-  margin-inline-end: 1rem;
+  display: flex;
+  gap: 8px;
 }
 
 .btn {
-  background: #1b2340;
-  color: #dbe6ff;
-  border: 1px solid #283358;
-  border-radius: 10px;
-  padding: 8px 12px;
+  /* מראה של כפתור עם Edge */
+  font-size: 1rem;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--panel);
+  background: var(--panel);
+  color: var(--text);
   cursor: pointer;
-  transition: transform 0.08s ease, background 0.2s ease, border-color 0.2s ease;
-  font-size: 0.95rem;
-}
-
-.btn:hover {
-  transform: translateY(-1px);
-  background: #202c4d;
-}
-
-.btn:active {
-  transform: translateY(0);
-}
-
-.btn.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
+  font-weight: 500;
 }
 
 .btn.ghost {
   background: transparent;
-  border-color: #2a375f;
-  color: #b9c4df;
+  border-color: var(--tag);
+  color: var(--muted);
 }
 
-.spacer {
-  flex: 1;
+.btn:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px); /* אפקט קפיצה קל */
 }
 
-/* Feed */
+.btn.ghost:hover {
+  color: var(--text);
+}
+
+.btn.active {
+  background: var(--accent); /* יקבל את הצהוב */
+  border-color: var(--accent); /* יקבל את הצהוב */
+  color: var(--bg); /* טקסט כהה על הצהוב */
+  font-weight: 700;
+}
+
+/* נגישות - טאב */
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* פיד החדשות */
 .news-feed {
-  min-height: 40vh;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 60px;
 }
 
+/* News Card */
 .news-card {
+  display: flex;
   background: var(--panel);
-  padding: 16px;
   border-radius: 14px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
-  margin: 12px 0;
-  will-change: transform;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
+
+/* הוספת אפקט תנועה אנרגטי על כרטיסי החדשות */
+.news-card:hover {
+  transform: translateY(-4px) rotateZ(0.5deg); /* קפיצה והטיה קלה - ה"tilt" המבוקש */
+  box-shadow: 0 6px 20px rgba(255, 199, 0, 0.3), 0 3px 10px rgba(0, 0, 0, 0.4); /* צל שכבות בצבע הניאון החדש */
+}
+
 
 .news-cover {
-  width: 100%;
-  height: auto;
-  border-radius: 10px;
-  margin-bottom: 8px;
-  content-visibility: auto;
+  width: 140px;
+  flex-shrink: 0;
+  aspect-ratio: 1 / 1;
+  background-size: cover;
+  background-position: center;
+  border-radius: 0 14px 14px 0;
+}
+
+.news-details {
+  padding: 16px;
+  flex-grow: 1;
+}
+
+.news-source {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .news-title {
-  font-size: 1.1rem;
-  margin: 6px 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
 }
 
 .news-title a {
   color: var(--text);
+  transition: color 0.2s ease;
 }
 
 .news-title a:hover {
-  color: var(--accent);
+  color: var(--accent); /* צבע הניאון החדש ב-hover */
+  text-decoration: none;
 }
 
-/* Meta */
-.news-meta {
-  font-size: 0.85rem;
+.news-time {
+  font-size: 0.8rem;
   color: var(--muted);
-  margin-bottom: 6px;
+  font-style: italic;
+  display: block;
+}
+
+.news-tags {
+  margin-top: 10px;
   display: flex;
-  flex-wrap: wrap;
   gap: 6px;
-  align-items: center;
+  flex-wrap: wrap;
 }
 
-.news-date {
-  direction: rtl;
-  color: #9aa3b2;
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
-
-.news-date .clock {
-  direction: ltr;
-  unicode-bidi: embed;
-}
-
-.news-meta .sep {
-  opacity: 0.65;
-}
-
-.news-source {
-  color: var(--muted);
-}
-
-.news-summary {
-  font-size: 0.9rem;
-  line-height: 1.6;
-  color: #c5d0e6;
-  margin: 8px 0 0;
-}
-
-/* Tags */
-.tag {
-  border: 1px solid var(--tag);
-  border-radius: 8px;
-  padding: 2px 8px;
+.news-tag {
   font-size: 0.75rem;
-  color: #bdc8e6;
-  text-transform: lowercase;
+  background: var(--tag);
+  color: var(--muted);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
 }
 
-/* Grid בדסקטופ */
+/* תצוגת דסקטופ (2 עמודות) */
 @media (min-width: 1024px) {
   .news-feed {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 14px;
-  }
-  
-  .news-feed > .news-card {
-    margin: 0;
+    gap: 20px;
   }
 }
 
-/* Skeleton */
+/* תצוגת מובייל (כרטיס אנכי מלא) */
+@media (max-width: 768px) {
+  .news-card {
+    flex-direction: column;
+  }
+  
+  .news-cover {
+    width: 100%;
+    height: 140px;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .news-details {
+    padding: 14px;
+  }
+
+  .toolbar {
+    flex-wrap: wrap;
+  }
+
+  .btn-group {
+    order: 2;
+    margin-top: 10px;
+    /* מרחיב את קבוצת הכפתורים לכל הרוחב */
+    width: 100%;
+    /* מאפשר גלילה אופקית אם יש יותר מדי פילטרים */
+    overflow-x: auto; 
+    padding-bottom: 5px;
+  }
+  
+  .btn-group::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .spacer {
+    display: none;
+  }
+  
+  /* כפתורי הכלים לימין, כפתורי הז'אנר למטה */
+  .spotify-btn, #refreshBtn {
+    order: 1;
+  }
+}
+
+/* סקלטון לטעינה */
 .skeleton {
   background: linear-gradient(90deg, #1f2a44 25%, #2a3550 50%, #1f2a44 75%);
   background-size: 200% 100%;
@@ -305,47 +342,59 @@ a:hover {
 
 /* Footer */
 .footer {
-  margin: 18px 0 8px;
-  color: var(--muted);
   text-align: center;
+  padding: 30px 10px;
   font-size: 0.9rem;
+  color: var(--muted);
 }
 
-.footer img {
-  vertical-align: middle;
-  margin-inline-end: 8px;
-}
+/* ---------------------------------------------------------------- */
+/* עיצובים חדשניים: Spotify, Tilt ו-Dusty Vibe           */
+/* ---------------------------------------------------------------- */
 
-.footer p {
+/* Spotify Button - ירוק המותג של ספוטיפיי */
+.btn.spotify-btn {
+  /* צבע מותג ספוטיפיי קלאסי */
+  background: #1DB954;
+  border: 1px solid #1DB954;
+  color: #0f0f23; /* טקסט כהה על רקע ירוק בהיר */
+  font-weight: 700;
+  
+  /* אפקט זוהר קל בירוק ניאוני */
+  box-shadow: 0 0 15px rgba(29, 185, 84, 0.4);
+  
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
+  gap: 6px;
+  transition: transform 0.08s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Performance optimizations */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+.btn.spotify-btn:hover {
+  transform: scale(1.05) translateY(-1px); /* הבלטה חזקה יותר */
+  background: #1ed760; /* ירוק מעט בהיר יותר בריחוף */
+  border-color: #1ed760;
+  box-shadow: 0 0 25px rgba(29, 185, 84, 0.7);
 }
 
-/* Print styles */
-@media print {
-  .toolbar,
-  .footer,
-  .skip-link {
-    display: none;
-  }
-  
-  .news-card {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
+.btn.spotify-btn::before {
+  content: '🎧'; /* אייקון האוזניות */
+  /* ודא שהאייקון לא מקבל צבע בהיר מדי על הרקע הבהיר של הכפתור */
+  color: #0f0f23; 
 }
 
 
+/* אפקט "רעש אנלוגי" (Grainy Texture) - Dusty Vibe */
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* שימוש בתמונה קטנה של noise כרקע חוזר - Base64 */
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKkFgAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyFpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzowMTowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHJlZiNvcmciIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNSBXaW5kb3dzIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuasJpZDpGMkRGRDcxRTM5QUUxMUU2ODU4MUUyQTkyNzgzQTcxRCIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDpGMkRGRDcxRTM5QUUxMUU2ODU4MUUyQTkyNzgzQTcxRCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuasJpZDpGMkRGRDcxQzM5QUUxMUU2ODU4MUUyQTkyNzgzQTcxRCIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDpGMkRGRDcxRDM5QUUxMUU2ODU4MUUyQTkyNzgzQTcxRCIvPiA8L3JkZjpEZXNjcmlwdGlvbi4pPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0idyI/Pl5oG+sAAAAWSURBVHjaYmBgYGBiYkADWAgQWACgAADr8AGtT6+8AAAAAElFTkSuQmCC');
+  pointer-events: none; /* מאפשר קליקים דרכו */
+  opacity: 0.05; /* שקיפות נמוכה מאוד */
+  mix-blend-mode: overlay; /* משפר את הניגודיות הכללית */
+  z-index: 100; /* ודא שהוא מעל הכל */
+}
