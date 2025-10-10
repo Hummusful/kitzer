@@ -1,9 +1,9 @@
-/* styles.css */
+/* styles.css - אופטימיזציה מלאה */
 :root {
   --bg: #0f0f23;
   --panel: #141a2a;
   --muted: #9aa3b2;
-  --accent: #FFFF5C; 
+  --accent: #FFC700; /* צהוב ניאון */
   --tag: #2a3550;
   --text: #eaf0ff;
 }
@@ -20,9 +20,10 @@ body {
 body {
   margin: 0;
   padding: 0;
+  /* רקע עם גרדיאנט כהה */
   background: radial-gradient(1200px 800px at 80% -10%, #19223b 0%, #0f0f23 60%), #0f0f23;
   color: var(--text);
-  /* תיקון: החזרת הגדרת ה-font-family המקורית המלאה */
+  /* גופנים תקינים לטיפול בטקסט, סמלים ואמוג'י */
   font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   line-height: 1.5;
 }
@@ -171,24 +172,24 @@ a:hover {
 .news-card {
   display: flex; /* הפוך את הכרטיס ל-Flex Container (דו-טורי) */
   background: var(--panel);
-  padding: 0; /* הסרת הפדינג מכל הכרטיס */
+  padding: 0; 
   border-radius: 14px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-  margin: 0; /* מנהל את המרווח ב-.news-feed gap */
+  margin: 0; 
   overflow: hidden; 
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* אפקט תנועה אנרגטי על כרטיסי החדשות */
+/* אפקט תנועה אנרגטי על כרטיסי החדשות (Tilt) */
 .news-card:hover {
-  transform: translateY(-4px) rotateZ(0.5deg); /* קפיצה והטיה קלה - ה"tilt" המבוקש */
+  transform: translateY(-4px) rotateZ(0.5deg); 
   box-shadow: 0 6px 20px rgba(255, 199, 0, 0.3), 0 3px 10px rgba(0, 0, 0, 0.4); 
 }
 
 /* תמונת הכיסוי - טור שמאלי */
 .news-cover {
-  width: 120px; /* רוחב קבוע לתמונה */
-  height: 120px; /* גובה קבוע לתמונה */
+  width: 120px; 
+  height: 120px; 
   flex-shrink: 0; 
   object-fit: cover;
   border-radius: 0;
@@ -198,7 +199,7 @@ a:hover {
 /* מיכל הפרטים - טור ימני */
 .news-details {
   padding: 16px;
-  flex-grow: 1; /* תופס את שאר הרוחב */
+  flex-grow: 1; 
   display: flex; 
   flex-direction: column; 
   justify-content: space-between; 
@@ -242,7 +243,7 @@ a:hover {
   justify-content: space-between;
   align-items: center;
   font-size: 0.85rem;
-  margin-top: auto; /* דוחף את עצמו לתחתית */
+  margin-top: auto; 
 }
 
 /* תאריך - נשאר תקין */
@@ -287,14 +288,30 @@ a:hover {
 
   .news-cover {
     width: 100%;
-    height: 150px;
+    height: 120px; /* קומפקטי יותר */
     border-radius: 14px 14px 0 0;
   }
   
   .news-details {
-    padding: 14px;
+    padding: 12px; /* פדינג קטן יותר */
   }
-  
+
+  .news-title {
+    font-size: 1.1rem; /* גופן קטן יותר */
+  }
+
+  /* תיקון סופי: הסתרת הסיכום במובייל */
+  .news-summary {
+    display: none;
+  }
+
+  /* מטה-דאטה קטנה יותר */
+  .news-footer-meta,
+  .news-date {
+    font-size: 0.8rem;
+  }
+
+  /* כפתורי הניווט (כדי למנוע שבירה) */
   .toolbar {
     flex-wrap: wrap;
   }
@@ -316,7 +333,7 @@ a:hover {
   }
 }
 
-/* Spotify Button*/
+/* Spotify Button - ירוק המותג של ספוטיפיי */
 .btn.spotify-btn {
   background: #1DB954;
   border: 1px solid #1DB954;
@@ -438,6 +455,3 @@ body::after {
     page-break-inside: avoid;
   }
 }
-
-
-
