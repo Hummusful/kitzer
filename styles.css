@@ -20,9 +20,10 @@ body {
 body {
   margin: 0;
   padding: 0;
-  /* הרקע נשאר מעולה - מוסיפים רק את טקסטורת הרעש בסוף הקובץ */
+  /* הרקע המעולה שלך נשאר */
   background: radial-gradient(1200px 800px at 80% -10%, #19223b 0%, #0f0f23 60%), #0f0f23;
   color: var(--text);
+  /* תיקון: החזרת הגדרת ה-font-family המקורית המלאה */
   font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   line-height: 1.5;
 }
@@ -72,7 +73,7 @@ a:hover {
   text-transform: uppercase;
   
   /* אפקט גרדיאנט נושם */
-  background: linear-gradient(90deg, #ffc700, #ff6b6b, #ffc700); /* שיניתי צבעי גרדיאנט לשילובי צהוב/אדום */
+  background: linear-gradient(90deg, #ffc700, #ff6b6b, #ffc700);
   background-size: 200% auto;
   color: transparent;
   -webkit-background-clip: text;
@@ -161,7 +162,7 @@ a:hover {
   flex-direction: column;
   gap: 20px;
   padding-bottom: 60px;
-  min-height: 40vh; /* מתוך הCSS הקריטי המקורי */
+  min-height: 40vh;
 }
 
 /* News Card */
@@ -174,7 +175,7 @@ a:hover {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* הוספת אפקט תנועה אנרגטי על כרטיסי החדשות */
+/* אפקט תנועה אנרגטי על כרטיסי החדשות */
 .news-card:hover {
   transform: translateY(-4px) rotateZ(0.5deg); /* קפיצה והטיה קלה - ה"tilt" המבוקש */
   box-shadow: 0 6px 20px rgba(255, 199, 0, 0.3), 0 3px 10px rgba(0, 0, 0, 0.4); /* צל שכבות בצבע הניאון החדש */
