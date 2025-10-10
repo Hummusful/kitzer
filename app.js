@@ -103,7 +103,7 @@ const relTime  = it.date ? timeAgo(it.date) : '';
 const dateHTML = it.date
   ? `<time class="news-date" datetime="${it.date}">
        <span class="rel" dir="rtl">${relTime}</span>
-       ${absClock ? `<span class="sep"> · </span><bdi class="clock" dir="ltr">${absClock}\u200E</bdi>` : ''}
+       ${absClock ? `<span class="sep"> · </span><bdi class="clock">${absClock}\u200E</bdi>` : ''}
      </time>`
   : '';
 
@@ -182,5 +182,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
     }).catch(()=>{});
   }
 });
+
 
 
