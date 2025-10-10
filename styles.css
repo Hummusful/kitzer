@@ -282,9 +282,39 @@ a:hover {
 
 /* תצוגת מובייל (כרטיס אנכי מלא) */
 @media (max-width: 768px) {
-  .news-card {
-    flex-direction: column; /* חוזר לתצוגה אנכית במובייל */
+  /* ... (כל הכללים הקודמים) ... */
+
+  /* כפתורי הניווט (כדי למנוע שבירה) */
+  .toolbar {
+    flex-wrap: wrap; /* מאפשר לכפתורים לעבור שורה */
+    padding-bottom: 0; /* כדי שיתאים לבאג גלילה שצריך לתקן */
   }
+
+  .btn-group {
+    order: 2; /* מוודא שהכפתורים יופיעו בשורה נפרדת מתחת לכפתור ספוטיפיי */
+    margin-top: 10px;
+    width: 100%;
+    
+    /* 💡 התיקון העיקרי: הפוך את הקבוצה לגלילה אופקית! */
+    overflow-x: auto; 
+    white-space: nowrap; /* ודא שהכפתורים נשארים בשורה אחת בתוך ה-Overflow */
+    padding-bottom: 5px; /* מרווח קטן כדי שסרגל הגלילה יהיה נוח */
+  }
+  
+  /* הסתרת סרגל הגלילה ברוב הדפדפנים (למעט iOS) */
+  .btn-group::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .spacer {
+    display: none;
+  }
+  
+  /* מוודא שהכפתורים בתוך הקבוצה אינם גמישים (כדי שיגללו) */
+  .btn-group .btn {
+      flex-shrink: 0;
+  }
+}
 
   .news-cover {
     width: 100%;
@@ -455,3 +485,4 @@ body::after {
     page-break-inside: avoid;
   }
 }
+
