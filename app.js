@@ -187,8 +187,8 @@ function card(it){
         <span class="language-badge">${lang}</span>
         <span class="source-tag">${src}</span>
       </div>
-      <div class="news-date" title="${escapeHtml(altDate)}">${relDate(it.date, lang)}</div>
-    </div>
+<div class="news-date" ${isLTR ? 'dir="ltr" lang="en"' : 'dir="rtl" lang="he"'}
+     title="${escapeHtml(altDate)}">${relDate(it.date, lang)}</div>    </div>
     <div class="news-body">
       ${imgHtml}
       <div class="news-main">
@@ -336,5 +336,6 @@ function renderDiag(diag){
       showError(err.message || String(err), help);
     });
 })();
+
 
 
