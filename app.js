@@ -26,6 +26,14 @@ const $  = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 const log = (...a) => DEBUG && console.log("[app]", ...a);
 
+function hostFromUrl(href){ 
+  try { 
+    return new URL(href).hostname.replace(/^www\./,''); 
+  } catch { 
+    return ''; 
+  } 
+}
+
 function getParam(name){ return new URLSearchParams(location.search).get(name); }
 
 /* ניקוי ישויות HTML + דחיסת רווחים */
@@ -139,7 +147,7 @@ function pickImageFromSummary(summary=""){
 
 function card(it){
   const lang = normLang(it.language);
-  const src  = escapeHtml(it.source || '');
+  const src  = escapeHtml(it.source || hostFromUrl(it.link) || 'News');
   const url  = safeUrl(it.link);
   const title= escapeHtml(it.headline || '');
   const rawSummary = String(it.summary || '').replace(/&nbsp;/gi, ' ');
@@ -311,3 +319,4 @@ function renderDiag(diag){
       showError(err.message || String(err), help);
     });
 })();
+
