@@ -50,7 +50,7 @@ a:hover {
   font-size: 3.2rem;
   font-weight: 900;
   font-family: 'Rubik', 'Heebo', system-ui, sans-serif;
-  letter-spacing: -2px;
+  letter-spacing: 2px;
   text-transform: uppercase;
   background: linear-gradient(135deg, #ff006e 0%, #8338ec 35%, #3a86ff 70%, #06ffa5 100%);
   background-size: 300% 300%;
@@ -347,3 +347,4 @@ a:hover {
     page-break-inside: avoid;
   }
 }
+
