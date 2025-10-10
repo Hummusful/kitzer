@@ -1,27 +1,31 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>קיצר - Music News</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>קיצר — Music News</title>
   <link rel="icon" href="/favicon.ico" />
-  <link rel="preload" href="styles.css" as="style" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
   <a href="#newsFeed" class="skip-link">דלג לתוכן</a>
 
-  <div class="container" role="main">
+  <div class="container">
     <header class="header" role="banner">
       <h1 class="site-title">קיצר</h1>
       <h2 class="subtitle"><img src="favicon-16x16.png" alt="minilogo" /> Dusty's Feed</h2>
     </header>
 
     <div class="toolbar" role="toolbar" aria-label="News filters">
+      <!-- פילטרים למצב אגרגטור -->
       <button class="btn active" data-filter="all" aria-pressed="true">הכול</button>
       <button class="btn" data-filter="HE" aria-pressed="false">ישראלי</button>
       <button class="btn" data-filter="EN" aria-pressed="false">בינלאומי</button>
+
+      <!-- מצב Spotify -->
       <button class="btn" id="onlySpotifyBtn" type="button" aria-pressed="false">רק Spotify</button>
+
+      <!-- בורר מצב קירוב (curated/extended) — מוצג רק במצב Spotify -->
       <div class="mode-selector" id="modeSelector" hidden>
         <label for="spotifyMode">כיסוי:</label>
         <select id="spotifyMode">
@@ -31,9 +35,9 @@
       </div>
     </div>
 
-    <div id="newsFeed" class="news-feed" role="feed" aria-live="polite" aria-busy="true"></div>
+    <div class="news-feed" id="newsFeed" role="feed" aria-live="polite" aria-busy="true"></div>
   </div>
 
-  <script defer src="app.js"></script>
+  <script src="./app.js" defer></script>
 </body>
 </html>
