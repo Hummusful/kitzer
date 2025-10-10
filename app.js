@@ -115,10 +115,11 @@ const dateHTML = it.date
       ${cover}
       <h3 class="news-title"><a href="${safeUrl(it.link)}" target="_blank" rel="noopener noreferrer">${it.headline || ''}</a></h3>
       <div class="news-meta">
-        ${date}
-        ${it.source ? `<span class="news-source"> · ${it.source}</span>` : ''}
-        ${tags ? tags : ''}
-      </div>
+  ${dateHTML}
+  ${it.source ? `<span class="news-source"> · ${it.source}</span>` : ''}
+  ${tags ? tags : ''}
+</div>
+
       ${it.summary ? `<p class="news-summary">${it.summary}</p>` : ''}
     `;
     frag.appendChild(el);
@@ -181,4 +182,5 @@ document.addEventListener('DOMContentLoaded', ()=>{
     }).catch(()=>{});
   }
 });
+
 
