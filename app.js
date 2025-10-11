@@ -111,20 +111,20 @@ function makeTags(it) {
 // *** renderNews: עדכון מבנה ה-HTML להתאמה ל-CSS החדש ***
 function renderNews(items) {
   if (!feedEl) return;
-  
+
   feedEl.innerHTML = ''; // נקה
 
   if (!items || !items.length) {
     feedEl.innerHTML = `<p class="muted">אין חדשות כרגע.</p>`;
     return;
   }
-  
-  const frag = document.createDocumentFragment();
 
-  // רינדור בבאצ'ים
   const renderBatch = (startIdx) => {
-    const batchSize = 6;
+    const batchSize = 24; // אפשר להקטין/להגדיל לפי הצורך
     const endIdx = Math.min(startIdx + batchSize, items.length);
+
+    // ⚠️ פרגמנט חדש לכל באץ'
+    const frag = document.createDocumentFragment();
 
     for (let i = startIdx; i < endIdx; i++) {
       const it = items[i];
@@ -145,10 +145,8 @@ function renderNews(items) {
            </time>`
         : '';
 
-      const tagsHTML = makeTags(it)
-        .map(t => `<span class="tag">${t}</span>`)
-        .join(' ');
-        
+      const tagsHTML = makeTags(it).map(t => `<span class="tag">${t}</span>`).join(' ');
+
       el.innerHTML = `
         ${cover}
         <div class="news-details">
@@ -164,14 +162,17 @@ function renderNews(items) {
       frag.appendChild(el);
     }
 
+    // ✅ מצרפים כל באץ' לדום
+    feedEl.appendChild(frag);
+
     if (endIdx < items.length) {
       requestAnimationFrame(() => renderBatch(endIdx));
     }
   };
 
   renderBatch(0);
-  feedEl.appendChild(frag);
 }
+
 
 
 function getCache(key) {
@@ -286,6 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadNews(); 
   warmupAPI();
 });
+
 
 
 
