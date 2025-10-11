@@ -238,4 +238,59 @@ async function loadNews(forceRefresh = false) {
 
 // מביא רשימה מלאה ומחליף רק אם היא יותר ארוכה/חדשה
 async function hydrateFullInBackground(cacheKey) {
-  const fullUrl = buildUrl({ forGenre: pickFetchGenre(), lim
+  const fullUrl = buildUrl({ forGenre: pickFetchGenre(), limit: 200, lite: false });
+  const res = await timedFetch(fullUrl, 20000, { cache: 'default' });
+  if (!res.ok) return;
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('application/json')) return;
+
+  const data = await res.json();
+  let items = Array.isArray(data) ? data : (data.items || []);
+  items = (state.genre === 'international') ? filterForInternational(items) : items;
+
+  const current = getCache(cacheKey) || [];
+  // החלפה רק אם באמת יש יותר/חדש (פשוט בודקים אורך)
+  if (items.length > current.length) {
+    setCache(cacheKey, items);
+    renderNews(items);
+  }
+}
+
+function initFilters() {
+  qsa('[data-genre]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.genre = (btn.getAttribute('data-genre') || 'all').toLowerCase();
+      setActiveGenre(state.genre);
+      persistStateToUrl();
+      loadNews(); // יפעיל fast→hydrate בהתאם לז'אנר
+    });
+  });
+
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', () => loadNews(true)); // force refresh
+  }
+}
+
+function restoreStateFromUrl() {
+  const url = new URL(location.href);
+  const genre = (url.searchParams.get('genre') || 'all').toLowerCase();
+  state.genre = ['all', 'electronic', 'hebrew', 'international'].includes(genre) ? genre : 'all';
+  setActiveGenre(state.genre);
+}
+
+// חימום API (HEAD) בזמן סרק
+function warmupAPI() {
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      fetch(FEED_ENDPOINT, { method: 'HEAD' }).catch(() => {});
+    });
+  }
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+  restoreStateFromUrl();
+  initFilters();
+  loadNews();
+  warmupAPI();
+});
