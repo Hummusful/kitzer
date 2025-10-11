@@ -496,6 +496,25 @@ body::after {
     page-break-inside: avoid;
   }
 }
+/* תקציר – בסיס */
+.news-summary {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3; /* ברירת מחדל */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* מובייל: 2 שורות */
+@media (max-width: 768px) {
+  .news-summary { -webkit-line-clamp: 2; }
+}
+
+/* דסקטופ: 3–4 שורות */
+@media (min-width: 1024px) {
+  .news-summary { -webkit-line-clamp: 3; }
+}
+
 
 
 
