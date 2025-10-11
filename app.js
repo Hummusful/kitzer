@@ -101,6 +101,7 @@ function makeTags(it) {
 }
 
 // *** renderNews: עדכון מבנה ה-HTML להתאמה ל-CSS החדש ***
+// *** renderNews: עדכון מבנה ה-HTML להתאמה ל-CSS החדש ***
 function renderNews(items) {
   if (!feedEl) return;
   
@@ -141,7 +142,6 @@ function renderNews(items) {
         .map(t => `<span class="tag">${t}</span>`)
         .join(' ');
         
-      // מבנה HTML חדש: התמונה, ואז div.news-details
       el.innerHTML = `
         ${cover}
         <div class="news-details">
@@ -165,6 +165,7 @@ function renderNews(items) {
   renderBatch(0);
   feedEl.appendChild(frag);
 }
+
 
 function getCache(key) {
   const rec = memoryCache.byKey.get(key);
@@ -278,3 +279,4 @@ document.addEventListener('DOMContentLoaded', () => {
   loadNews(); 
   warmupAPI();
 });
+
