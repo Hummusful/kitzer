@@ -62,13 +62,15 @@ function clockIL(dateStr) {
 function buildUrl(forGenre = state.genre) {
   const u = new URL(FEED_ENDPOINT);
 
-  // פרמטרים שקטים לדיפולט חדש:
-  u.searchParams.set('days', 7);      // או 14 אם תרצה חלון רחב יותר
-  u.searchParams.set('limit', 200);   // מציג יותר פריטים בדף
+  // דיפולט חדש: חלון 7 ימים ומקסימום 200 פריטים
+  u.searchParams.set('days', 7);
+  u.searchParams.set('limit', 200);
 
+  // שמירת המסנן הנוכחי (אם זה 'hebrew' או 'electronic')
   if (forGenre === 'hebrew' || forGenre === 'electronic') {
     u.searchParams.set('genre', forGenre);
   }
+
   return u.toString();
 }
 
@@ -284,5 +286,6 @@ document.addEventListener('DOMContentLoaded', () => {
   loadNews(); 
   warmupAPI();
 });
+
 
 
