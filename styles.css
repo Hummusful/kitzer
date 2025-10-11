@@ -179,6 +179,8 @@ a:hover {
   margin: 0; 
   overflow: hidden; 
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  content-visibility: auto;
+  contain-intrinsic-size: 200px 400px;
 }
 
 /* אפקט תנועה אנרגטי על כרטיסי החדשות (Tilt) */
@@ -482,3 +484,4 @@ body::after {
     page-break-inside: avoid;
   }
 }
+
