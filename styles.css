@@ -281,11 +281,14 @@ a:hover {
 
 /* תצוגת דסקטופ (2 עמודות) */
 @media (min-width: 1024px) {
-  .news-feed {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+  .news-summary {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
+}
   
   .news-card {
     /* 🛠️ התיקון הקריטי: מעביר לתמונה לצד טקסט רק בדסקטופ */
@@ -306,9 +309,14 @@ a:hover {
 
 /* -------------------- MOBILE OPTIMIZATION (max-width: 768px) -------------------- */
 @media (max-width: 768px) {
-  .news-card {
-    flex-direction: column; /* ודא שהמובייל הוא טור */
+  .news-summary {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
+}
 
   .news-cover {
     width: 100%;
@@ -325,9 +333,8 @@ a:hover {
   }
 
   /* 💡 הסתרת הסיכום במובייל כדי לחסוך מקום */
-  .news-summary {
-    display: none;
-  }
+  .news-summary { { -webkit-line-clamp: 2; }
+}
 
   /* מטה-דאטה קטנה יותר */
   .news-footer-meta,
