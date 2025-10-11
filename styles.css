@@ -246,7 +246,7 @@ a:hover {
   margin-top: 6px;
   line-height: 1.4;
   display: -webkit-box;
-  -webkit-line-clamp: 4;   /* מציג עד 3 שורות תקציר */
+  -webkit-line-clamp: 5;   /* מציג עד 5 שורות תקציר */
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -305,11 +305,11 @@ a:hover {
     border-radius: 14px 0 0 14px; /* פינות עגולות רק בצד שמאל */
   }
 
-  /* מציגים תקציר עד 3 שורות בדסקטופ */
+  /* מציגים תקציר עד 5 שורות בדסקטופ */
   .news-summary {
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 5;
     overflow: hidden;
     text-overflow: ellipsis;
   }
@@ -520,6 +520,7 @@ body::after {
 @media (min-width: 1024px) {
   .news-summary { -webkit-line-clamp: 3; }
 }
+
 
 
 
