@@ -1,4 +1,4 @@
-// app.js – טעינה מהירה (שלב 1) + הידרציה (שלב 2), קאש פר-טאב
+// app.js – טעינה דו-שלבית + קאש פר-טאב + UX חלק (ללא פלאש מיותר)
 const FEED_ENDPOINT = 'https://music-aggregator.dustrial.workers.dev/api/music';
 
 const feedEl = document.getElementById('newsFeed');
@@ -6,7 +6,7 @@ const refreshBtn = document.getElementById('refreshBtn');
 
 let state = { genre: 'all' };
 
-// קאש בזיכרון לפי מפתח (genre + פרמטרים רלוונטיים)
+// קאש בזיכרון לפי מפתח (genre)
 let memoryCache = {
   ttl: 5 * 60 * 1000, // 5 דקות
   byKey: new Map(),   // key -> { data, ts }
@@ -14,12 +14,11 @@ let memoryCache = {
 
 const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-// Skeleton
+// Skeleton – מוצג רק כשאין תוכן קיים כדי למנוע "פלאש"
 function setBusy(isBusy) {
   if (!feedEl) return;
   feedEl.setAttribute('aria-busy', isBusy ? 'true' : 'false');
   if (isBusy) {
-    // הצג סקלטון רק אם אין תוכן
     if (!feedEl.querySelector('.news-card')) {
       feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
     }
@@ -29,7 +28,7 @@ function setBusy(isBusy) {
   }
 }
 
-// זמן יחסי ושעון
+// Hebrew relative time + absolute clock
 const HEB_RTF = new Intl.RelativeTimeFormat('he-IL', { numeric: 'auto' });
 const TZ = 'Asia/Jerusalem';
 
@@ -57,13 +56,12 @@ function clockIL(dateStr) {
   }
 }
 
-// --- URL builder עם פרמטרים דינמיים ---
+// URL builder – תומך ב-limit/lite וסינון ז'אנר
 function buildUrl({ forGenre = state.genre, days = 7, limit = 200, lite = false } = {}) {
   const u = new URL(FEED_ENDPOINT);
   u.searchParams.set('days', days.toString());
   u.searchParams.set('limit', limit.toString());
-  if (lite) u.searchParams.set('lite', '1'); // יתעלם אם ה-Worker לא מכיר, זה בסדר.
-
+  if (lite) u.searchParams.set('lite', '1'); // הנתמך ב-Worker
   const g = (forGenre || '').toLowerCase();
   if (g === 'hebrew' || g === 'electronic') u.searchParams.set('genre', g);
   return u.toString();
@@ -101,7 +99,7 @@ function makeTags(it) {
   return tags;
 }
 
-// --- רנדר ---
+// רנדר כרטיסים בבאצ'ים כדי לשמור על פריימים חלקים
 function renderNews(items) {
   if (!feedEl) return;
   feedEl.innerHTML = '';
@@ -122,7 +120,7 @@ function renderNews(items) {
       el.className = 'news-card';
 
       const cover = it.cover
-        ? `<img class="news-cover" src="${it.cover}" alt="" loading="lazy" decoding="async">`
+        ? `<img class="news-cover" src="${it.cover}" alt="" loading="lazy" decoding="async" fetchpriority="low">`
         : '';
 
       const absClock = it.date ? clockIL(it.date) : '';
@@ -152,14 +150,13 @@ function renderNews(items) {
     }
 
     feedEl.appendChild(frag);
-
     if (endIdx < items.length) requestAnimationFrame(() => renderBatch(endIdx));
   };
 
   renderBatch(0);
 }
 
-// --- קאש ---
+// קאש בזיכרון
 function getCache(key) {
   const rec = memoryCache.byKey.get(key);
   if (!rec) return null;
@@ -169,16 +166,21 @@ function getCache(key) {
   }
   return rec.data;
 }
-
 function setCache(key, data) {
   memoryCache.byKey.set(key, { data, ts: Date.now() });
 }
 
+// "בינלאומי" = כל מה שלא hebrew
 function filterForInternational(items) {
   return items.filter(x => (x.genre || '').toLowerCase() !== 'hebrew');
 }
 
-// --- פטצ' עם timeout ---
+// עוזר לבחירת ז'אנר עבור הבקשה לשרת (all/hebrew/electronic)
+function pickFetchGenre() {
+  return (state.genre === 'hebrew' || state.genre === 'electronic') ? state.genre : 'all';
+}
+
+// בקשה עם טיימאאוט
 async function timedFetch(url, ms = 15000, opts = {}) {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), ms);
@@ -190,124 +192,50 @@ async function timedFetch(url, ms = 15000, opts = {}) {
   }
 }
 
-// --- טעינה דו-שלבית: מהיר → מלא ---
+// --- טעינה דו-שלבית: מהיר (limit=24,lite=1) → הידרציה מלאה (limit=200) ---
 async function loadNews(forceRefresh = false) {
-  setBusy(true);
+  const key = (state.genre || 'all').toLowerCase();
 
-  const genreKey = (state.genre || 'all').toLowerCase();
-
-  // 1) קאש (אם לא בכפייה)
+  // 1) אם יש קאש, נציג אותו מיד וללא סקלטון
   if (!forceRefresh) {
-    const cached = getCache(genreKey);
+    const cached = getCache(key);
     if (cached) {
       renderNews(cached);
-      setBusy(false);
-      // עדיין נרענן ברקע אחרי הצגה
-      hydrateFullInBackground(genreKey).catch(()=>{});
+      // הידרציה ברקע (לא חובה, אבל מומלץ כדי לעדכן)
+      hydrateFullInBackground(key).catch(()=>{});
       return;
     }
   }
 
-  // 2) שלב מהיר: מעט פריטים (limit=24)
+  // אין קאש → מציגים סקלטון בזמן שמביאים "מהיר"
+  setBusy(true);
+
   try {
-    const initialUrl = buildUrl({
-      forGenre: pickFetchGenre(),
-      limit: 24,        // מעט פריטים להצגה מהירה
-      lite: true        // יתעלם אם ה-Worker לא תומך
-    });
-
-    const fastRes = await timedFetch(initialUrl, 15000, { cache: 'default' });
+    // שלב מהיר
+    const fastUrl = buildUrl({ forGenre: pickFetchGenre(), limit: 24, lite: true });
+    const fastRes = await timedFetch(fastUrl, 15000, { cache: 'default' });
     if (!fastRes.ok) throw new Error(`HTTP ${fastRes.status}`);
-    const ct = fastRes.headers.get('content-type') || '';
-    if (!ct.includes('application/json')) throw new Error('Not JSON response');
+    const ct1 = fastRes.headers.get('content-type') || '';
+    if (!ct1.includes('application/json')) throw new Error('Not JSON response');
+
     const fastData = await fastRes.json();
-    let items = Array.isArray(fastData) ? fastData : (fastData.items || []);
+    let fastItems = Array.isArray(fastData) ? fastData : (fastData.items || []);
+    fastItems = (state.genre === 'international') ? filterForInternational(fastItems) : fastItems;
 
-    // סינון לפי טאב "international"
-    items = (state.genre === 'international') ? filterForInternational(items) : items;
+    renderNews(fastItems);
+    setCache(key, fastItems);
 
-    // הצג מהר ושמור קאש
-    renderNews(items);
-    setCache(genreKey, items);
   } catch (e) {
     console.error('Fast load error:', e);
-    // ננסה לפחות להציג הודעה מכובדת אם אין כלום
-    if (!feedEl.querySelector('.news-card')) {
-      feedEl.innerHTML = `<p class="error">שגיאה בטעינה הראשונית (${e.message})</p>`;
-    }
+    feedEl.innerHTML = `<p class="error">שגיאה בטעינה הראשונית (${e.message})</p>`;
   } finally {
     setBusy(false);
   }
 
-  // 3) הידרציה: גרסה מלאה ברקע (limit=200)
-  hydrateFullInBackground(genreKey).catch(err => console.warn('Hydrate error:', err));
+  // הידרציה מלאה ברקע
+  hydrateFullInBackground(key).catch(err => console.warn('Hydrate error:', err));
 }
 
-function pickFetchGenre() {
-  return (state.genre === 'hebrew' || state.genre === 'electronic') ? state.genre : 'all';
-}
-
-async function hydrateFullInBackground(genreKey) {
-  const fullUrl = buildUrl({
-    forGenre: pickFetchGenre(),
-    limit: 200,
-    lite: false
-  });
-
-  const res = await timedFetch(fullUrl, 20000, { cache: 'default' });
-  if (!res.ok) return;
-
-  const ct = res.headers.get('content-type') || '';
-  if (!ct.includes('application/json')) return;
-
-  const data = await res.json();
-  let items = Array.isArray(data) ? data : (data.items || []);
-  items = (state.genre === 'international') ? filterForInternational(items) : items;
-
-  // אם המלא מכיל יותר/חדש → החלף תצוגה וקאש
-  const current = getCache(genreKey) || [];
-  if (items.length > current.length) {
-    setCache(genreKey, items);
-    renderNews(items);
-  }
-}
-
-// פילטרים ואירועים
-function initFilters() {
-  qsa('[data-genre]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state.genre = (btn.getAttribute('data-genre') || 'all').toLowerCase();
-      setActiveGenre(state.genre);
-      persistStateToUrl();
-      loadNews(); // יפעיל fast→hydrate לפי הז’אנר החדש
-    });
-  });
-
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', () => loadNews(true)); // רענון בכפייה
-  }
-}
-
-function restoreStateFromUrl() {
-  const url = new URL(location.href);
-  const genre = (url.searchParams.get('genre') || 'all').toLowerCase();
-  state.genre = ['all', 'electronic', 'hebrew', 'international'].includes(genre) ? genre : 'all';
-  setActiveGenre(state.genre);
-}
-
-// חימום API קליל
-function warmupAPI() {
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => {
-      fetch(FEED_ENDPOINT, { method: 'HEAD' }).catch(() => {});
-    });
-  }
-}
-
-// אתחול
-document.addEventListener('DOMContentLoaded', () => {
-  restoreStateFromUrl();
-  initFilters();
-  loadNews(); 
-  warmupAPI();
-});
+// מביא רשימה מלאה ומחליף רק אם היא יותר ארוכה/חדשה
+async function hydrateFullInBackground(cacheKey) {
+  const fullUrl = buildUrl({ forGenre: pickFetchGenre(), lim
