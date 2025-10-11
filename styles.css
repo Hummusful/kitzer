@@ -280,7 +280,26 @@ a:hover {
 }
 
 /* תצוגת דסקטופ (2 עמודות) */
+/* תצוגת דסקטופ (2 עמודות) */
 @media (min-width: 1024px) {
+  .news-feed {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  /* תמונה משמאל, טקסט מימין */
+  .news-card {
+    flex-direction: row;
+  }
+
+  .news-cover {
+    width: 120px;
+    height: 100%;
+    border-radius: 14px 0 0 14px; /* פינות עגולות רק בצד שמאל */
+  }
+
+  /* מציגים תקציר עד 3 שורות בדסקטופ */
   .news-summary {
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -289,41 +308,19 @@ a:hover {
     text-overflow: ellipsis;
   }
 }
-  
-  .news-card {
-    /* 🛠️ התיקון הקריטי: מעביר לתמונה לצד טקסט רק בדסקטופ */
-    flex-direction: row; 
-  }
-
-  .news-cover {
-    width: 120px; 
-    height: 100%;
-    border-radius: 14px 0 0 14px; /* פינות עגולות רק בצד שמאל */
-  }
-
-  /* 💡 הסתרת הסיכום בדסקטופ 2 עמודות כדי לחסוך מקום */
-  .news-summary {
-    display: none;
-  }
-}
 
 /* -------------------- MOBILE OPTIMIZATION (max-width: 768px) -------------------- */
 @media (max-width: 768px) {
-  .news-summary {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .news-card {
+    flex-direction: column; /* ודא שהמובייל הוא טור */
   }
-}
 
   .news-cover {
     width: 100%;
     height: 120px;
     border-radius: 14px 14px 0 0;
   }
-  
+
   .news-details {
     padding: 12px;
   }
@@ -332,9 +329,14 @@ a:hover {
     font-size: 1.1rem;
   }
 
-  /* 💡 הסתרת הסיכום במובייל כדי לחסוך מקום */
-  .news-summary { { -webkit-line-clamp: 2; }
-}
+  /* מובייל: תקציר עד 2 שורות */
+  .news-summary {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
   /* מטה-דאטה קטנה יותר */
   .news-footer-meta,
@@ -344,29 +346,27 @@ a:hover {
 
   /* כפתורי הניווט - פתרון גלילה אופקית */
   .toolbar {
-    flex-wrap: wrap; 
+    flex-wrap: wrap;
     padding-bottom: 0;
   }
 
   .btn-group {
-    order: 2; /* מוודא שהכפתורים יופיעו בשורה נפרדת */
+    order: 2;
     margin-top: 10px;
     width: 100%;
-    
-    /* 🛠️ התיקון לגלילה: מאפשר גלילה אופקית מוגבלת */
-    overflow-x: auto; 
-    white-space: nowrap; 
-    padding-bottom: 5px; 
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 5px;
   }
-  
+
   .btn-group .btn {
-      flex-shrink: 0; /* מונע מהכפתורים להצטמק */
+    flex-shrink: 0;
   }
 
   .btn-group::-webkit-scrollbar {
     display: none;
   }
-  
+
   .spacer {
     display: none;
   }
@@ -514,6 +514,7 @@ body::after {
 @media (min-width: 1024px) {
   .news-summary { -webkit-line-clamp: 3; }
 }
+
 
 
 
