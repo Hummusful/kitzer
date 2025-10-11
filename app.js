@@ -61,12 +61,17 @@ function clockIL(dateStr) {
 // buildUrl: ללא days דינמי
 function buildUrl(forGenre = state.genre) {
   const u = new URL(FEED_ENDPOINT);
-  
+
+  // פרמטרים שקטים לדיפולט חדש:
+  u.searchParams.set('days', 7);      // או 14 אם תרצה חלון רחב יותר
+  u.searchParams.set('limit', 200);   // מציג יותר פריטים בדף
+
   if (forGenre === 'hebrew' || forGenre === 'electronic') {
     u.searchParams.set('genre', forGenre);
   }
   return u.toString();
 }
+
 
 function setActiveGenre(value) {
   qsa('[data-genre]').forEach(btn => {
@@ -279,4 +284,5 @@ document.addEventListener('DOMContentLoaded', () => {
   loadNews(); 
   warmupAPI();
 });
+
 
