@@ -1,14 +1,12 @@
-// app.js – גרסה סופית: יציבה, קאש פר-טאב ומבנה HTML מתוקן
+// app.js – טעינה מהירה (שלב 1) + הידרציה (שלב 2), קאש פר-טאב
 const FEED_ENDPOINT = 'https://music-aggregator.dustrial.workers.dev/api/music';
 
 const feedEl = document.getElementById('newsFeed');
 const refreshBtn = document.getElementById('refreshBtn');
 
-let state = {
-  genre: 'all',
-};
+let state = { genre: 'all' };
 
-// קאש בזיכרון לפי מפתח (genre)
+// קאש בזיכרון לפי מפתח (genre + פרמטרים רלוונטיים)
 let memoryCache = {
   ttl: 5 * 60 * 1000, // 5 דקות
   byKey: new Map(),   // key -> { data, ts }
@@ -16,21 +14,22 @@ let memoryCache = {
 
 const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-// setBusy: מציג סקלטון מלא (טעינה רגילה)
+// Skeleton
 function setBusy(isBusy) {
   if (!feedEl) return;
   feedEl.setAttribute('aria-busy', isBusy ? 'true' : 'false');
   if (isBusy) {
-    // מציג סקלטון מלא
-    feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
+    // הצג סקלטון רק אם אין תוכן
+    if (!feedEl.querySelector('.news-card')) {
+      feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
+    }
   } else {
-     // הסר סקלטון
-     const spinner = document.getElementById('scroll-spinner');
-     if (spinner) spinner.remove();
+    const spinner = document.getElementById('scroll-spinner');
+    if (spinner) spinner.remove();
   }
 }
 
-// Hebrew relative time + absolute clock
+// זמן יחסי ושעון
 const HEB_RTF = new Intl.RelativeTimeFormat('he-IL', { numeric: 'auto' });
 const TZ = 'Asia/Jerusalem';
 
@@ -58,22 +57,17 @@ function clockIL(dateStr) {
   }
 }
 
-// buildUrl: ללא days דינמי
-function buildUrl(forGenre = state.genre) {
+// --- URL builder עם פרמטרים דינמיים ---
+function buildUrl({ forGenre = state.genre, days = 7, limit = 200, lite = false } = {}) {
   const u = new URL(FEED_ENDPOINT);
+  u.searchParams.set('days', days.toString());
+  u.searchParams.set('limit', limit.toString());
+  if (lite) u.searchParams.set('lite', '1'); // יתעלם אם ה-Worker לא מכיר, זה בסדר.
 
-  // דיפולט חדש: חלון 7 ימים ומקסימום 200 פריטים
-  u.searchParams.set('days', 7);
-  u.searchParams.set('limit', 200);
-
-  // שמירת המסנן הנוכחי (אם זה 'hebrew' או 'electronic')
-  if (forGenre === 'hebrew' || forGenre === 'electronic') {
-    u.searchParams.set('genre', forGenre);
-  }
-
+  const g = (forGenre || '').toLowerCase();
+  if (g === 'hebrew' || g === 'electronic') u.searchParams.set('genre', g);
   return u.toString();
 }
-
 
 function setActiveGenre(value) {
   qsa('[data-genre]').forEach(btn => {
@@ -107,8 +101,7 @@ function makeTags(it) {
   return tags;
 }
 
-// *** renderNews: עדכון מבנה ה-HTML להתאמה ל-CSS החדש ***
-// *** renderNews: עדכון מבנה ה-HTML להתאמה ל-CSS החדש ***
+// --- רנדר ---
 function renderNews(items) {
   if (!feedEl) return;
   feedEl.innerHTML = '';
@@ -119,10 +112,9 @@ function renderNews(items) {
   }
 
   const renderBatch = (startIdx) => {
-    const batchSize = 24; // אפשר 24/36
+    const batchSize = 24;
     const endIdx = Math.min(startIdx + batchSize, items.length);
-
-    const frag = document.createDocumentFragment(); // חדש בכל באץ'
+    const frag = document.createDocumentFragment();
 
     for (let i = startIdx; i < endIdx; i++) {
       const it = items[i];
@@ -159,7 +151,7 @@ function renderNews(items) {
       frag.appendChild(el);
     }
 
-    feedEl.appendChild(frag); // לצרף כל באץ' לדום
+    feedEl.appendChild(frag);
 
     if (endIdx < items.length) requestAnimationFrame(() => renderBatch(endIdx));
   };
@@ -167,8 +159,7 @@ function renderNews(items) {
   renderBatch(0);
 }
 
-
-
+// --- קאש ---
 function getCache(key) {
   const rec = memoryCache.byKey.get(key);
   if (!rec) return null;
@@ -187,74 +178,113 @@ function filterForInternational(items) {
   return items.filter(x => (x.genre || '').toLowerCase() !== 'hebrew');
 }
 
-// loadNews: ללא לוגיקת גלילה אינסופית
+// --- פטצ' עם timeout ---
+async function timedFetch(url, ms = 15000, opts = {}) {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), ms);
+  try {
+    const res = await fetch(url, { signal: controller.signal, ...opts });
+    return res;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+// --- טעינה דו-שלבית: מהיר → מלא ---
 async function loadNews(forceRefresh = false) {
   setBusy(true);
 
-  const key = (state.genre || 'all').toLowerCase(); // המפתח לקאש הוא רק ה-genre
+  const genreKey = (state.genre || 'all').toLowerCase();
 
-  // 1) נסה קאש
+  // 1) קאש (אם לא בכפייה)
   if (!forceRefresh) {
-    const cached = getCache(key);
+    const cached = getCache(genreKey);
     if (cached) {
-      renderNews(cached); 
+      renderNews(cached);
       setBusy(false);
+      // עדיין נרענן ברקע אחרי הצגה
+      hydrateFullInBackground(genreKey).catch(()=>{});
       return;
     }
   }
 
+  // 2) שלב מהיר: מעט פריטים (limit=24)
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); 
+    const initialUrl = buildUrl({
+      forGenre: pickFetchGenre(),
+      limit: 24,        // מעט פריטים להצגה מהירה
+      lite: true        // יתעלם אם ה-Worker לא תומך
+    });
 
-    const fetchGenre = (state.genre === 'hebrew' || state.genre === 'electronic') ? state.genre : 'all';
-    const url = buildUrl(fetchGenre); 
-
-    const res = await fetch(url, { cache: 'default', signal: controller.signal });
-    clearTimeout(timeoutId);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const ct = res.headers.get('content-type') || '';
+    const fastRes = await timedFetch(initialUrl, 15000, { cache: 'default' });
+    if (!fastRes.ok) throw new Error(`HTTP ${fastRes.status}`);
+    const ct = fastRes.headers.get('content-type') || '';
     if (!ct.includes('application/json')) throw new Error('Not JSON response');
+    const fastData = await fastRes.json();
+    let items = Array.isArray(fastData) ? fastData : (fastData.items || []);
 
-    const data = await res.json();
-    let items = Array.isArray(data) ? data : (data.items || []);
+    // סינון לפי טאב "international"
+    items = (state.genre === 'international') ? filterForInternational(items) : items;
 
-    // 3) סינון ושמירה בקאש
-    let finalItems;
-    if (state.genre === 'international') {
-      finalItems = filterForInternational(items);
-    } else {
-      finalItems = items;
-    }
-    
-    setCache(key, finalItems); 
-    renderNews(finalItems);
-
+    // הצג מהר ושמור קאש
+    renderNews(items);
+    setCache(genreKey, items);
   } catch (e) {
-    console.error('Load error:', e);
-    if (e.name === 'AbortError') {
-      feedEl.innerHTML = `<p class="error">הבקשה ארכה יותר מדי. אנא נסה שוב.</p>`;
-    } else {
-      feedEl.innerHTML = `<p class="error">שגיאה בטעינת החדשות (${e.message})</p>`;
+    console.error('Fast load error:', e);
+    // ננסה לפחות להציג הודעה מכובדת אם אין כלום
+    if (!feedEl.querySelector('.news-card')) {
+      feedEl.innerHTML = `<p class="error">שגיאה בטעינה הראשונית (${e.message})</p>`;
     }
   } finally {
     setBusy(false);
   }
+
+  // 3) הידרציה: גרסה מלאה ברקע (limit=200)
+  hydrateFullInBackground(genreKey).catch(err => console.warn('Hydrate error:', err));
 }
 
+function pickFetchGenre() {
+  return (state.genre === 'hebrew' || state.genre === 'electronic') ? state.genre : 'all';
+}
+
+async function hydrateFullInBackground(genreKey) {
+  const fullUrl = buildUrl({
+    forGenre: pickFetchGenre(),
+    limit: 200,
+    lite: false
+  });
+
+  const res = await timedFetch(fullUrl, 20000, { cache: 'default' });
+  if (!res.ok) return;
+
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('application/json')) return;
+
+  const data = await res.json();
+  let items = Array.isArray(data) ? data : (data.items || []);
+  items = (state.genre === 'international') ? filterForInternational(items) : items;
+
+  // אם המלא מכיל יותר/חדש → החלף תצוגה וקאש
+  const current = getCache(genreKey) || [];
+  if (items.length > current.length) {
+    setCache(genreKey, items);
+    renderNews(items);
+  }
+}
+
+// פילטרים ואירועים
 function initFilters() {
   qsa('[data-genre]').forEach(btn => {
     btn.addEventListener('click', () => {
       state.genre = (btn.getAttribute('data-genre') || 'all').toLowerCase();
       setActiveGenre(state.genre);
       persistStateToUrl();
-      loadNews(); 
+      loadNews(); // יפעיל fast→hydrate לפי הז’אנר החדש
     });
   });
 
   if (refreshBtn) {
-    refreshBtn.addEventListener('click', () => loadNews(true)); // force refresh
+    refreshBtn.addEventListener('click', () => loadNews(true)); // רענון בכפייה
   }
 }
 
@@ -265,7 +295,7 @@ function restoreStateFromUrl() {
   setActiveGenre(state.genre);
 }
 
-// טעינה מוקדמת של הAPI
+// חימום API קליל
 function warmupAPI() {
   if ('requestIdleCallback' in window) {
     requestIdleCallback(() => {
@@ -274,15 +304,10 @@ function warmupAPI() {
   }
 }
 
-// Event listeners
+// אתחול
 document.addEventListener('DOMContentLoaded', () => {
   restoreStateFromUrl();
   initFilters();
   loadNews(); 
   warmupAPI();
 });
-
-
-
-
-
