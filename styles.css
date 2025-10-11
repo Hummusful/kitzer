@@ -240,7 +240,7 @@ a:hover {
   margin-top: 6px;
   line-height: 1.4;
   display: -webkit-box;
-  -webkit-line-clamp: 3;   /* מציג עד 3 שורות תקציר */
+  -webkit-line-clamp: 4;   /* מציג עד 3 שורות תקציר */
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -489,5 +489,6 @@ body::after {
     page-break-inside: avoid;
   }
 }
+
 
 
