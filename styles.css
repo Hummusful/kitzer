@@ -235,10 +235,15 @@ a:hover {
 
 /* סיכום */
 .news-summary {
-  font-size: 0.95rem;
-  line-height: 1.6;
-  color: #c5d0e6;
-  margin: 0 0 10px 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-top: 6px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;   /* מציג עד 3 שורות תקציר */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* פוטר הכרטיס (תאריך + תגיות) */
@@ -484,4 +489,5 @@ body::after {
     page-break-inside: avoid;
   }
 }
+
 
