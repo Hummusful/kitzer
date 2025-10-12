@@ -1,4 +1,4 @@
-// app.js – גרסה יציבה עם שיפורי Lighthouse (LCP) ושמירה על הלוגיקה המקורית
+// app.js – גרסה יציבה עם שיפורי Lighthouse (LCP + width/height) ושמירה על הלוגיקה
 const FEED_ENDPOINT = 'https://music-aggregator.dustrial.workers.dev/api/music';
 
 const feedEl = document.getElementById('newsFeed');
@@ -60,7 +60,7 @@ function clockIL(dateStr) {
   }
 }
 
-// buildUrl: מוסיף lite=1 להקטנת נפח (מביא אותו מבנה שדות כפי שה-Worker שלך מחזיר)
+// buildUrl: מוסיף lite=1 להקטנת נפח
 function buildUrl(forGenre = state.genre) {
   const u = new URL(FEED_ENDPOINT);
   if (forGenre === 'hebrew' || forGenre === 'electronic') {
@@ -103,7 +103,9 @@ function makeTags(it) {
 }
 
 // רינדור לפי המודל של ה-Worker: headline/link/cover/date/summary
-// שיפורי Lighthouse: לתמונה הראשונה (LCP) אין lazy ויש fetchpriority="high"
+// שיפורי Lighthouse:
+// - לפריט הראשון (LCP) אין lazy ויש fetchpriority="high"
+// - לכל התמונות width/height כדי לייצב יחס ולצמצם CLS
 function renderNews(items) {
   if (!feedEl) return;
   feedEl.innerHTML = '';
@@ -123,13 +125,12 @@ function renderNews(items) {
       const el = document.createElement('article');
       el.className = 'news-card';
 
-      // LCP: הפריט הראשון בעמוד (i === 0) – בלי lazy, עם עדיפות רשת
       const isLCP = i === 0;
       const lazy  = isLCP ? '' : ' loading="lazy"';
       const prio  = isLCP ? ' fetchpriority="high" decoding="async"' : ' decoding="async"';
-
+      // width/height “דמה” לשמירת יחס 16:9 (טוב ל-CLS, עובד עם object-fit)
       const cover = it.cover
-        ? `<img class="news-cover" src="${safeUrl(it.cover)}"${lazy}${prio} alt="">`
+        ? `<img class="news-cover" src="${safeUrl(it.cover)}"${lazy}${prio} width="1600" height="900" alt="">`
         : '';
 
       const absClock = it.date ? clockIL(it.date) : '';
