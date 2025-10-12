@@ -157,6 +157,9 @@ a:hover { text-decoration: underline; }
   content-visibility: auto;
   /* 🛠️ יציבות גובה בזמן לייזי/סקלטון */
   contain-intrinsic-size: auto 240px;
+
+  /* 🛠️ עזרה לביצועים על hover */
+  will-change: transform, box-shadow;
 }
 
 /* אפקט תנועה אנרגטי על כרטיסי החדשות (Tilt) */
@@ -202,6 +205,8 @@ a:hover { text-decoration: underline; }
   font-weight: 800;
   margin: 0 0 8px 0;
   line-height: 1.3;
+  /* 🛠️ מניעת CLS משורה שנייה שקופצת */
+  min-height: 2.4em; /* ~2 שורות */
 }
 .news-title a {
   background: #FFFFFF;
@@ -230,6 +235,8 @@ a:hover { text-decoration: underline; }
   color: #9aa3b2;
   font-size: 0.85rem;
   white-space: nowrap;
+  /* 🛠️ מניעת CLS של שורת התאריך */
+  min-height: 1.2em;
 }
 
 /* תגיות */
@@ -385,7 +392,7 @@ img, svg, video, canvas {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Utility */
-.muted { color: #99a1b5; }
+.muted { color: var(--muted); } /* 🛠️ קונסיסטנטיות עם משתנה הנושא */
 .error { color: #ff6b6b; text-align: center; padding: 20px; }
 
 /* Footer */
