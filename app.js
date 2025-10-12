@@ -1,4 +1,4 @@
-// app.js – גרסה מתוקנת: SPA יציב, טעינה, קאש, ותיקוני סוגריים
+// app.js – גרסה יציבה עם שיפורי Lighthouse (LCP) ושמירה על הלוגיקה המקורית
 const FEED_ENDPOINT = 'https://music-aggregator.dustrial.workers.dev/api/music';
 
 const feedEl = document.getElementById('newsFeed');
@@ -60,13 +60,13 @@ function clockIL(dateStr) {
   }
 }
 
-// buildUrl: מוסיף lite=1 להקטנת נפח
+// buildUrl: מוסיף lite=1 להקטנת נפח (מביא אותו מבנה שדות כפי שה-Worker שלך מחזיר)
 function buildUrl(forGenre = state.genre) {
   const u = new URL(FEED_ENDPOINT);
   if (forGenre === 'hebrew' || forGenre === 'electronic') {
     u.searchParams.set('genre', forGenre);
   }
-  u.searchParams.set('lite','1');
+  u.searchParams.set('lite','1'); // צמצום payload → שיפור ביצועים
   return u.toString();
 }
 
@@ -103,6 +103,7 @@ function makeTags(it) {
 }
 
 // רינדור לפי המודל של ה-Worker: headline/link/cover/date/summary
+// שיפורי Lighthouse: לתמונה הראשונה (LCP) אין lazy ויש fetchpriority="high"
 function renderNews(items) {
   if (!feedEl) return;
   feedEl.innerHTML = '';
@@ -122,8 +123,13 @@ function renderNews(items) {
       const el = document.createElement('article');
       el.className = 'news-card';
 
+      // LCP: הפריט הראשון בעמוד (i === 0) – בלי lazy, עם עדיפות רשת
+      const isLCP = i === 0;
+      const lazy  = isLCP ? '' : ' loading="lazy"';
+      const prio  = isLCP ? ' fetchpriority="high" decoding="async"' : ' decoding="async"';
+
       const cover = it.cover
-        ? `<img class="news-cover" src="${safeUrl(it.cover)}" alt="" loading="lazy" decoding="async">`
+        ? `<img class="news-cover" src="${safeUrl(it.cover)}"${lazy}${prio} alt="">`
         : '';
 
       const absClock = it.date ? clockIL(it.date) : '';
@@ -144,7 +150,7 @@ function renderNews(items) {
         ${cover}
         <div class="news-details">
           <span class="news-source">${escapeHTML(it.source || '')}</span>
-          <h3 class="news-title"><a href="${safeUrl(it.link)}" target="_בלאנק" rel="noopener noreferrer">${escapeHTML(it.headline || '')}</a></h3>
+          <h3 class="news-title"><a href="${safeUrl(it.link)}" target="_blank" rel="noopener noreferrer">${escapeHTML(it.headline || '')}</a></h3>
           ${it.summary ? `<p class="news-summary">${escapeHTML(it.summary)}</p>` : ''}
           <div class="news-footer-meta">
             ${dateHTML}
@@ -213,6 +219,7 @@ async function loadNews(forceRefresh = false) {
     const data = await res.json();
     let items = Array.isArray(data) ? data : (data.items || []);
 
+    // אם תרצה לבטל את הסינון המקומי ל-international, שנה את הקטע הבא בהתאם
     let finalItems;
     if (state.genre === 'international') {
       finalItems = filterForInternational(items);
@@ -242,12 +249,12 @@ function initFilters() {
       state.genre = (el.getAttribute('data-genre') || 'all').toLowerCase();
       setActiveGenre(state.genre);
       updateUrl(true);
-      loadNews(true);
+      loadNews(true); // רענון מיידי לטאב החדש
     }, { passive: false });
   });
 
   if (refreshBtn) {
-    refreshBtn.addEventListener('click', () => loadNews(true));
+    refreshBtn.addEventListener('click', () => loadNews(true)); // force refresh
   }
 }
 
@@ -258,7 +265,7 @@ function restoreStateFromUrl() {
   setActiveGenre(state.genre);
 }
 
-// טעינה מוקדמת של הAPI
+// טעינה מוקדמת של ה-API (לא חוסם ציור)
 function warmupAPI() {
   if ('requestIdleCallback' in window) {
     requestIdleCallback(() => {
