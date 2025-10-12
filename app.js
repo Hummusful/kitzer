@@ -1,12 +1,10 @@
-// app.js – גרסה סופית: יציבה, קאש פר-טאב ומבנה HTML מתוקן
+// app.js – גרסה מתוקנת: SPA יציב, טעינה, קאש, ותיקוני סוגריים
 const FEED_ENDPOINT = 'https://music-aggregator.dustrial.workers.dev/api/music';
 
 const feedEl = document.getElementById('newsFeed');
 const refreshBtn = document.getElementById('refreshBtn');
 
-let state = {
-  genre: 'all',
-};
+let state = { genre: 'all' };
 
 // קאש בזיכרון לפי מפתח (genre)
 let memoryCache = {
@@ -16,15 +14,19 @@ let memoryCache = {
 
 const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
+function escapeHTML(s){
+  return String(s || '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[ch]));
+}
+
 // setBusy: מציג סקלטון מלא (טעינה רגילה)
 function setBusy(isBusy) {
   if (!feedEl) return;
   feedEl.setAttribute('aria-busy', isBusy ? 'true' : 'false');
   if (isBusy) {
-    // מציג סקלטון מלא
     feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
   } else {
-     // הסר סקלטון
      const spinner = document.getElementById('scroll-spinner');
      if (spinner) spinner.remove();
   }
@@ -58,13 +60,13 @@ function clockIL(dateStr) {
   }
 }
 
-// buildUrl: ללא days דינמי
+// buildUrl: מוסיף lite=1 להקטנת נפח
 function buildUrl(forGenre = state.genre) {
   const u = new URL(FEED_ENDPOINT);
-  
   if (forGenre === 'hebrew' || forGenre === 'electronic') {
     u.searchParams.set('genre', forGenre);
   }
+  u.searchParams.set('lite','1');
   return u.toString();
 }
 
@@ -74,13 +76,6 @@ function setActiveGenre(value) {
     btn.classList.toggle('active', active);
     btn.setAttribute('aria-pressed', active ? 'true' : 'false');
   });
-}
-
-function persistStateToUrl() {
-  const url = new URL(location.href);
-  if (state.genre && state.genre !== 'all') url.searchParams.set('genre', state.genre);
-  else url.searchParams.delete('genre');
-  history.replaceState(null, '', url);
 }
 
 function updateUrl(addHistory = false) {
@@ -107,20 +102,17 @@ function makeTags(it) {
   return tags;
 }
 
-// *** renderNews: עדכון מבנה ה-HTML להתאמה ל-CSS החדש ***
+// רינדור לפי המודל של ה-Worker: headline/link/cover/date/summary
 function renderNews(items) {
   if (!feedEl) return;
-  
-  feedEl.innerHTML = ''; // נקה
+  feedEl.innerHTML = '';
 
   if (!items || !items.length) {
     feedEl.innerHTML = `<p class="muted">אין חדשות כרגע.</p>`;
     return;
   }
-  
-  const frag = document.createDocumentFragment();
 
-  // רינדור בבאצ'ים
+  const frag = document.createDocumentFragment();
   const renderBatch = (startIdx) => {
     const batchSize = 6;
     const endIdx = Math.min(startIdx + batchSize, items.length);
@@ -131,7 +123,7 @@ function renderNews(items) {
       el.className = 'news-card';
 
       const cover = it.cover
-        ? `<img class="news-cover" src="${it.cover}" alt="" loading="lazy" decoding="async">`
+        ? `<img class="news-cover" src="${safeUrl(it.cover)}" alt="" loading="lazy" decoding="async">`
         : '';
 
       const absClock = it.date ? clockIL(it.date) : '';
@@ -139,22 +131,21 @@ function renderNews(items) {
 
       const dateHTML = it.date
         ? `<time class="news-date" datetime="${it.date}">
-             <span class="rel" dir="rtl">${relTime}</span>
-             ${absClock ? `<span class="sep"> · </span><bdi class="clock">${absClock}\u200E</bdi>` : ''}
+             <span class="rel" dir="rtl">${escapeHTML(relTime)}</span>
+             ${absClock ? `<span class="sep"> · </span><bdi class="clock">${escapeHTML(absClock)}\u200E</bdi>` : ''}
            </time>`
         : '';
 
       const tagsHTML = makeTags(it)
-        .map(t => `<span class="tag">${t}</span>`)
+        .map(t => `<span class="tag">${escapeHTML(t)}</span>`)
         .join(' ');
-        
-      // מבנה HTML חדש: התמונה, ואז div.news-details
+
       el.innerHTML = `
         ${cover}
         <div class="news-details">
-          <span class="news-source">${it.source || ''}</span>
-          <h3 class="news-title"><a href="${safeUrl(it.link)}" target="_blank" rel="noopener noreferrer">${it.headline || ''}</a></h3>
-          ${it.summary ? `<p class="news-summary">${it.summary}</p>` : ''}
+          <span class="news-source">${escapeHTML(it.source || '')}</span>
+          <h3 class="news-title"><a href="${safeUrl(it.link)}" target="_בלאנק" rel="noopener noreferrer">${escapeHTML(it.headline || '')}</a></h3>
+          ${it.summary ? `<p class="news-summary">${escapeHTML(it.summary)}</p>` : ''}
           <div class="news-footer-meta">
             ${dateHTML}
             <div class="news-tags">${tagsHTML}</div>
@@ -191,17 +182,15 @@ function filterForInternational(items) {
   return items.filter(x => (x.genre || '').toLowerCase() !== 'hebrew');
 }
 
-// loadNews: ללא לוגיקת גלילה אינסופית
+// טעינה (ללא גלילה אינסופית)
 async function loadNews(forceRefresh = false) {
   setBusy(true);
+  const key = (state.genre || 'all').toLowerCase();
 
-  const key = (state.genre || 'all').toLowerCase(); // המפתח לקאש הוא רק ה-genre
-
-  // 1) נסה קאש
   if (!forceRefresh) {
     const cached = getCache(key);
     if (cached) {
-      renderNews(cached); 
+      renderNews(cached);
       setBusy(false);
       return;
     }
@@ -209,30 +198,29 @@ async function loadNews(forceRefresh = false) {
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); 
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     const fetchGenre = (state.genre === 'hebrew' || state.genre === 'electronic') ? state.genre : 'all';
-    const url = buildUrl(fetchGenre); 
+    const url = buildUrl(fetchGenre);
 
-    const res = await fetch(url, { cache: 'default', signal: controller.signal });
+    const res = await fetch(url, { cache: 'default', signal: controller.signal, headers: { 'accept':'application/json' } });
     clearTimeout(timeoutId);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    const ct = res.headers.get('content-type') || '';
+    const ct = (res.headers.get('content-type') || '').toLowerCase();
     if (!ct.includes('application/json')) throw new Error('Not JSON response');
 
     const data = await res.json();
     let items = Array.isArray(data) ? data : (data.items || []);
 
-    // 3) סינון ושמירה בקאש
     let finalItems;
     if (state.genre === 'international') {
       finalItems = filterForInternational(items);
     } else {
       finalItems = items;
     }
-    
-    setCache(key, finalItems); 
+
+    setCache(key, finalItems);
     renderNews(finalItems);
 
   } catch (e) {
@@ -240,7 +228,7 @@ async function loadNews(forceRefresh = false) {
     if (e.name === 'AbortError') {
       feedEl.innerHTML = `<p class="error">הבקשה ארכה יותר מדי. אנא נסה שוב.</p>`;
     } else {
-      feedEl.innerHTML = `<p class="error">שגיאה בטעינת החדשות (${e.message})</p>`;
+      feedEl.innerHTML = `<p class="error">שגיאה בטעינת החדשות (${escapeHTML(e.message)})</p>`;
     }
   } finally {
     setBusy(false);
@@ -254,18 +242,12 @@ function initFilters() {
       state.genre = (el.getAttribute('data-genre') || 'all').toLowerCase();
       setActiveGenre(state.genre);
       updateUrl(true);
-      loadNews();
+      loadNews(true);
     }, { passive: false });
   });
 
   if (refreshBtn) {
     refreshBtn.addEventListener('click', () => loadNews(true));
-  }
-});
-  });
-
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', () => loadNews(true)); // force refresh
   }
 }
 
@@ -282,13 +264,15 @@ function warmupAPI() {
     requestIdleCallback(() => {
       fetch(FEED_ENDPOINT, { method: 'HEAD' }).catch(() => {});
     });
+  } else {
+    setTimeout(() => { fetch(FEED_ENDPOINT, { method: 'HEAD' }).catch(() => {}); }, 1000);
   }
 }
 
-// Event listeners
+// Boot
 document.addEventListener('DOMContentLoaded', () => {
   restoreStateFromUrl();
-  updateUrl(false); // keep URL in sync without adding history entry
+  updateUrl(false);
   initFilters();
   loadNews();
   warmupAPI();
