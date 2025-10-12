@@ -4,9 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>הלאה בקיצר — הפיד של דאסטי</title>
+  <meta name="description" content="בקיצר — אגרגטור חדשות מוזיקה: עברית, בינלאומי ואלקטרוני, מעודכן בזמן אמת." />
   <meta name="theme-color" content="#0f0f23" />
   <link rel="icon" href="/favicon.ico">
 
+  <!-- Fonts (עם display=swap) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@800;900&display=swap" rel="stylesheet">
@@ -17,18 +19,47 @@
     *{box-sizing:border-box;}
     html,body{height:100%;margin:0;padding:0;}
     /* החזרת כל רשימת הפונטים המקורית לטיפול בתצוגת הזמן/אמוג'י */
-    body{background:radial-gradient(1200px 800px at 80% -10%,#19223b 0%,#0f0f23 60%),#0f0f23;color:var(--text);font-family:system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";line-height:1.5;}
+    body{
+      background:radial-gradient(1200px 800px at 80% -10%,#19223b 0%,#0f0f23 60%),#0f0f23;
+      color:var(--text);
+      font-family:system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+      line-height:1.5;
+    }
     .container{max-width:980px;margin:0 auto;padding:16px;}
-    .skeleton{background:linear-gradient(90deg,#1f2a44 25%,#2a3550 50%,#1f2a44 75%);background-size:200% 100%;animation:shimmer 1.5s infinite linear;border-radius:14px;height:140px;margin:12px 0;}
+    .skeleton{
+      background:linear-gradient(90deg,#1f2a44 25%,#2a3550 50%,#1f2a44 75%);
+      background-size:200% 100%;
+      animation:shimmer 1.5s infinite linear;
+      border-radius:14px;height:140px;margin:12px 0;
+    }
     @keyframes shimmer{100%{background-position:-200% 0;}}
     .news-feed{min-height:40vh;}
+
+    /* ===== Lighthouse: CLS/LCP/TBT fixes ===== */
+    /* 1) מניעת CLS מהתמונות בכרטיסים */
+    .news-card .news-cover{
+      width:100%;
+      height:auto;
+      aspect-ratio:16/9;       /* קבע יחס שמתאים לך (למשל 4/3) */
+      object-fit:cover;
+      display:block;
+    }
+    /* 2) מניעת קפיצות בגבהי טקסט */
+    .news-title{ min-height:2.4em; } /* ~2 שורות */
+    .news-meta, .news-date{ min-height:1.2em; color:var(--muted); }
+    .muted{ color:var(--muted); }
+    /* 3) הפחתת עלויות ציור לרכיבים מחוץ למסך */
+    .news-card{ content-visibility:auto; contain-intrinsic-size:300px; }
   </style>
 
-  <link rel="preconnect" href="https://music-aggregator.dustrial.workers.dev">
+  <!-- Preconnect/DNS-prefetch ל-Worker כדי להאיץ RTT -->
+  <link rel="preconnect" href="https://music-aggregator.dustrial.workers.dev" crossorigin>
   <link rel="dns-prefetch" href="https://music-aggregator.dustrial.workers.dev">
-  
+
+  <!-- Prefetch לאינדפוינט (לא חוסם ציור) -->
   <link rel="prefetch" href="https://music-aggregator.dustrial.workers.dev/api/music" as="fetch" crossorigin>
 
+  <!-- CSS חיצוני נטען כ-preload ואז משודרג ל-stylesheet (אי-חסימה) -->
   <link rel="preload" href="./styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="./styles.css"></noscript>
 </head>
@@ -50,10 +81,10 @@
       </div>
 
       <div class="spacer"></div>
-      <a href="https://open.spotify.com/playlist/5JZW6Orj5bBwTJCR4zLJVA?si=cd3c6dd4dc1a4998" 
-         class="btn spotify-btn" 
-         target="_blank" 
-         rel="noopener noreferrer" 
+      <a href="https://open.spotify.com/playlist/5JZW6Orj5bBwTJCR4zLJVA?si=cd3c6dd4dc1a4998"
+         class="btn spotify-btn"
+         target="_blank"
+         rel="noopener noreferrer"
          title="Today's">
         Today's Playlist
       </a>
@@ -77,11 +108,7 @@
     </footer>
   </div>
 
+  <!-- טעינת JS לא-חוסמת ציור -->
   <script src="./app.js" defer></script>
 </body>
 </html>
-
-
-
-
-
