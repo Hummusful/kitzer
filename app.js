@@ -1,4 +1,4 @@
-// app.js – גרסה יציבה עם שיפורי Lighthouse (LCP + width/height) ושמירה על הלוגיקה
+// app.js – גרסה משופרת: טעינה דו-שלבית + קאש פר-טאב + CLS מופחת + רשת חכמה
 const FEED_ENDPOINT = 'https://music-aggregator.dustrial.workers.dev/api/music';
 
 const feedEl = document.getElementById('newsFeed');
@@ -14,21 +14,17 @@ let memoryCache = {
 
 const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-function escapeHTML(s){
-  return String(s || '').replace(/[&<>"']/g, ch => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[ch]));
-}
-
-// setBusy: מציג סקלטון מלא (טעינה רגילה)
+// Skeleton – מוצג רק כשאין תוכן קיים כדי למנוע "פלאש"
 function setBusy(isBusy) {
   if (!feedEl) return;
   feedEl.setAttribute('aria-busy', isBusy ? 'true' : 'false');
   if (isBusy) {
-    feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
+    if (!feedEl.querySelector('.news-card')) {
+      feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
+    }
   } else {
-     const spinner = document.getElementById('scroll-spinner');
-     if (spinner) spinner.remove();
+    const spinner = document.getElementById('scroll-spinner');
+    if (spinner) spinner.remove();
   }
 }
 
@@ -60,13 +56,14 @@ function clockIL(dateStr) {
   }
 }
 
-// buildUrl: מוסיף lite=1 להקטנת נפח
-function buildUrl(forGenre = state.genre) {
+// URL builder – תומך ב-limit/lite וסינון ז'אנר
+function buildUrl({ forGenre = state.genre, days = 7, limit = 200, lite = false } = {}) {
   const u = new URL(FEED_ENDPOINT);
-  if (forGenre === 'hebrew' || forGenre === 'electronic') {
-    u.searchParams.set('genre', forGenre);
-  }
-  u.searchParams.set('lite','1'); // צמצום payload → שיפור ביצועים
+  u.searchParams.set('days', days.toString());
+  u.searchParams.set('limit', limit.toString());
+  if (lite) u.searchParams.set('lite', '1'); // נתמך ב-Worker
+  const g = (forGenre || '').toLowerCase();
+  if (g === 'hebrew' || g === 'electronic') u.searchParams.set('genre', g);
   return u.toString();
 }
 
@@ -78,11 +75,11 @@ function setActiveGenre(value) {
   });
 }
 
-function updateUrl(addHistory = false) {
+function persistStateToUrl() {
   const url = new URL(location.href);
   if (state.genre && state.genre !== 'all') url.searchParams.set('genre', state.genre);
   else url.searchParams.delete('genre');
-  (addHistory ? history.pushState : history.replaceState).call(history, null, '', url);
+  history.replaceState(null, '', url);
 }
 
 function safeUrl(href) {
@@ -102,10 +99,7 @@ function makeTags(it) {
   return tags;
 }
 
-// רינדור לפי המודל של ה-Worker: headline/link/cover/date/summary
-// שיפורי Lighthouse:
-// - לפריט הראשון (LCP) אין lazy ויש fetchpriority="high"
-// - לכל התמונות width/height כדי לייצב יחס ולצמצם CLS
+// רנדר כרטיסים בבאצ'ים כדי לשמור על פריימים חלקים
 function renderNews(items) {
   if (!feedEl) return;
   feedEl.innerHTML = '';
@@ -115,44 +109,38 @@ function renderNews(items) {
     return;
   }
 
-  const frag = document.createDocumentFragment();
   const renderBatch = (startIdx) => {
-    const batchSize = 6;
+    const batchSize = 24;
     const endIdx = Math.min(startIdx + batchSize, items.length);
+    const frag = document.createDocumentFragment();
 
     for (let i = startIdx; i < endIdx; i++) {
       const it = items[i];
       const el = document.createElement('article');
       el.className = 'news-card';
 
-      const isLCP = i === 0;
-      const lazy  = isLCP ? '' : ' loading="lazy"';
-      const prio  = isLCP ? ' fetchpriority="high" decoding="async"' : ' decoding="async"';
-      // width/height “דמה” לשמירת יחס 16:9 (טוב ל-CLS, עובד עם object-fit)
       const cover = it.cover
-        ? `<img class="news-cover" src="${safeUrl(it.cover)}"${lazy}${prio} width="1600" height="900" alt="">`
+        ? `<img class="news-cover" src="${it.cover}" width="400" height="225"
+                 alt="" loading="lazy" decoding="async" fetchpriority="low">`
         : '';
 
       const absClock = it.date ? clockIL(it.date) : '';
       const relTime = it.date ? timeAgo(it.date) : '';
-
       const dateHTML = it.date
         ? `<time class="news-date" datetime="${it.date}">
-             <span class="rel" dir="rtl">${escapeHTML(relTime)}</span>
-             ${absClock ? `<span class="sep"> · </span><bdi class="clock">${escapeHTML(absClock)}\u200E</bdi>` : ''}
+             <span class="rel" dir="rtl">${relTime}</span>
+             ${absClock ? `<span class="sep"> · </span><bdi class="clock">${absClock}\u200E</bdi>` : ''}
            </time>`
         : '';
 
-      const tagsHTML = makeTags(it)
-        .map(t => `<span class="tag">${escapeHTML(t)}</span>`)
-        .join(' ');
+      const tagsHTML = makeTags(it).map(t => `<span class="tag">${t}</span>`).join(' ');
 
       el.innerHTML = `
         ${cover}
         <div class="news-details">
-          <span class="news-source">${escapeHTML(it.source || '')}</span>
-          <h3 class="news-title"><a href="${safeUrl(it.link)}" target="_blank" rel="noopener noreferrer">${escapeHTML(it.headline || '')}</a></h3>
-          ${it.summary ? `<p class="news-summary">${escapeHTML(it.summary)}</p>` : ''}
+          <span class="news-source">${it.source || ''}</span>
+          <h3 class="news-title"><a href="${safeUrl(it.link)}" target="_blank" rel="noopener noreferrer">${it.headline || ''}</a></h3>
+          ${it.summary ? `<p class="news-summary">${it.summary}</p>` : ''}
           <div class="news-footer-meta">
             ${dateHTML}
             <div class="news-tags">${tagsHTML}</div>
@@ -162,15 +150,14 @@ function renderNews(items) {
       frag.appendChild(el);
     }
 
-    if (endIdx < items.length) {
-      requestAnimationFrame(() => renderBatch(endIdx));
-    }
+    feedEl.appendChild(frag);
+    if (endIdx < items.length) requestAnimationFrame(() => renderBatch(endIdx));
   };
 
   renderBatch(0);
-  feedEl.appendChild(frag);
 }
 
+// קאש בזיכרון
 function getCache(key) {
   const rec = memoryCache.byKey.get(key);
   if (!rec) return null;
@@ -180,78 +167,108 @@ function getCache(key) {
   }
   return rec.data;
 }
-
 function setCache(key, data) {
   memoryCache.byKey.set(key, { data, ts: Date.now() });
 }
 
+// "בינלאומי" = כל מה שלא hebrew
 function filterForInternational(items) {
   return items.filter(x => (x.genre || '').toLowerCase() !== 'hebrew');
 }
 
-// טעינה (ללא גלילה אינסופית)
+// עוזר לבחירת ז'אנר עבור הבקשה לשרת (all/hebrew/electronic)
+function pickFetchGenre() {
+  return (state.genre === 'hebrew' || state.genre === 'electronic') ? state.genre : 'all';
+}
+
+// בקשה עם טיימאאוט
+async function timedFetch(url, ms = 15000, opts = {}) {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), ms);
+  try {
+    const res = await fetch(url, { signal: controller.signal, ...opts });
+    return res;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+// --- טעינה דו-שלבית: מהיר (limit=24,lite=1) → הידרציה מלאה (limit=200, רק ברשת מהירה) ---
 async function loadNews(forceRefresh = false) {
-  setBusy(true);
   const key = (state.genre || 'all').toLowerCase();
 
+  // 1) אם יש קאש, נציג אותו מיד וללא סקלטון
   if (!forceRefresh) {
     const cached = getCache(key);
     if (cached) {
       renderNews(cached);
-      setBusy(false);
+      // הידרציה רק אם הרשת מהירה
+      if (navigator.connection?.effectiveType === '4g' && !navigator.connection?.saveData) {
+        hydrateFullInBackground(key).catch(()=>{});
+      }
       return;
     }
   }
 
+  // אין קאש → מציגים סקלטון בזמן שמביאים "מהיר"
+  setBusy(true);
+
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    // שלב מהיר
+    const fastUrl = buildUrl({ forGenre: pickFetchGenre(), limit: 24, lite: true });
+    const fastRes = await timedFetch(fastUrl, 15000, { cache: 'default' });
+    if (!fastRes.ok) throw new Error(`HTTP ${fastRes.status}`);
+    const ct1 = fastRes.headers.get('content-type') || '';
+    if (!ct1.includes('application/json')) throw new Error('Not JSON response');
 
-    const fetchGenre = (state.genre === 'hebrew' || state.genre === 'electronic') ? state.genre : 'all';
-    const url = buildUrl(fetchGenre);
+    const fastData = await fastRes.json();
+    let fastItems = Array.isArray(fastData) ? fastData : (fastData.items || []);
+    fastItems = (state.genre === 'international') ? filterForInternational(fastItems) : fastItems;
 
-    const res = await fetch(url, { cache: 'default', signal: controller.signal, headers: { 'accept':'application/json' } });
-    clearTimeout(timeoutId);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const ct = (res.headers.get('content-type') || '').toLowerCase();
-    if (!ct.includes('application/json')) throw new Error('Not JSON response');
-
-    const data = await res.json();
-    let items = Array.isArray(data) ? data : (data.items || []);
-
-    // אם תרצה לבטל את הסינון המקומי ל-international, שנה את הקטע הבא בהתאם
-    let finalItems;
-    if (state.genre === 'international') {
-      finalItems = filterForInternational(items);
-    } else {
-      finalItems = items;
-    }
-
-    setCache(key, finalItems);
-    renderNews(finalItems);
+    renderNews(fastItems);
+    setCache(key, fastItems);
 
   } catch (e) {
-    console.error('Load error:', e);
-    if (e.name === 'AbortError') {
-      feedEl.innerHTML = `<p class="error">הבקשה ארכה יותר מדי. אנא נסה שוב.</p>`;
-    } else {
-      feedEl.innerHTML = `<p class="error">שגיאה בטעינת החדשות (${escapeHTML(e.message)})</p>`;
-    }
+    console.error('Fast load error:', e);
+    feedEl.innerHTML = `<p class="error">שגיאה בטעינה הראשונית (${e.message})</p>`;
   } finally {
     setBusy(false);
+  }
+
+  // הידרציה מלאה רק אם הרשת מהירה
+  if (navigator.connection?.effectiveType === '4g' && !navigator.connection?.saveData) {
+    hydrateFullInBackground(key).catch(err => console.warn('Hydrate error:', err));
+  }
+}
+
+// מביא רשימה מלאה ומחליף רק אם היא יותר ארוכה/חדשה
+async function hydrateFullInBackground(cacheKey) {
+  const fullUrl = buildUrl({ forGenre: pickFetchGenre(), limit: 200, lite: false });
+  const res = await timedFetch(fullUrl, 20000, { cache: 'default' });
+  if (!res.ok) return;
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('application/json')) return;
+
+  const data = await res.json();
+  let items = Array.isArray(data) ? data : (data.items || []);
+  items = (state.genre === 'international') ? filterForInternational(items) : items;
+
+  const current = getCache(cacheKey) || [];
+  // החלפה רק אם באמת יש יותר/חדש
+  if (items.length > current.length) {
+    setCache(cacheKey, items);
+    renderNews(items);
   }
 }
 
 function initFilters() {
-  qsa('[data-genre]').forEach(el => {
-    el.addEventListener('click', (ev) => {
-      if (el.tagName === 'A') ev.preventDefault();
-      state.genre = (el.getAttribute('data-genre') || 'all').toLowerCase();
+  qsa('[data-genre]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.genre = (btn.getAttribute('data-genre') || 'all').toLowerCase();
       setActiveGenre(state.genre);
-      updateUrl(true);
-      loadNews(true); // רענון מיידי לטאב החדש
-    }, { passive: false });
+      persistStateToUrl();
+      loadNews(); // fast → hydrate
+    });
   });
 
   if (refreshBtn) {
@@ -266,27 +283,19 @@ function restoreStateFromUrl() {
   setActiveGenre(state.genre);
 }
 
-// טעינה מוקדמת של ה-API (לא חוסם ציור)
+// חימום API (HEAD) בזמן סרק
 function warmupAPI() {
   if ('requestIdleCallback' in window) {
     requestIdleCallback(() => {
       fetch(FEED_ENDPOINT, { method: 'HEAD' }).catch(() => {});
     });
-  } else {
-    setTimeout(() => { fetch(FEED_ENDPOINT, { method: 'HEAD' }).catch(() => {}); }, 1000);
   }
 }
 
-// Boot
+// Init
 document.addEventListener('DOMContentLoaded', () => {
   restoreStateFromUrl();
-  updateUrl(false);
   initFilters();
   loadNews();
   warmupAPI();
-});
-
-window.addEventListener('popstate', () => {
-  restoreStateFromUrl();
-  loadNews(true);
 });
