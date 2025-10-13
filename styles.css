@@ -1,4 +1,4 @@
-/* styles.css - גרסה סופית: Vibe מקורי + תיקוני פריסה ורקע + יציבות ביצועים */
+/* styles.css - גרסה סופית: Vibe מקורי + תיקוני פריסה ורקע */
 :root {
   --bg: #0f0f23;
   --panel: #141a2a;
@@ -8,14 +8,13 @@
   --text: #eaf0ff;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
-html, body { height: 100%; }
-
-/* 🛠️ hint קל לביצועים וקריאות טקסט */
-html {
-  scroll-behavior: smooth;
-  text-rendering: optimizeLegibility;
+html,
+body {
+  height: 100%;
 }
 
 body {
@@ -29,8 +28,14 @@ body {
   line-height: 1.5;
 }
 
-a { color: inherit; text-decoration: none; }
-a:hover { text-decoration: underline; }
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
 
 .container {
   max-width: 980px;
@@ -49,10 +54,15 @@ a:hover { text-decoration: underline; }
   z-index: 1000;
   text-decoration: none;
 }
-.skip-link:focus { top: 0; }
+.skip-link:focus {
+  top: 0;
+}
 
 /* כותרת - ה-Vibe המוזיקלי */
-.header { text-align: center; margin: 40px 0 30px; }
+.header {
+  text-align: center;
+  margin: 40px 0 30px;
+}
 
 .site-title {
   /* ⬅️ עיצוב גרדיאנט נושם מקורי */
@@ -64,7 +74,7 @@ a:hover { text-decoration: underline; }
   letter-spacing: 2px;
   text-transform: uppercase;
   line-height: 0.9;
-
+  
   background: linear-gradient(90deg, #ffc700, #ff6b6b, #ffc700);
   background-size: 200% auto;
   color: transparent;
@@ -83,7 +93,11 @@ a:hover { text-decoration: underline; }
   gap: 8px;
 }
 
-@keyframes titleGradient { to { background-position: 200% center; } }
+@keyframes titleGradient {
+  to {
+    background-position: 200% center;
+  }
+}
 
 /* ניווט וכלים */
 .toolbar {
@@ -94,9 +108,14 @@ a:hover { text-decoration: underline; }
   margin-bottom: 20px;
 }
 
-.spacer { flex-grow: 1; }
+.spacer {
+  flex-grow: 1;
+}
 
-.btn-group { display: flex; gap: 8px; }
+.btn-group {
+  display: flex;
+  gap: 8px;
+}
 
 .btn {
   font-size: 1rem;
@@ -110,9 +129,20 @@ a:hover { text-decoration: underline; }
   font-weight: 500;
 }
 
-.btn.ghost { background: transparent; border-color: var(--tag); color: var(--muted); }
-.btn:hover { border-color: var(--accent); transform: translateY(-1px); }
-.btn.ghost:hover { color: var(--text); }
+.btn.ghost {
+  background: transparent;
+  border-color: var(--tag);
+  color: var(--muted);
+}
+
+.btn:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.btn.ghost:hover {
+  color: var(--text);
+}
 
 .btn.active {
   background: var(--accent);
@@ -128,64 +158,53 @@ a:hover { text-decoration: underline; }
 }
 
 /* פיד החדשות */
-/* 🛠️ ציור עצל ותיחום אינהרנטי לרשימה גדולה */
 .news-feed {
   display: flex;
   flex-direction: column;
   gap: 20px;
   padding-bottom: 60px;
   min-height: 40vh;
-
-  content-visibility: auto;
-  contain-intrinsic-size: 500px;
-  contain: layout paint;
 }
 
 /* -------------------- NEWS CARD LAYOUT -------------------- */
 
 .news-card {
+  /* 🛠️ התיקון הקריטי: ודא שהכרטיס הוא Flex container */
   display: flex;
   flex-direction: column; /* ברירת מחדל: ערימה במובייל */
   background: var(--panel);
-  padding: 0;
+  padding: 0; 
   border-radius: 14px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-  margin: 0;
-  overflow: hidden;
+  margin: 0; 
+  overflow: hidden; 
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-  content-visibility: auto;
-  /* 🛠️ יציבות גובה בזמן לייזי/סקלטון */
-  contain-intrinsic-size: auto 240px;
 }
 
 /* אפקט תנועה אנרגטי על כרטיסי החדשות (Tilt) */
 .news-card:hover {
-  transform: translateY(-4px) rotateZ(0.5deg);
-  box-shadow: 0 6px 20px rgba(255, 199, 0, 0.3), 0 3px 10px rgba(0, 0, 0, 0.4);
+  transform: translateY(-4px) rotateZ(0.5deg); 
+  box-shadow: 0 6px 20px rgba(255, 199, 0, 0.3), 0 3px 10px rgba(0, 0, 0, 0.4); 
 }
 
 /* תמונת הכיסוי */
-/* 🛠️ יציבות יחס ממדים למניעת CLS + תצוגה צפויה */
 .news-cover {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 16 / 9;
+  width: 100%; /* במובייל */
+  height: 120px;
+  flex-shrink: 0; 
   object-fit: cover;
-  display: block;
   border-radius: 14px 14px 0 0;
   margin-bottom: 0;
-  flex-shrink: 0;
 }
 
 /* מיכל הפרטים (טקסט) */
 .news-details {
-  /* 🛠️ Flex כדי לדחוף את הפוטר למטה */
+  /* 🛠️ הוספת Flex כדי לדחוף את הפוטר למטה */
   padding: 16px;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  flex-grow: 1; 
+  display: flex; 
+  flex-direction: column; 
+  justify-content: space-between; 
 }
 
 /* מקור - מופיע ראשון */
@@ -198,25 +217,31 @@ a:hover { text-decoration: underline; }
 
 /* כותרת */
 .news-title {
-  font-size: 1.25rem;
-  font-weight: 800;
+  font-size: 1.25rem; 
+  font-weight: 800; 
   margin: 0 0 8px 0;
   line-height: 1.3;
 }
 .news-title a {
-  background: #FFFFFF;
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-  font-weight: 800;
-  transition: background-position 0.4s ease;
+  color: var(--text);
+  transition: color 0.2s ease;
 }
-.news-title a:hover { color: var(--accent); text-decoration: none; }
+.news-title a:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+/* סיכום */
+.news-summary {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #c5d0e6;
+  margin: 0 0 10px 0;
+}
 
 /* פוטר הכרטיס (תאריך + תגיות) */
 .news-footer-meta {
+  /* 🛠️ הוספתי את המכולה הזו כדי לנהל את התאריך והתגיות יחד */
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -233,7 +258,10 @@ a:hover { text-decoration: underline; }
 }
 
 /* תגיות */
-.news-tags { display: flex; gap: 6px; }
+.news-tags {
+  display: flex;
+  gap: 6px;
+}
 .tag {
   border: 1px solid var(--tag);
   border-radius: 4px;
@@ -244,86 +272,99 @@ a:hover { text-decoration: underline; }
   background: var(--tag);
 }
 
-/* -------------------- תקציר (גרסה מאוחדת) -------------------- */
-/* 🛠️ מאוחד – אין כפילויות בהגדרות אחרות */
-.news-summary {
-  color: var(--muted);
-  font-size: 0.9rem;
-  margin-top: 6px;
-  line-height: 1.4;
-
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3; /* ברירת מחדל לדסקטופ קטן/טבלט */
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* -------------------- DESKTOP (2 columns) -------------------- */
+/* תצוגת דסקטופ (2 עמודות) */
 @media (min-width: 1024px) {
   .news-feed {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
   }
+  
+  .news-card {
+    /* 🛠️ התיקון הקריטי: מעביר לתמונה לצד טקסט רק בדסקטופ */
+    flex-direction: row; 
+  }
 
-  /* תמונה משמאל, טקסט מימין */
-  .news-card { flex-direction: row; }
-
-  /* 🛠️ בדסקטופ התמונה הופכת לעמודה קבועה;
-     aspect-ratio נשאר כדי לשמר יציבות אם אין גובה */
   .news-cover {
-    width: 120px;
+    width: 120px; 
     height: 100%;
     border-radius: 14px 0 0 14px; /* פינות עגולות רק בצד שמאל */
-    aspect-ratio: auto; /* לא לכפות יחס כשגובה 100% */
   }
 
-  /* דסקטופ: עד 5 שורות */
-  .news-summary { -webkit-line-clamp: 5; }
+  /* 💡 הסתרת הסיכום בדסקטופ 2 עמודות כדי לחסוך מקום */
+  .news-summary {
+    display: none;
+  }
 }
 
-/* -------------------- MOBILE OPTIMIZATION -------------------- */
+/* -------------------- MOBILE OPTIMIZATION (max-width: 768px) -------------------- */
 @media (max-width: 768px) {
-  .news-card { flex-direction: column; } /* ודא שמובייל הוא טור */
+  .news-card {
+    flex-direction: column; /* ודא שהמובייל הוא טור */
+  }
 
   .news-cover {
     width: 100%;
-    height: auto;            /* גובה נגזר מ-aspect-ratio */
-    aspect-ratio: 16 / 9;    /* שמירת יחס במובייל */
+    height: 120px;
     border-radius: 14px 14px 0 0;
   }
+  
+  .news-details {
+    padding: 12px;
+  }
 
-  .news-details { padding: 12px; }
-  .news-title { font-size: 1.1rem; }
+  .news-title {
+    font-size: 1.1rem;
+  }
 
-  /* מובייל: 2 שורות */
-  .news-summary { -webkit-line-clamp: 2; }
+  /* 💡 הסתרת הסיכום במובייל כדי לחסוך מקום */
+  .news-summary {
+    display: none;
+  }
 
   /* מטה-דאטה קטנה יותר */
-  .news-footer-meta, .news-date { font-size: 0.8rem; }
+  .news-footer-meta,
+  .news-date {
+    font-size: 0.8rem;
+  }
 
   /* כפתורי הניווט - פתרון גלילה אופקית */
-  .toolbar { flex-wrap: wrap; padding-bottom: 0; }
+  .toolbar {
+    flex-wrap: wrap; 
+    padding-bottom: 0;
+  }
+
   .btn-group {
-    order: 2;
+    order: 2; /* מוודא שהכפתורים יופיעו בשורה נפרדת */
     margin-top: 10px;
     width: 100%;
-    overflow-x: auto;
-    white-space: nowrap;
-    padding-bottom: 5px;
+    
+    /* 🛠️ התיקון לגלילה: מאפשר גלילה אופקית מוגבלת */
+    overflow-x: auto; 
+    white-space: nowrap; 
+    padding-bottom: 5px; 
   }
-  .btn-group .btn { flex-shrink: 0; }
-  .btn-group::-webkit-scrollbar { display: none; }
-  .spacer { display: none; }
+  
+  .btn-group .btn {
+      flex-shrink: 0; /* מונע מהכפתורים להצטמק */
+  }
+
+  .btn-group::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .spacer {
+    display: none;
+  }
 }
 /* -------------------- END MOBILE OPTIMIZATION -------------------- */
+
 
 /* Spotify Button - ירוק המותג של ספוטיפיי (נשאר כפי שהיה) */
 .btn.spotify-btn {
   background: #1DB954;
   border: 1px solid #1DB954;
-  color: #0f0f23;
+  color: #0f0f23; 
   font-weight: 700;
   box-shadow: 0 0 15px rgba(29, 185, 84, 0.4);
   display: flex;
@@ -331,48 +372,50 @@ a:hover { text-decoration: underline; }
   gap: 6px;
   transition: transform 0.08s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
+
 .btn.spotify-btn:hover {
   transform: scale(1.05) translateY(-1px);
-  background: #1ed760;
+  background: #1ed760; 
   border-color: #1ed760;
   box-shadow: 0 0 25px rgba(29, 185, 84, 0.7);
 }
-.btn.spotify-btn::before { content: '🎧'; color: #0f0f23; }
+
+.btn.spotify-btn::before {
+  content: '🎧';
+  color: #0f0f23; 
+}
 
 /* אפקט "רעש אנלוגי" (Grainy Texture) - Dusty Vibe */
 body::after {
   content: "";
   position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   /* תמונת Base64 של רעש */
-  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKkFgAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyFpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzowMTowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94bXAvMS4wLyIgeG1sbnM6eG1wRz0iaHR0cDovL25zLmFkb2JlLmNvbS94bXAtZz/...');
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKkFgAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyFpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzowMTowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94Y...AAAAAElFTkSuQmCC');
   pointer-events: none;
-  opacity: 0.02;
+  opacity: 0.05;
   mix-blend-mode: overlay;
   z-index: 100;
 }
 
-/* 🛠️ חוק גלובלי ליציבות מדיה */
-img, svg, video, canvas {
-  max-width: 100%;
-  height: auto;
-  display: block;
-}
-
-/* סקלטון וספינר */
+/* סקלטון וספינר - נשארו ללא שינוי */
 .skeleton {
   background: linear-gradient(90deg, #1f2a44 25%, #2a3550 50%, #1f2a44 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite linear;
   border-radius: 14px;
-  /* 🛠️ גובה תואם לאייטם אמיתי כדי למנוע קפיצות */
-  height: 240px;
+  height: 140px;
   margin: 12px 0;
   will-change: background-position;
 }
-@keyframes shimmer { 100% { background-position: -200% 0; } }
-
+@keyframes shimmer {
+  100% {
+    background-position: -200% 0;
+  }
+}
 .spinner {
   width: 44px;
   height: 44px;
@@ -382,11 +425,21 @@ img, svg, video, canvas {
   animation: spin 1s linear infinite;
   margin: 18px auto;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 /* Utility */
-.muted { color: #99a1b5; }
-.error { color: #ff6b6b; text-align: center; padding: 20px; }
+.muted {
+  color: #99a1b5;
+}
+.error {
+  color: #ff6b6b;
+  text-align: center;
+  padding: 20px;
+}
 
 /* Footer */
 .footer {
@@ -395,12 +448,22 @@ img, svg, video, canvas {
   font-size: 0.9rem;
   color: var(--muted);
 }
-.footer img { vertical-align: middle; margin-inline-end: 8px; }
-.footer p { display: flex; align-items: center; justify-content: center; gap: 4px; }
+.footer img {
+  vertical-align: middle;
+  margin-inline-end: 8px;
+}
+.footer p {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
 
 /* Performance optimizations */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -409,6 +472,13 @@ img, svg, video, canvas {
 
 /* Print styles */
 @media print {
-  .toolbar, .footer, .skip-link { display: none; }
-  .news-card { break-inside: avoid; page-break-inside: avoid; }
+  .toolbar,
+  .footer,
+  .skip-link {
+    display: none;
+  }
+  .news-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
 }

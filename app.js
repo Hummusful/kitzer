@@ -1,10 +1,12 @@
-// app.js – גרסה משופרת: טעינה דו-שלבית + קאש פר-טאב + CLS מופחת + רשת חכמה
+// app.js – גרסה סופית: יציבה, קאש פר-טאב ומבנה HTML מתוקן
 const FEED_ENDPOINT = 'https://music-aggregator.dustrial.workers.dev/api/music';
 
 const feedEl = document.getElementById('newsFeed');
 const refreshBtn = document.getElementById('refreshBtn');
 
-let state = { genre: 'all' };
+let state = {
+  genre: 'all',
+};
 
 // קאש בזיכרון לפי מפתח (genre)
 let memoryCache = {
@@ -14,17 +16,17 @@ let memoryCache = {
 
 const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-// Skeleton – מוצג רק כשאין תוכן קיים כדי למנוע "פלאש"
+// setBusy: מציג סקלטון מלא (טעינה רגילה)
 function setBusy(isBusy) {
   if (!feedEl) return;
   feedEl.setAttribute('aria-busy', isBusy ? 'true' : 'false');
   if (isBusy) {
-    if (!feedEl.querySelector('.news-card')) {
-      feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
-    }
+    // מציג סקלטון מלא
+    feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
   } else {
-    const spinner = document.getElementById('scroll-spinner');
-    if (spinner) spinner.remove();
+     // הסר סקלטון
+     const spinner = document.getElementById('scroll-spinner');
+     if (spinner) spinner.remove();
   }
 }
 
@@ -56,14 +58,13 @@ function clockIL(dateStr) {
   }
 }
 
-// URL builder – תומך ב-limit/lite וסינון ז'אנר
-function buildUrl({ forGenre = state.genre, days = 7, limit = 200, lite = false } = {}) {
+// buildUrl: ללא days דינמי
+function buildUrl(forGenre = state.genre) {
   const u = new URL(FEED_ENDPOINT);
-  u.searchParams.set('days', days.toString());
-  u.searchParams.set('limit', limit.toString());
-  if (lite) u.searchParams.set('lite', '1'); // נתמך ב-Worker
-  const g = (forGenre || '').toLowerCase();
-  if (g === 'hebrew' || g === 'electronic') u.searchParams.set('genre', g);
+  
+  if (forGenre === 'hebrew' || forGenre === 'electronic') {
+    u.searchParams.set('genre', forGenre);
+  }
   return u.toString();
 }
 
@@ -99,20 +100,23 @@ function makeTags(it) {
   return tags;
 }
 
-// רנדר כרטיסים בבאצ'ים כדי לשמור על פריימים חלקים
+// *** renderNews: עדכון מבנה ה-HTML להתאמה ל-CSS החדש ***
 function renderNews(items) {
   if (!feedEl) return;
-  feedEl.innerHTML = '';
+  
+  feedEl.innerHTML = ''; // נקה
 
   if (!items || !items.length) {
     feedEl.innerHTML = `<p class="muted">אין חדשות כרגע.</p>`;
     return;
   }
+  
+  const frag = document.createDocumentFragment();
 
+  // רינדור בבאצ'ים
   const renderBatch = (startIdx) => {
-    const batchSize = 24;
+    const batchSize = 6;
     const endIdx = Math.min(startIdx + batchSize, items.length);
-    const frag = document.createDocumentFragment();
 
     for (let i = startIdx; i < endIdx; i++) {
       const it = items[i];
@@ -120,12 +124,12 @@ function renderNews(items) {
       el.className = 'news-card';
 
       const cover = it.cover
-        ? `<img class="news-cover" src="${it.cover}" width="400" height="225"
-                 alt="" loading="lazy" decoding="async" fetchpriority="low">`
+        ? `<img class="news-cover" src="${it.cover}" alt="" loading="lazy" decoding="async">`
         : '';
 
       const absClock = it.date ? clockIL(it.date) : '';
       const relTime = it.date ? timeAgo(it.date) : '';
+
       const dateHTML = it.date
         ? `<time class="news-date" datetime="${it.date}">
              <span class="rel" dir="rtl">${relTime}</span>
@@ -133,8 +137,11 @@ function renderNews(items) {
            </time>`
         : '';
 
-      const tagsHTML = makeTags(it).map(t => `<span class="tag">${t}</span>`).join(' ');
-
+      const tagsHTML = makeTags(it)
+        .map(t => `<span class="tag">${t}</span>`)
+        .join(' ');
+        
+      // מבנה HTML חדש: התמונה, ואז div.news-details
       el.innerHTML = `
         ${cover}
         <div class="news-details">
@@ -150,14 +157,15 @@ function renderNews(items) {
       frag.appendChild(el);
     }
 
-    feedEl.appendChild(frag);
-    if (endIdx < items.length) requestAnimationFrame(() => renderBatch(endIdx));
+    if (endIdx < items.length) {
+      requestAnimationFrame(() => renderBatch(endIdx));
+    }
   };
 
   renderBatch(0);
+  feedEl.appendChild(frag);
 }
 
-// קאש בזיכרון
 function getCache(key) {
   const rec = memoryCache.byKey.get(key);
   if (!rec) return null;
@@ -167,97 +175,68 @@ function getCache(key) {
   }
   return rec.data;
 }
+
 function setCache(key, data) {
   memoryCache.byKey.set(key, { data, ts: Date.now() });
 }
 
-// "בינלאומי" = כל מה שלא hebrew
 function filterForInternational(items) {
   return items.filter(x => (x.genre || '').toLowerCase() !== 'hebrew');
 }
 
-// עוזר לבחירת ז'אנר עבור הבקשה לשרת (all/hebrew/electronic)
-function pickFetchGenre() {
-  return (state.genre === 'hebrew' || state.genre === 'electronic') ? state.genre : 'all';
-}
-
-// בקשה עם טיימאאוט
-async function timedFetch(url, ms = 15000, opts = {}) {
-  const controller = new AbortController();
-  const t = setTimeout(() => controller.abort(), ms);
-  try {
-    const res = await fetch(url, { signal: controller.signal, ...opts });
-    return res;
-  } finally {
-    clearTimeout(t);
-  }
-}
-
-// --- טעינה דו-שלבית: מהיר (limit=24,lite=1) → הידרציה מלאה (limit=200, רק ברשת מהירה) ---
+// loadNews: ללא לוגיקת גלילה אינסופית
 async function loadNews(forceRefresh = false) {
-  const key = (state.genre || 'all').toLowerCase();
+  setBusy(true);
 
-  // 1) אם יש קאש, נציג אותו מיד וללא סקלטון
+  const key = (state.genre || 'all').toLowerCase(); // המפתח לקאש הוא רק ה-genre
+
+  // 1) נסה קאש
   if (!forceRefresh) {
     const cached = getCache(key);
     if (cached) {
-      renderNews(cached);
-      // הידרציה רק אם הרשת מהירה
-      if (navigator.connection?.effectiveType === '4g' && !navigator.connection?.saveData) {
-        hydrateFullInBackground(key).catch(()=>{});
-      }
+      renderNews(cached); 
+      setBusy(false);
       return;
     }
   }
 
-  // אין קאש → מציגים סקלטון בזמן שמביאים "מהיר"
-  setBusy(true);
-
   try {
-    // שלב מהיר
-    const fastUrl = buildUrl({ forGenre: pickFetchGenre(), limit: 24, lite: true });
-    const fastRes = await timedFetch(fastUrl, 15000, { cache: 'default' });
-    if (!fastRes.ok) throw new Error(`HTTP ${fastRes.status}`);
-    const ct1 = fastRes.headers.get('content-type') || '';
-    if (!ct1.includes('application/json')) throw new Error('Not JSON response');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); 
 
-    const fastData = await fastRes.json();
-    let fastItems = Array.isArray(fastData) ? fastData : (fastData.items || []);
-    fastItems = (state.genre === 'international') ? filterForInternational(fastItems) : fastItems;
+    const fetchGenre = (state.genre === 'hebrew' || state.genre === 'electronic') ? state.genre : 'all';
+    const url = buildUrl(fetchGenre); 
 
-    renderNews(fastItems);
-    setCache(key, fastItems);
+    const res = await fetch(url, { cache: 'default', signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) throw new Error('Not JSON response');
+
+    const data = await res.json();
+    let items = Array.isArray(data) ? data : (data.items || []);
+
+    // 3) סינון ושמירה בקאש
+    let finalItems;
+    if (state.genre === 'international') {
+      finalItems = filterForInternational(items);
+    } else {
+      finalItems = items;
+    }
+    
+    setCache(key, finalItems); 
+    renderNews(finalItems);
 
   } catch (e) {
-    console.error('Fast load error:', e);
-    feedEl.innerHTML = `<p class="error">שגיאה בטעינה הראשונית (${e.message})</p>`;
+    console.error('Load error:', e);
+    if (e.name === 'AbortError') {
+      feedEl.innerHTML = `<p class="error">הבקשה ארכה יותר מדי. אנא נסה שוב.</p>`;
+    } else {
+      feedEl.innerHTML = `<p class="error">שגיאה בטעינת החדשות (${e.message})</p>`;
+    }
   } finally {
     setBusy(false);
-  }
-
-  // הידרציה מלאה רק אם הרשת מהירה
-  if (navigator.connection?.effectiveType === '4g' && !navigator.connection?.saveData) {
-    hydrateFullInBackground(key).catch(err => console.warn('Hydrate error:', err));
-  }
-}
-
-// מביא רשימה מלאה ומחליף רק אם היא יותר ארוכה/חדשה
-async function hydrateFullInBackground(cacheKey) {
-  const fullUrl = buildUrl({ forGenre: pickFetchGenre(), limit: 200, lite: false });
-  const res = await timedFetch(fullUrl, 20000, { cache: 'default' });
-  if (!res.ok) return;
-  const ct = res.headers.get('content-type') || '';
-  if (!ct.includes('application/json')) return;
-
-  const data = await res.json();
-  let items = Array.isArray(data) ? data : (data.items || []);
-  items = (state.genre === 'international') ? filterForInternational(items) : items;
-
-  const current = getCache(cacheKey) || [];
-  // החלפה רק אם באמת יש יותר/חדש
-  if (items.length > current.length) {
-    setCache(cacheKey, items);
-    renderNews(items);
   }
 }
 
@@ -267,7 +246,7 @@ function initFilters() {
       state.genre = (btn.getAttribute('data-genre') || 'all').toLowerCase();
       setActiveGenre(state.genre);
       persistStateToUrl();
-      loadNews(); // fast → hydrate
+      loadNews(); 
     });
   });
 
@@ -283,7 +262,7 @@ function restoreStateFromUrl() {
   setActiveGenre(state.genre);
 }
 
-// חימום API (HEAD) בזמן סרק
+// טעינה מוקדמת של הAPI
 function warmupAPI() {
   if ('requestIdleCallback' in window) {
     requestIdleCallback(() => {
@@ -292,10 +271,10 @@ function warmupAPI() {
   }
 }
 
-// Init
+// Event listeners
 document.addEventListener('DOMContentLoaded', () => {
   restoreStateFromUrl();
   initFilters();
-  loadNews();
+  loadNews(); 
   warmupAPI();
 });
