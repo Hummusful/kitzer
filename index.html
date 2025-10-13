@@ -12,17 +12,59 @@
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@800;900&display=swap" rel="stylesheet">
 
   <style>
-    /* עדכון Accent Color לצהוב ניאון והחזרת כלל הפונטים הנדרשים */
-    :root{--bg:#0f0f23;--panel:#141a2a;--muted:#9aa3b2;--accent:#FFC700;--tag:#2a3550;--text:#eaf0ff;}
-    *{box-sizing:border-box;}
-    html,body{height:100%;margin:0;padding:0;}
-    /* החזרת כל רשימת הפונטים המקורית לטיפול בתצוגת הזמן/אמוג'י */
-    body{background:radial-gradient(1200px 800px at 80% -10%,#19223b 0%,#0f0f23 60%),#0f0f23;color:var(--text);font-family:system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";line-height:1.5;}
-    .container{max-width:980px;margin:0 auto;padding:16px;}
-    .skeleton{background:linear-gradient(90deg,#1f2a44 25%,#2a3550 50%,#1f2a44 75%);background-size:200% 100%;animation:shimmer 1.5s infinite linear;border-radius:14px;height:140px;margin:12px 0;}
-    @keyframes shimmer{100%{background-position:-200% 0;}}
-    .news-feed{min-height:40vh;}
-  </style>
+  /* ========== CRITICAL CSS ONLY ========== */
+  :root{--bg:#0f0f23;--panel:#141a2a;--muted:#9aa3b2;--accent:#FFC700;--tag:#2a3550;--text:#eaf0ff;}
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;padding:0;}
+  body{
+    background:radial-gradient(1200px 800px at 80% -10%,#19223b 0%,#0f0f23 60%),#0f0f23;
+    color:var(--text);
+    font-family:system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+    line-height:1.5;
+  }
+  .container{max-width:980px;margin:0 auto;padding:16px;}
+  
+  /* 👇 הוסף את אלו - הם נראים מיד בטעינה */
+  .header{text-align:center;margin:40px 0 30px;}
+  .site-title{
+    font-family:'Rubik',sans-serif;
+    font-size:5rem;
+    font-weight:900;
+    margin:0;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    line-height:0.9;
+    background:linear-gradient(90deg,#ffc700,#ff6b6b,#ffc700);
+    background-size:200% auto;
+    color:transparent;
+    -webkit-background-clip:text;
+    background-clip:text;
+  }
+  .subtitle{font-size:1.2rem;color:var(--muted);margin-top:5px;}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;padding:10px 0;margin-bottom:20px;}
+  .btn{
+    font-size:1rem;
+    padding:8px 16px;
+    border-radius:6px;
+    border:1px solid var(--panel);
+    background:var(--panel);
+    color:var(--text);
+    cursor:pointer;
+  }
+  .btn.active{background:var(--accent);border-color:var(--accent);color:var(--bg);font-weight:700;}
+  
+  /* Skeleton */
+  .skeleton{
+    background:linear-gradient(90deg,#1f2a44 25%,#2a3550 50%,#1f2a44 75%);
+    background-size:200% 100%;
+    animation:shimmer 1.5s infinite linear;
+    border-radius:14px;
+    height:140px;
+    margin:12px 0;
+  }
+  @keyframes shimmer{100%{background-position:-200% 0;}}
+  .news-feed{min-height:40vh;}
+</style>
 
   <link rel="preconnect" href="https://music-aggregator.dustrial.workers.dev">
   <link rel="dns-prefetch" href="https://music-aggregator.dustrial.workers.dev">
@@ -80,6 +122,7 @@
   <script src="./app.js" defer></script>
 </body>
 </html>
+
 
 
 
