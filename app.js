@@ -24,9 +24,9 @@ function setBusy(isBusy) {
     // מציג סקלטון מלא
     feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
   } else {
-     // הסר סקלטון
-     const spinner = document.getElementById('scroll-spinner');
-     if (spinner) spinner.remove();
+    // הסר סקלטון
+    const spinner = document.getElementById('scroll-spinner');
+    if (spinner) spinner.remove();
   }
 }
 
@@ -61,7 +61,6 @@ function clockIL(dateStr) {
 // buildUrl: ללא days דינמי
 function buildUrl(forGenre = state.genre) {
   const u = new URL(FEED_ENDPOINT);
-  
   if (forGenre === 'hebrew' || forGenre === 'electronic') {
     u.searchParams.set('genre', forGenre);
   }
@@ -100,23 +99,23 @@ function makeTags(it) {
   return tags;
 }
 
-// *** renderNews: עדכון מבנה ה-HTML להתאמה ל-CSS החדש ***
+// *** renderNews: תיקון באג הבאצ'ים – פרגמנט חדש לכל באץ' והזרקה מיידית ל-DOM ***
 function renderNews(items) {
   if (!feedEl) return;
-  
+
   feedEl.innerHTML = ''; // נקה
 
   if (!items || !items.length) {
     feedEl.innerHTML = `<p class="muted">אין חדשות כרגע.</p>`;
     return;
   }
-  
-  const frag = document.createDocumentFragment();
 
   // רינדור בבאצ'ים
+  const batchSize = 6;
+
   const renderBatch = (startIdx) => {
-    const batchSize = 6;
     const endIdx = Math.min(startIdx + batchSize, items.length);
+    const batchFrag = document.createDocumentFragment();
 
     for (let i = startIdx; i < endIdx; i++) {
       const it = items[i];
@@ -140,8 +139,8 @@ function renderNews(items) {
       const tagsHTML = makeTags(it)
         .map(t => `<span class="tag">${t}</span>`)
         .join(' ');
-        
-      // מבנה HTML חדש: התמונה, ואז div.news-details
+
+      // מבנה HTML: התמונה, ואז div.news-details
       el.innerHTML = `
         ${cover}
         <div class="news-details">
@@ -154,8 +153,12 @@ function renderNews(items) {
           </div>
         </div>
       `;
-      frag.appendChild(el);
+
+      batchFrag.appendChild(el);
     }
+
+    // ⬅️ זה ההבדל הקריטי: מצרפים כל באץ' מיידית ל-DOM
+    feedEl.appendChild(batchFrag);
 
     if (endIdx < items.length) {
       requestAnimationFrame(() => renderBatch(endIdx));
@@ -163,7 +166,6 @@ function renderNews(items) {
   };
 
   renderBatch(0);
-  feedEl.appendChild(frag);
 }
 
 function getCache(key) {
@@ -194,7 +196,7 @@ async function loadNews(forceRefresh = false) {
   if (!forceRefresh) {
     const cached = getCache(key);
     if (cached) {
-      renderNews(cached); 
+      renderNews(cached);
       setBusy(false);
       return;
     }
@@ -202,10 +204,10 @@ async function loadNews(forceRefresh = false) {
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); 
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     const fetchGenre = (state.genre === 'hebrew' || state.genre === 'electronic') ? state.genre : 'all';
-    const url = buildUrl(fetchGenre); 
+    const url = buildUrl(fetchGenre);
 
     const res = await fetch(url, { cache: 'default', signal: controller.signal });
     clearTimeout(timeoutId);
@@ -224,8 +226,8 @@ async function loadNews(forceRefresh = false) {
     } else {
       finalItems = items;
     }
-    
-    setCache(key, finalItems); 
+
+    setCache(key, finalItems);
     renderNews(finalItems);
 
   } catch (e) {
@@ -246,7 +248,7 @@ function initFilters() {
       state.genre = (btn.getAttribute('data-genre') || 'all').toLowerCase();
       setActiveGenre(state.genre);
       persistStateToUrl();
-      loadNews(); 
+      loadNews();
     });
   });
 
@@ -275,6 +277,6 @@ function warmupAPI() {
 document.addEventListener('DOMContentLoaded', () => {
   restoreStateFromUrl();
   initFilters();
-  loadNews(); 
+  loadNews();
   warmupAPI();
 });
