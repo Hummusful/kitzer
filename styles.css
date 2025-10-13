@@ -1,4 +1,4 @@
-/* styles.css - גרסה סופית: Vibe מקורי + תיקוני פריסה ורקע + תקצירים ללא הגבלה */
+/* styles.css - Vibe + תיקוני פריסה/רקע + תקציר 4 שורות */
 :root {
   --bg: #0f0f23;
   --panel: #141a2a;
@@ -15,10 +15,8 @@ html, body { height: 100%; }
 body {
   margin: 0;
   padding: 0;
-  /* 🛠️ תיקון רקע: הגדלתי את הגרדיאנט כדי לכסות חלק גדול יותר מהדף */
   background: radial-gradient(2000px 1500px at 80% -10%, #19223b 0%, #0f0f23 60%), #0f0f23;
   color: var(--text);
-  /* גופנים תקינים לטיפול בטקסט, סמלים ואמוג'י */
   font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   line-height: 1.5;
 }
@@ -28,72 +26,39 @@ a:hover { text-decoration: underline; }
 
 .container { max-width: 980px; margin: 0 auto; padding: 16px; }
 
-/* Skip link - נגישות */
+/* Skip link */
 .skip-link {
-  position: absolute;
-  top: -40px;
-  left: 0;
-  background: var(--accent);
-  color: var(--bg);
-  padding: 8px;
-  z-index: 1000;
-  text-decoration: none;
+  position: absolute; top: -40px; left: 0;
+  background: var(--accent); color: var(--bg);
+  padding: 8px; z-index: 1000; text-decoration: none;
 }
 .skip-link:focus { top: 0; }
 
-/* כותרת - ה-Vibe המוזיקלי */
+/* Header */
 .header { text-align: center; margin: 40px 0 30px; }
 
 .site-title {
-  /* ⬅️ עיצוב גרדיאנט נושם מקורי */
   font-family: 'Rubik', sans-serif;
-  font-size: 5rem;
-  font-weight: 900;
-  margin: 0;
-  padding: 0;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  line-height: 0.9;
+  font-size: 5rem; font-weight: 900; margin: 0; letter-spacing: 2px; text-transform: uppercase; line-height: .9;
   background: linear-gradient(90deg, #ffc700, #ff6b6b, #ffc700);
-  background-size: 200% auto;
-  color: transparent;
-  -webkit-background-clip: text;
-  background-clip: text;
+  background-size: 200% auto; color: transparent; -webkit-background-clip: text; background-clip: text;
   animation: titleGradient 4s linear infinite;
 }
-
 .subtitle {
-  font-size: 1.2rem;
-  color: var(--muted);
-  margin-top: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  font-size: 1.2rem; color: var(--muted); margin-top: 5px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
 }
-
 @keyframes titleGradient { to { background-position: 200% center; } }
 
-/* ניווט וכלים */
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  margin-bottom: 20px;
-}
+/* Toolbar */
+.toolbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; margin-bottom: 20px; }
 .spacer { flex-grow: 1; }
 .btn-group { display: flex; gap: 8px; }
 
 .btn {
-  font-size: 1rem;
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: 1px solid var(--panel);
-  background: var(--panel);
-  color: var(--text);
-  cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
+  font-size: 1rem; padding: 8px 16px; border-radius: 6px;
+  border: 1px solid var(--panel); background: var(--panel); color: var(--text);
+  cursor: pointer; transition: background .2s, border-color .2s, color .2s, transform .1s;
   font-weight: 500;
 }
 .btn.ghost { background: transparent; border-color: var(--tag); color: var(--muted); }
@@ -102,123 +67,138 @@ a:hover { text-decoration: underline; }
 .btn.active { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 700; }
 .btn.active:hover { filter: brightness(1.05); }
 
-/* נגישות - טאב */
+/* Focus visibility */
 :where(a, button):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* פיד החדשות */
+/* Feed */
 .news-feed {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding-bottom: 60px;
-  min-height: 40vh;
+  display: flex; flex-direction: column; gap: 20px;
+  padding-bottom: 60px; min-height: 40vh;
 }
 
-/* -------------------- NEWS CARD LAYOUT -------------------- */
-
+/* Card */
 .news-card {
-  /* 🛠️ הכרטיס הוא Flex container */
-  display: flex;
-  flex-direction: column; /* ברירת מחדל: ערימה במובייל */
-  background: var(--panel);
-  padding: 0; 
-  border-radius: 14px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-  margin: 0; 
-  overflow: hidden; 
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex; flex-direction: column;
+  background: var(--panel); padding: 0; border-radius: 14px; overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0,0,0,.25);
+  transition: transform .2s, box-shadow .2s; margin: 0;
 }
-
-/* אפקט תנועה אנרגטי על כרטיסי החדשות (Tilt) */
 .news-card:hover {
-  transform: translateY(-4px) rotateZ(0.5deg); 
-  box-shadow: 0 6px 20px rgba(255, 199, 0, 0.3), 0 3px 10px rgba(0, 0, 0, 0.4); 
+  transform: translateY(-4px) rotateZ(.5deg);
+  box-shadow: 0 6px 20px rgba(255,199,0,.3), 0 3px 10px rgba(0,0,0,.4);
 }
 
-/* תמונת הכיסוי */
+/* Cover */
 .news-cover {
-  width: 100%; /* במובייל */
-  height: 120px;
-  flex-shrink: 0; 
-  object-fit: cover;
-  border-radius: 14px 14px 0 0;
-  margin-bottom: 0;
+  width: 100%; height: 120px; flex-shrink: 0; object-fit: cover;
+  border-radius: 14px 14px 0 0; margin-bottom: 0;
 }
 
-/* מיכל הפרטים (טקסט) */
+/* Details */
 .news-details {
-  padding: 16px;
-  flex-grow: 1; 
-  display: flex; 
-  flex-direction: column; 
-  justify-content: space-between; 
+  padding: 16px; flex-grow: 1;
+  display: flex; flex-direction: column; justify-content: space-between;
 }
-
-/* מקור - מופיע ראשון */
-.news-source {
-  font-size: 0.8rem;
-  color: var(--muted);
-  font-weight: 500;
-  margin-bottom: 4px;
-}
-
-/* כותרת */
-.news-title {
-  font-size: 1.25rem; 
-  font-weight: 800; 
-  margin: 0 0 8px 0;
-  line-height: 1.3;
-}
-.news-title a { color: var(--text); transition: color 0.2s ease; }
+.news-source { font-size: .8rem; color: var(--muted); font-weight: 500; margin-bottom: 4px; }
+.news-title { font-size: 1.25rem; font-weight: 800; margin: 0 0 8px 0; line-height: 1.3; }
+.news-title a { color: var(--text); transition: color .2s; }
 .news-title a:hover { color: var(--accent); text-decoration: none; }
 
-/* תקציר — ללא הגבלה */
+/* Summary – 4 lines clamp */
 .news-summary {
-  font-size: 0.95rem;
-  line-height: 1.6;
-  color: #c5d0e6;
-  margin: 0 0 10px 0;
-
-  /* אין חיתוך/הסתרה. דואג לשבירת שורות בטוחה גם בטקסט ארוך/ללא רווחים */
-  overflow: visible;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  font-size: .95rem; line-height: 1.6; color: #c5d0e6; margin: 0 0 10px 0;
+  overflow-wrap: anywhere; word-break: break-word;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden;
 }
 
-/* פוטר הכרטיס (תאריך + תגיות) */
-.news-footer-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.85rem;
-  margin-top: auto; /* דוחף את הפוטר לתחתית ה-news-details */
-}
-
-/* תאריך */
-.news-date {
-  direction: rtl;
-  color: #9aa3b2;
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
-
-/* תגיות */
+/* Footer meta */
+.news-footer-meta { display: flex; justify-content: space-between; align-items: center; font-size: .85rem; margin-top: auto; }
+.news-date { direction: rtl; color: #9aa3b2; font-size: .85rem; white-space: nowrap; }
 .news-tags { display: flex; gap: 6px; }
-.tag {
-  border: 1px solid var(--tag);
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 0.75rem;
-  color: #bdc8e6;
-  text-transform: lowercase;
-  background: var(--tag);
-}
+.tag { border: 1px solid var(--tag); border-radius: 4px; padding: 4px 8px; font-size: .75rem; color: #bdc8e6; text-transform: lowercase; background: var(--tag); }
 
-/* תצוגת דסקטופ (2 עמודות) */
+/* Desktop (2 cols) */
 @media (min-width: 1024px) {
   .news-feed { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   .news-card { flex-direction: row; }
+  /* אם תרצה את התמונה משמאל ב-RTL:
+  .news-cover { order: 2; } .news-details { order: 1; }
+  */
+  .news-cover { width: 120px; height: 100%; border-radius: 14px 0 0 14px; }
+}
 
-  /* אם אתה רוצה את התמונה משמאל למרות RTL – בטל את ההערות הבאות:
-  .news-cover { order: 2; }
-  .n
+/* Mobile */
+@media (max-width: 768px) {
+  .news-card { flex-direction: column; }
+  .news-cover { width: 100%; height: 120px; border-radius: 14px 14px 0 0; }
+  .news-details { padding: 12px; }
+  .news-title { font-size: 1.1rem; }
+  .news-footer-meta, .news-date { font-size: .8rem; }
+
+  .toolbar { flex-wrap: wrap; padding-bottom: 0; }
+  .btn-group {
+    order: 2; margin-top: 10px; width: 100%;
+    overflow-x: auto; white-space: nowrap; padding-bottom: 5px;
+  }
+  .btn-group .btn { flex-shrink: 0; }
+  .btn-group::-webkit-scrollbar { display: none; }
+  .spacer { display: none; }
+}
+
+/* Spotify button */
+.btn.spotify-btn {
+  background: #1DB954; border: 1px solid #1DB954; color: #0f0f23;
+  font-weight: 700; box-shadow: 0 0 15px rgba(29,185,84,.4);
+  display: flex; align-items: center; gap: 6px;
+  transition: transform .08s, background .2s, border-color .2s, box-shadow .2s;
+}
+.btn.spotify-btn:hover {
+  transform: scale(1.05) translateY(-1px);
+  background: #1ed760; border-color: #1ed760; box-shadow: 0 0 25px rgba(29,185,84,.7);
+}
+.btn.spotify-btn::before { content: '🎧'; color: #0f0f23; }
+
+/* Grain */
+body::after {
+  content: ""; position: fixed; inset: 0;
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKkFgAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyFpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzowMTowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbj48L3JkZjpSREY+PC94OnhtcG1ldGE+'); /* מקוצר */
+  pointer-events: none; opacity: .05; mix-blend-mode: overlay; z-index: 100;
+}
+
+/* Skeleton & spinner */
+.skeleton {
+  background: linear-gradient(90deg, #1f2a44 25%, #2a3550 50%, #1f2a44 75%);
+  background-size: 200% 100%; animation: shimmer 1.5s linear infinite;
+  border-radius: 14px; height: 140px; margin: 12px 0; will-change: background-position;
+}
+@keyframes shimmer { 100% { background-position: -200% 0; } }
+
+.spinner {
+  width: 44px; height: 44px; border: 4px solid #2a3550; border-top-color: var(--accent);
+  border-radius: 50%; animation: spin 1s linear infinite; margin: 18px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Utils */
+.muted { color: #99a1b5; }
+.error { color: #ff6b6b; text-align: center; padding: 20px; }
+
+/* Footer */
+.footer { text-align: center; padding: 30px 10px; font-size: .9rem; color: var(--muted); }
+.footer img { vertical-align: middle; margin-inline-end: 8px; }
+.footer p { display: flex; align-items: center; justify-content: center; gap: 4px; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* Print */
+@media print {
+  .toolbar, .footer, .skip-link { display: none; }
+  .news-card { break-inside: avoid; page-break-inside: avoid; }
+}
