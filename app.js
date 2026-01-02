@@ -49,6 +49,30 @@ function timeAgo(dateStr) {
   return HEB_RTF.format(-day, 'day');
 }
 
+const LS_KEY_PREFIX = 'kitzer-feed-v1';
+
+function loadFromLocalStorage(key) {
+  try {
+    const raw = localStorage.getItem(`${LS_KEY_PREFIX}:${key}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.data || !parsed.ts) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveToLocalStorage(key, data) {
+  try {
+    localStorage.setItem(
+      `${LS_KEY_PREFIX}:${key}`,
+      JSON.stringify({ data, ts: Date.now() })
+    );
+  } catch {}
+}
+
+
 function clockIL(dateStr) {
   try {
     const d = new Date(dateStr);
@@ -188,59 +212,61 @@ function filterForInternational(items) {
 
 // loadNews: ללא לוגיקת גלילה אינסופית
 async function loadNews(forceRefresh = false) {
-  setBusy(true);
+  const key = (state.genre || 'all').toLowerCase();
 
-  const key = (state.genre || 'all').toLowerCase(); // המפתח לקאש הוא רק ה-genre
-
-  // 1) נסה קאש
+  // ✅ 1) Instant render from localStorage
   if (!forceRefresh) {
-    const cached = getCache(key);
-    if (cached) {
-      renderNews(cached);
+    const ls = loadFromLocalStorage(key);
+    if (ls && Array.isArray(ls.data)) {
+      renderNews(ls.data);
+      setBusy(false);
+    }
+  }
+
+  // show skeleton only if nothing was rendered
+  if (!feedEl.children.length) {
+    setBusy(true);
+  }
+
+  // ✅ 2) Memory cache (current tab)
+  if (!forceRefresh) {
+    const mem = getCache(key);
+    if (mem) {
+      renderNews(mem);
       setBusy(false);
       return;
     }
   }
 
+  // ✅ 3) Network fetch (background refresh)
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-    const fetchGenre = (state.genre === 'hebrew' || state.genre === 'electronic') ? state.genre : 'all';
-    const url = buildUrl(fetchGenre);
-
-    const res = await fetch(url, { cache: 'default', signal: controller.signal });
+    const url = buildUrl(state.genre);
+    const res = await fetch(url, { signal: controller.signal });
     clearTimeout(timeoutId);
+
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    const ct = res.headers.get('content-type') || '';
-    if (!ct.includes('application/json')) throw new Error('Not JSON response');
-
     const data = await res.json();
-    let items = Array.isArray(data) ? data : (data.items || []);
+    const items = Array.isArray(data) ? data : (data.items || []);
 
-    // 3) סינון ושמירה בקאש
-    let finalItems;
-    if (state.genre === 'international') {
-      finalItems = filterForInternational(items);
-    } else {
-      finalItems = items;
-    }
+    setCache(key, items);
+    saveToLocalStorage(key, items);
 
-    setCache(key, finalItems);
-    renderNews(finalItems);
+    renderNews(items);
 
   } catch (e) {
-    console.error('Load error:', e);
-    if (e.name === 'AbortError') {
-      feedEl.innerHTML = `<p class="error">הבקשה ארכה יותר מדי. אנא נסה שוב.</p>`;
-    } else {
-      feedEl.innerHTML = `<p class="error">שגיאה בטעינת החדשות (${e.message})</p>`;
+    console.error(e);
+    if (!feedEl.children.length) {
+      feedEl.innerHTML = `<p class="error">שגיאה בטעינה</p>`;
     }
   } finally {
     setBusy(false);
   }
 }
+
 
 function initFilters() {
   qsa('[data-genre]').forEach(btn => {
@@ -280,3 +306,4 @@ document.addEventListener('DOMContentLoaded', () => {
   loadNews();
   warmupAPI();
 });
+
