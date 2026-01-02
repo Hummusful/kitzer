@@ -15,7 +15,10 @@ html, body { height: 100%; }
 body {
   margin: 0;
   padding: 0;
-  background: radial-gradient(2000px 1500px at 80% -10%, #19223b 0%, #0f0f23 60%), #0f0f23;
+  background: 
+    radial-gradient(2000px 1500px at 80% -10%, #19223b 0%, #0f0f23 60%),
+    radial-gradient(1600px 2000px at 20% 120%, #151d33 0%, #0f0f23 70%),
+    #0f0f23;
   color: var(--text);
   font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   line-height: 1.5;
@@ -202,3 +205,4 @@ body::after {
   .toolbar, .footer, .skip-link { display: none; }
   .news-card { break-inside: avoid; page-break-inside: avoid; }
 }
+
