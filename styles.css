@@ -15,13 +15,23 @@ html, body { height: 100%; }
 body {
   margin: 0;
   padding: 0;
-  background: 
-    radial-gradient(2000px 1500px at 80% -10%, #19223b 0%, #0f0f23 60%),
-    radial-gradient(1600px 2000px at 20% 120%, #151d33 0%, #0f0f23 70%),
-    #0f0f23;
+  background: #0f0f23;
   color: var(--text);
   font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   line-height: 1.5;
+}
+body::before{
+  content:"";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+
+  background:
+    radial-gradient(160vmax 120vmax at 85% -20%, #19223b 0%, rgba(15,15,35,0) 62%),
+    radial-gradient(140vmax 160vmax at 10% 120%, #151d33 0%, rgba(15,15,35,0) 68%),
+    linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,.45) 100%),
+    #0f0f23;
 }
 
 a { color: inherit; text-decoration: none; }
@@ -205,4 +215,5 @@ body::after {
   .toolbar, .footer, .skip-link { display: none; }
   .news-card { break-inside: avoid; page-break-inside: avoid; }
 }
+
 
