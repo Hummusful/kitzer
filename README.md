@@ -1,2 +1,2 @@
-#  Halaa Bekitzer - הלאה בקיצר
+# Bekitzer - הלאה בקיצר
 Music News Aggregator 
