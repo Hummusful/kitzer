@@ -3,66 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- SEO בסיסי -->
-  <title>קיצר — חדשות מוזיקה (הפיד של דאסטי)</title>
-  <meta name="description" content="חדשות מוזיקה" />
-  <meta name="robots" content="index,follow,max-image-preview:large" />
-
-  <!-- Canonical -->
-  <link rel="canonical" href="https://kitzer.net/" />
-
-  <!-- Theme / Icon -->
+  <title>קיצר — הפיד של דאסטי</title>
   <meta name="theme-color" content="#0f0f23" />
-  <link rel="icon" href="/favicon.ico" />
+  <link rel="icon" href="/favicon.ico">
 
-  <!-- Open Graph -->
-  <meta property="og:type" content="website" />
-  <meta property="og:locale" content="he_IL" />
-  <meta property="og:site_name" content="קיצר" />
-  <meta property="og:title" content="קיצר — חדשות מוזיקה" />
-  <meta property="og:description" content="חדשות מוזיקה נטו: ריליסים, אלבומים, סינגלים ועדכוני אמנים." />
-  <meta property="og:url" content="https://YOUR-DOMAIN-HERE/" />
-
-  <!-- Twitter Cards -->
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="קיצר — חדשות מוזיקה" />
-  <meta name="twitter:description" content="חדשות מוזיקה נטו: ריליסים, אלבומים, סינגלים ועדכוני אמנים." />
-
-  <!-- Schema.org – אתר חדשות -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "NewsMediaOrganization",
-    "name": "קיצר",
-    "url": "https://kitzer.net/",
-    "inLanguage": "he"
-  }
-  </script>
-
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@800;900&display=swap" rel="stylesheet">
 
   <style>
+    /* עדכון Accent Color לצהוב ניאון והחזרת כלל הפונטים הנדרשים */
     :root{--bg:#0f0f23;--panel:#141a2a;--muted:#9aa3b2;--accent:#FFC700;--tag:#2a3550;--text:#eaf0ff;}
     *{box-sizing:border-box;}
     html,body{height:100%;margin:0;padding:0;}
+    /* החזרת כל רשימת הפונטים המקורית לטיפול בתצוגת הזמן/אמוג'י */
     body{color:var(--text);font-family:system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";line-height:1.5;}
     .container{max-width:980px;margin:0 auto;padding:16px;}
     .skeleton{background:linear-gradient(90deg,#1f2a44 25%,#2a3550 50%,#1f2a44 75%);background-size:200% 100%;animation:shimmer 1.5s infinite linear;border-radius:14px;height:140px;margin:12px 0;}
     @keyframes shimmer{100%{background-position:-200% 0;}}
     .news-feed{min-height:40vh;}
   </style>
-</head>
 
+  <link rel="preconnect" href="https://music-aggregator.dustrial.workers.dev">
+  <link rel="dns-prefetch" href="https://music-aggregator.dustrial.workers.dev">
+  
+  <link rel="prefetch" href="https://music-aggregator.dustrial.workers.dev/api/music" as="fetch" crossorigin>
+
+  <link rel="preload" href="./styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="./styles.css"></noscript>
+</head>
 <body>
   <a class="skip-link" href="#newsFeed">דלג לתוכן</a>
 
   <div class="container">
     <header class="header" role="banner">
-      <h1 class="site-title">קיצר</h1><br>
+      <h1 class="site-title">קיצר</h1>
       <p class="subtitle"><img src="Logo99.png" alt="logo99" aria-hidden="true">Dusty's Feed</p>
     </header>
 
@@ -105,7 +80,5 @@
   <script src="./app.js" defer></script>
 </body>
 </html>
-
-
 
 
