@@ -51,16 +51,16 @@ function renderNews(items) {
     const endIdx = Math.min(startIdx + batchSize, items.length);
     const frag = document.createDocumentFragment();
 
-    for (let i = startIdx; i < endIdx; i++) {
+      for (let i = startIdx; i < endIdx; i++) {
       const it = items[i];
       const el = document.createElement('article');
       el.className = 'news-card';
 
-      const tags = [];
-      if (it.lang) tags.push(it.lang.toUpperCase());
-      if (it.genre && it.genre !== 'general') tags.push(it.genre);
+      // הוספת הצגת תמונה אם היא קיימת
+      const coverHTML = it.cover ? `<img src="${safeUrl(it.cover)}" class="news-cover" loading="lazy" alt="">` : '';
 
       el.innerHTML = `
+        ${coverHTML}
         <div class="news-details">
           <span class="news-source">${cleanText(it.source)}</span>
           <h3 class="news-title">
@@ -74,7 +74,7 @@ function renderNews(items) {
                <span class="rel">${timeAgo(it.date)}</span>
                <span class="sep"> · </span><bdi class="clock">${new Date(it.date).toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit', timeZone:TZ})}\u200E</bdi>
             </time>
-            <div class="news-tags">${tags.map(t => `<span class="tag">${cleanText(t)}</span>`).join('')}</div>
+            <div class="news-tags">${makeTags(it).map(t => `<span class="tag">${cleanText(t)}</span>`).join('')}</div>
           </div>
         </div>`;
       frag.appendChild(el);
@@ -122,3 +122,4 @@ document.addEventListener('DOMContentLoaded', () => {
   refreshBtn?.addEventListener('click', () => loadNews(true));
   loadNews();
 });
+
