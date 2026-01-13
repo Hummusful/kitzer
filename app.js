@@ -1,4 +1,4 @@
-// app.js – גרסה סופית: יציבה, קאש פר-טאב ומבנה HTML מתוקן
+// app.js – גרסה מאובטחת ומותאמת ל-Worker החדש
 const FEED_ENDPOINT = 'https://music-aggregator.dustrial.workers.dev/api/music';
 
 const feedEl = document.getElementById('newsFeed');
@@ -16,21 +16,27 @@ let memoryCache = {
 
 const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
+// פונקציית עזר לניקוי טקסט מהזרקות קוד (XSS Protection)
+function escapeHTML(str) {
+  if (!str) return '';
+  const p = document.createElement('p');
+  p.textContent = str;
+  return p.innerHTML;
+}
+
 // setBusy: מציג סקלטון מלא (טעינה רגילה)
 function setBusy(isBusy) {
   if (!feedEl) return;
   feedEl.setAttribute('aria-busy', isBusy ? 'true' : 'false');
   if (isBusy) {
-    // מציג סקלטון מלא
     feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
   } else {
-    // הסר סקלטון
     const spinner = document.getElementById('scroll-spinner');
     if (spinner) spinner.remove();
   }
 }
 
-// Hebrew relative time + absolute clock
+// Hebrew relative time
 const HEB_RTF = new Intl.RelativeTimeFormat('he-IL', { numeric: 'auto' });
 const TZ = 'Asia/Jerusalem';
 
@@ -56,36 +62,26 @@ function loadFromLocalStorage(key) {
     const raw = localStorage.getItem(`${LS_KEY_PREFIX}:${key}`);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (!parsed || !parsed.data || !parsed.ts) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
+    return (parsed && parsed.data && parsed.ts) ? parsed : null;
+  } catch { return null; }
 }
 
 function saveToLocalStorage(key, data) {
   try {
-    localStorage.setItem(
-      `${LS_KEY_PREFIX}:${key}`,
-      JSON.stringify({ data, ts: Date.now() })
-    );
+    localStorage.setItem(`${LS_KEY_PREFIX}:${key}`, JSON.stringify({ data, ts: Date.now() }));
   } catch {}
 }
-
 
 function clockIL(dateStr) {
   try {
     const d = new Date(dateStr);
     return d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
-  } catch {
-    return '';
-  }
+  } catch { return ''; }
 }
 
-// buildUrl: ללא days דינמי
 function buildUrl(forGenre = state.genre) {
   const u = new URL(FEED_ENDPOINT);
-  if (forGenre === 'hebrew' || forGenre === 'electronic') {
+  if (forGenre === 'hebrew' || forGenre === 'electronic' || forGenre === 'international') {
     u.searchParams.set('genre', forGenre);
   }
   return u.toString();
@@ -110,33 +106,29 @@ function safeUrl(href) {
   try {
     const u = new URL(href);
     return (u.protocol === 'http:' || u.protocol === 'https:') ? u.toString() : '#';
-  } catch {
-    return '#';
-  }
+  } catch { return '#'; }
 }
 
 function makeTags(it) {
   const tags = [];
-  if (it.language) tags.push((it.language || '').toUpperCase());
+  // התאמה ל-Worker: שימוש ב-it.lang במקום it.language
+  if (it.lang) tags.push(it.lang.toUpperCase());
   const g = (it.genre || '').toLowerCase();
-  if (g && g !== 'hebrew') tags.push(g);
+  if (g && g !== 'hebrew' && g !== 'general') tags.push(g);
   return tags;
 }
 
-// *** renderNews: תיקון באג הבאצ'ים – פרגמנט חדש לכל באץ' והזרקה מיידית ל-DOM ***
+// *** renderNews: התאמה מלאה לשדות המאובטחים (title, description) ***
 function renderNews(items) {
   if (!feedEl) return;
-
-  feedEl.innerHTML = ''; // נקה
+  feedEl.innerHTML = '';
 
   if (!items || !items.length) {
     feedEl.innerHTML = `<p class="muted">אין חדשות כרגע.</p>`;
     return;
   }
 
-  // רינדור בבאצ'ים
   const batchSize = 6;
-
   const renderBatch = (startIdx) => {
     const endIdx = Math.min(startIdx + batchSize, items.length);
     const batchFrag = document.createDocumentFragment();
@@ -146,10 +138,7 @@ function renderNews(items) {
       const el = document.createElement('article');
       el.className = 'news-card';
 
-      const cover = it.cover
-        ? `<img class="news-cover" src="${it.cover}" alt="" loading="lazy" decoding="async">`
-        : '';
-
+      const cover = it.cover ? `<img class="news-cover" src="${it.cover}" alt="" loading="lazy" decoding="async">` : '';
       const absClock = it.date ? clockIL(it.date) : '';
       const relTime = it.date ? timeAgo(it.date) : '';
 
@@ -160,35 +149,31 @@ function renderNews(items) {
            </time>`
         : '';
 
-      const tagsHTML = makeTags(it)
-        .map(t => `<span class="tag">${t}</span>`)
-        .join(' ');
+      const tagsHTML = makeTags(it).map(t => `<span class="tag">${escapeHTML(t)}</span>`).join(' ');
 
-      // מבנה HTML: התמונה, ואז div.news-details
+      // שימוש ב-it.title ו-it.description + אבטחת XSS
       el.innerHTML = `
         ${cover}
         <div class="news-details">
-          <span class="news-source">${it.source || ''}</span>
-          <h3 class="news-title"><a href="${safeUrl(it.link)}" target="_blank" rel="noopener noreferrer">${it.headline || ''}</a></h3>
-          ${it.summary ? `<p class="news-summary">${it.summary}</p>` : ''}
+          <span class="news-source">${escapeHTML(it.source || '')}</span>
+          <h3 class="news-title">
+            <a href="${safeUrl(it.link)}" target="_blank" rel="noopener noreferrer">
+              ${escapeHTML(it.title || '')}
+            </a>
+          </h3>
+          ${it.description ? `<p class="news-summary">${escapeHTML(it.description)}</p>` : ''}
           <div class="news-footer-meta">
             ${dateHTML}
             <div class="news-tags">${tagsHTML}</div>
           </div>
         </div>
       `;
-
       batchFrag.appendChild(el);
     }
 
-    // ⬅️ זה ההבדל הקריטי: מצרפים כל באץ' מיידית ל-DOM
     feedEl.appendChild(batchFrag);
-
-    if (endIdx < items.length) {
-      requestAnimationFrame(() => renderBatch(endIdx));
-    }
+    if (endIdx < items.length) requestAnimationFrame(() => renderBatch(endIdx));
   };
-
   renderBatch(0);
 }
 
@@ -206,15 +191,9 @@ function setCache(key, data) {
   memoryCache.byKey.set(key, { data, ts: Date.now() });
 }
 
-function filterForInternational(items) {
-  return items.filter(x => (x.genre || '').toLowerCase() !== 'hebrew');
-}
-
-// loadNews: ללא לוגיקת גלילה אינסופית
 async function loadNews(forceRefresh = false) {
   const key = (state.genre || 'all').toLowerCase();
 
-  // ✅ 1) Instant render from localStorage
   if (!forceRefresh) {
     const ls = loadFromLocalStorage(key);
     if (ls && Array.isArray(ls.data)) {
@@ -223,12 +202,8 @@ async function loadNews(forceRefresh = false) {
     }
   }
 
-  // show skeleton only if nothing was rendered
-  if (!feedEl.children.length) {
-    setBusy(true);
-  }
+  if (!feedEl.children.length) setBusy(true);
 
-  // ✅ 2) Memory cache (current tab)
   if (!forceRefresh) {
     const mem = getCache(key);
     if (mem) {
@@ -238,7 +213,6 @@ async function loadNews(forceRefresh = false) {
     }
   }
 
-  // ✅ 3) Network fetch (background refresh)
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -250,11 +224,11 @@ async function loadNews(forceRefresh = false) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const data = await res.json();
+    // וידוא שהנתונים נלקחים משדה items
     const items = Array.isArray(data) ? data : (data.items || []);
 
     setCache(key, items);
     saveToLocalStorage(key, items);
-
     renderNews(items);
 
   } catch (e) {
@@ -267,7 +241,6 @@ async function loadNews(forceRefresh = false) {
   }
 }
 
-
 function initFilters() {
   qsa('[data-genre]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -279,7 +252,7 @@ function initFilters() {
   });
 
   if (refreshBtn) {
-    refreshBtn.addEventListener('click', () => loadNews(true)); // force refresh
+    refreshBtn.addEventListener('click', () => loadNews(true));
   }
 }
 
@@ -290,7 +263,6 @@ function restoreStateFromUrl() {
   setActiveGenre(state.genre);
 }
 
-// טעינה מוקדמת של הAPI
 function warmupAPI() {
   if ('requestIdleCallback' in window) {
     requestIdleCallback(() => {
@@ -299,11 +271,9 @@ function warmupAPI() {
   }
 }
 
-// Event listeners
 document.addEventListener('DOMContentLoaded', () => {
   restoreStateFromUrl();
   initFilters();
   loadNews();
   warmupAPI();
 });
-
