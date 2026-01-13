@@ -4,7 +4,8 @@ const refreshBtn = document.getElementById('refreshBtn');
 
 let state = { genre: 'all' };
 
-// פונקציית העל לניקוי ואבטחת טקסט (מטפלת ב-HTML ובסימנים מוזרים)
+const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
 function cleanText(input, limit = 0) {
   if (!input) return '';
   try {
@@ -38,6 +39,13 @@ function timeAgo(dateStr) {
   return HEB_RTF.format(-Math.round(hr / 24), 'day');
 }
 
+function makeTags(it) {
+  const tags = [];
+  if (it.lang) tags.push(it.lang.toUpperCase());
+  if (it.genre && it.genre !== 'general' && it.genre !== 'all') tags.push(it.genre);
+  return tags;
+}
+
 function renderNews(items) {
   if (!feedEl) return;
   feedEl.innerHTML = '';
@@ -51,13 +59,17 @@ function renderNews(items) {
     const endIdx = Math.min(startIdx + batchSize, items.length);
     const frag = document.createDocumentFragment();
 
-      for (let i = startIdx; i < endIdx; i++) {
+    for (let i = startIdx; i < endIdx; i++) {
       const it = items[i];
       const el = document.createElement('article');
       el.className = 'news-card';
 
-      // הוספת הצגת תמונה אם היא קיימת
-      const coverHTML = it.cover ? `<img src="${safeUrl(it.cover)}" class="news-cover" loading="lazy" alt="">` : '';
+      // הוספת התמונה לפי ה-it.cover שמגיע מה-Worker
+      const coverHTML = it.cover 
+        ? `<img src="${safeUrl(it.cover)}" class="news-cover" loading="lazy" alt="">` 
+        : '';
+
+      const tags = makeTags(it);
 
       el.innerHTML = `
         ${coverHTML}
@@ -68,13 +80,13 @@ function renderNews(items) {
                 ${cleanText(it.title)}
             </a>
           </h3>
-          ${it.description ? `<p class="news-summary">${cleanText(it.description, 160)}</p>` : ''}
+          ${it.description ? `<p class="news-summary">${cleanText(it.description, 200)}</p>` : ''}
           <div class="news-footer-meta">
             <time class="news-date">
                <span class="rel">${timeAgo(it.date)}</span>
                <span class="sep"> · </span><bdi class="clock">${new Date(it.date).toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit', timeZone:TZ})}\u200E</bdi>
             </time>
-            <div class="news-tags">${makeTags(it).map(t => `<span class="tag">${cleanText(t)}</span>`).join('')}</div>
+            <div class="news-tags">${tags.map(t => `<span class="tag">${cleanText(t)}</span>`).join('')}</div>
           </div>
         </div>`;
       frag.appendChild(el);
@@ -94,7 +106,9 @@ async function loadNews(forceRefresh = false) {
     if (cached) renderNews(JSON.parse(cached).data);
   }
 
-  if (!feedEl.children.length) feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
+  if (!feedEl.children.length) {
+    feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
+  }
 
   try {
     const url = new URL(FEED_ENDPOINT);
@@ -107,19 +121,18 @@ async function loadNews(forceRefresh = false) {
     localStorage.setItem(cacheKey, JSON.stringify({ data: items, ts: Date.now() }));
     renderNews(items);
   } catch (e) {
-    if (!feedEl.children.length) feedEl.innerHTML = `<p class="error">שגיאה בטעינה</p>`;
+    if (!feedEl.children.length) feedEl.innerHTML = `<p class="error">שגיאה בטעינת נתונים</p>`;
   }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  Array.from(document.querySelectorAll('[data-genre]')).forEach(btn => {
+  qsa('[data-genre]').forEach(btn => {
     btn.addEventListener('click', () => {
       state.genre = btn.getAttribute('data-genre') || 'all';
-      Array.from(document.querySelectorAll('[data-genre]')).forEach(b => b.classList.toggle('active', b === btn));
+      qsa('[data-genre]').forEach(b => b.classList.toggle('active', b === btn));
       loadNews();
     });
   });
   refreshBtn?.addEventListener('click', () => loadNews(true));
   loadNews();
 });
-
