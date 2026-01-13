@@ -1,5 +1,5 @@
 /**
- * Core Branding & Theme
+ * Configuration & Design Tokens
  */
 :root {
   --bg: #0f0f23;
@@ -11,35 +11,46 @@
   --card-radius: 14px;
 }
 
+/**
+ * Base Global Styles
+ */
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
 body {
   margin: 0;
+  padding: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, sans-serif;
-  direction: rtl; /* מוודא שהכל מיושר לימין כמו במקור */
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
 }
 
-/* הרקע המדורג המקורי */
+/**
+ * Page Background Layer: Fixed Gradients
+ */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: 
+  pointer-events: none;
+  background:
     radial-gradient(160vmax 120vmax at 85% -20%, #19223b 0%, rgba(15,15,35,0) 62%),
     radial-gradient(140vmax 160vmax at 10% 120%, #151d33 0%, rgba(15,15,35,0) 68%),
-    #0f0f23;
+    linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,.45) 100%),
+    var(--bg);
 }
 
-.container { max-width: 980px; margin: 0 auto; padding: 16px; }
-
 /**
- * Header & Title (החזרה לעיצוב הגדול והמרשים)
+ * Typography & Site Branding
  */
-.header { text-align: center; margin: 40px 0; }
 .site-title {
+  font-family: 'Rubik', sans-serif;
   font-size: 5rem;
   font-weight: 900;
+  text-transform: uppercase;
   background: linear-gradient(90deg, #ffc700, #ff6b6b, #ffc700);
   background-size: 200% auto;
   color: transparent;
@@ -47,63 +58,120 @@ body::before {
   background-clip: text;
   animation: titleGradient 4s linear infinite;
 }
+
 @keyframes titleGradient { to { background-position: 200% center; } }
 
 /**
- * News Card Structure
- * כאן עשינו את התיקון כדי שהתמונה לא תהרוס את העיצוב
+ * Layout Components
+ */
+.container { max-width: 980px; margin: 0 auto; padding: 16px; }
+
+/**
+ * News Feed Grid System
+ */
+.news-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 60px;
+}
+
+/**
+ * News Card Component
  */
 .news-card {
   display: flex;
-  flex-direction: column; /* תמונה מעל טקסט במובייל */
+  flex-direction: column;
   background: var(--panel);
   border-radius: var(--card-radius);
   overflow: hidden;
-  margin-bottom: 20px;
-  transition: transform 0.2s;
+  box-shadow: 0 4px 10px rgba(0,0,0,.25);
+  transition: transform .2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.news-card:hover { transform: translateY(-3px); }
+.news-card:hover {
+  transform: translateY(-4px) rotateZ(0.5deg);
+  box-shadow: 0 6px 20px rgba(255,199,0,.15);
+}
 
-/* התמונה מקבלת גובה קבוע כדי לא "לדחוף" את הטקסט */
+/**
+ * Media Component: Cover Image Logic
+ */
 .news-cover {
   width: 100%;
-  height: 160px; 
+  height: 180px; /* Fixed mobile height */
+  flex-shrink: 0;
   object-fit: cover;
-  display: block;
+  background-color: var(--tag); /* Fallback loader color */
+  border-radius: var(--card-radius) var(--card-radius) 0 0;
+  display: block; /* Ensures visibility in flow */
 }
 
-.news-details { padding: 16px; }
-.news-title { font-size: 1.3rem; margin: 0 0 10px 0; line-height: 1.2; }
-.news-summary { 
-  font-size: 0.95rem; 
-  color: var(--muted);
+/**
+ * Content Wrapper
+ */
+.news-details {
+  padding: 16px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.news-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 8px; line-height: 1.3; }
+
+/**
+ * Typography: Multi-line Clamp Utility
+ */
+.news-summary {
+  font-size: .95rem;
+  line-height: 1.6;
+  color: #c5d0e6;
   display: -webkit-box;
-  -webkit-line-clamp: 3; /* מקצר ל-3 שורות כדי לשמור על גובה אחיד */
   -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
   overflow: hidden;
 }
 
 /**
- * Desktop Look (צד לצד)
+ * Responsive Overrides: Tablet/Desktop
  */
-@media (min-width: 768px) {
-  .news-feed { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  
-  /* אם אתה רוצה שהתמונה תהיה בצד של הטקסט בדסקטופ */
-  .news-card { flex-direction: row; height: 180px; }
-  .news-cover { width: 150px; height: 100%; }
+@media (min-width: 1024px) {
+  .news-feed { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 24px; 
+  }
+
+  .news-card { 
+    flex-direction: row; 
+    min-height: 200px;
+  }
+
+  .news-cover { 
+    width: 180px; /* Sidebar image width */
+    height: auto; 
+    min-height: 100%;
+    border-radius: var(--card-radius) 0 0 var(--card-radius);
+  }
 }
 
 /**
- * Buttons & Active State
+ * Navigation & Buttons
  */
-.btn {
-  padding: 8px 16px;
-  background: var(--panel);
-  color: var(--text);
-  border: 1px solid var(--tag);
-  border-radius: 6px;
-  cursor: pointer;
+.btn.active {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
 }
-.btn.active { background: var(--accent); color: var(--bg); font-weight: bold; }
+
+/**
+ * Loading States: Skeletons
+ */
+.skeleton {
+  background: linear-gradient(90deg, #1f2a44 25%, #2a3550 50%, #1f2a44 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+  border-radius: var(--card-radius);
+  height: 180px;
+}
+@keyframes shimmer { 100% { background-position: -200% 0; } }
