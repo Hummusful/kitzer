@@ -1,105 +1,25 @@
-// app.js – גרסה מאובטחת ומותאמת ל-Worker החדש
 const FEED_ENDPOINT = 'https://music-aggregator.dustrial.workers.dev/api/music';
-
 const feedEl = document.getElementById('newsFeed');
 const refreshBtn = document.getElementById('refreshBtn');
 
-let state = {
-  genre: 'all',
-};
-
-// קאש בזיכרון לפי מפתח (genre)
-let memoryCache = {
-  ttl: 5 * 60 * 1000, // 5 דקות
-  byKey: new Map(),   // key -> { data, ts }
-};
+let state = { genre: 'all' };
 
 const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-// פונקציית עזר לניקוי טקסט מהזרקות קוד (XSS Protection)
-function escapeHTML(str) {
+function cleanDescription(html) {
+  if (!html) return '';
+  try {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const cleanText = doc.body.textContent || "";
+    return cleanText.slice(0, 160).trim() + (cleanText.length > 160 ? '...' : '');
+  } catch (e) { return ''; }
+}
+
+function escapeText(str) {
   if (!str) return '';
-  const p = document.createElement('p');
-  p.textContent = str;
-  return p.innerHTML;
-}
-
-// setBusy: מציג סקלטון מלא (טעינה רגילה)
-function setBusy(isBusy) {
-  if (!feedEl) return;
-  feedEl.setAttribute('aria-busy', isBusy ? 'true' : 'false');
-  if (isBusy) {
-    feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
-  } else {
-    const spinner = document.getElementById('scroll-spinner');
-    if (spinner) spinner.remove();
-  }
-}
-
-// Hebrew relative time
-const HEB_RTF = new Intl.RelativeTimeFormat('he-IL', { numeric: 'auto' });
-const TZ = 'Asia/Jerusalem';
-
-function timeAgo(dateStr) {
-  if (!dateStr) return '';
-  const t = Date.parse(dateStr);
-  if (Number.isNaN(t)) return '';
-  const diff = Date.now() - t;
-  const sec = Math.round(diff / 1000);
-  if (sec < 60) return 'לפני רגע';
-  const min = Math.round(sec / 60);
-  if (min < 60) return HEB_RTF.format(-min, 'minute');
-  const hr = Math.round(min / 60);
-  if (hr < 24) return HEB_RTF.format(-hr, 'hour');
-  const day = Math.round(hr / 24);
-  return HEB_RTF.format(-day, 'day');
-}
-
-const LS_KEY_PREFIX = 'kitzer-feed-v1';
-
-function loadFromLocalStorage(key) {
-  try {
-    const raw = localStorage.getItem(`${LS_KEY_PREFIX}:${key}`);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return (parsed && parsed.data && parsed.ts) ? parsed : null;
-  } catch { return null; }
-}
-
-function saveToLocalStorage(key, data) {
-  try {
-    localStorage.setItem(`${LS_KEY_PREFIX}:${key}`, JSON.stringify({ data, ts: Date.now() }));
-  } catch {}
-}
-
-function clockIL(dateStr) {
-  try {
-    const d = new Date(dateStr);
-    return d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
-  } catch { return ''; }
-}
-
-function buildUrl(forGenre = state.genre) {
-  const u = new URL(FEED_ENDPOINT);
-  if (forGenre === 'hebrew' || forGenre === 'electronic' || forGenre === 'international') {
-    u.searchParams.set('genre', forGenre);
-  }
-  return u.toString();
-}
-
-function setActiveGenre(value) {
-  qsa('[data-genre]').forEach(btn => {
-    const active = (btn.getAttribute('data-genre') || '').toLowerCase() === value.toLowerCase();
-    btn.classList.toggle('active', active);
-    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-  });
-}
-
-function persistStateToUrl() {
-  const url = new URL(location.href);
-  if (state.genre && state.genre !== 'all') url.searchParams.set('genre', state.genre);
-  else url.searchParams.delete('genre');
-  history.replaceState(null, '', url);
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }
 
 function safeUrl(href) {
@@ -109,171 +29,105 @@ function safeUrl(href) {
   } catch { return '#'; }
 }
 
-function makeTags(it) {
-  const tags = [];
-  // התאמה ל-Worker: שימוש ב-it.lang במקום it.language
-  if (it.lang) tags.push(it.lang.toUpperCase());
-  const g = (it.genre || '').toLowerCase();
-  if (g && g !== 'hebrew' && g !== 'general') tags.push(g);
-  return tags;
+const HEB_RTF = new Intl.RelativeTimeFormat('he-IL', { numeric: 'auto' });
+const TZ = 'Asia/Jerusalem';
+
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const t = Date.parse(dateStr);
+  if (Number.isNaN(t)) return '';
+  const diff = Date.now() - t;
+  const hr = Math.round(diff / 3600000);
+  if (hr < 1) return 'לפני רגע';
+  if (hr < 24) return HEB_RTF.format(-hr, 'hour');
+  return HEB_RTF.format(-Math.round(hr / 24), 'day');
 }
 
-// *** renderNews: התאמה מלאה לשדות המאובטחים (title, description) ***
+function clockIL(dateStr) {
+  try {
+    return new Date(dateStr).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
+  } catch { return ''; }
+}
+
 function renderNews(items) {
   if (!feedEl) return;
   feedEl.innerHTML = '';
-
-  if (!items || !items.length) {
+  if (!items?.length) {
     feedEl.innerHTML = `<p class="muted">אין חדשות כרגע.</p>`;
     return;
   }
 
-  const batchSize = 6;
+  const batchSize = 8;
   const renderBatch = (startIdx) => {
     const endIdx = Math.min(startIdx + batchSize, items.length);
-    const batchFrag = document.createDocumentFragment();
+    const frag = document.createDocumentFragment();
 
     for (let i = startIdx; i < endIdx; i++) {
       const it = items[i];
       const el = document.createElement('article');
       el.className = 'news-card';
 
-      const cover = it.cover ? `<img class="news-cover" src="${it.cover}" alt="" loading="lazy" decoding="async">` : '';
-      const absClock = it.date ? clockIL(it.date) : '';
-      const relTime = it.date ? timeAgo(it.date) : '';
+      const tags = [];
+      if (it.lang) tags.push(it.lang.toUpperCase());
+      if (it.genre && it.genre !== 'general') tags.push(it.genre);
 
-      const dateHTML = it.date
-        ? `<time class="news-date" datetime="${it.date}">
-             <span class="rel" dir="rtl">${relTime}</span>
-             ${absClock ? `<span class="sep"> · </span><bdi class="clock">${absClock}\u200E</bdi>` : ''}
-           </time>`
-        : '';
-
-      const tagsHTML = makeTags(it).map(t => `<span class="tag">${escapeHTML(t)}</span>`).join(' ');
-
-      // שימוש ב-it.title ו-it.description + אבטחת XSS
       el.innerHTML = `
-        ${cover}
         <div class="news-details">
-          <span class="news-source">${escapeHTML(it.source || '')}</span>
+          <span class="news-source">${escapeText(it.source)}</span>
           <h3 class="news-title">
-            <a href="${safeUrl(it.link)}" target="_blank" rel="noopener noreferrer">
-              ${escapeHTML(it.title || '')}
-            </a>
+            <a href="${safeUrl(it.link)}" target="_blank" rel="noopener noreferrer">${escapeText(it.title)}</a>
           </h3>
-          ${it.description ? `<p class="news-summary">${escapeHTML(it.description)}</p>` : ''}
+          ${it.description ? `<p class="news-summary">${cleanDescription(it.description)}</p>` : ''}
           <div class="news-footer-meta">
-            ${dateHTML}
-            <div class="news-tags">${tagsHTML}</div>
+            <time class="news-date">
+               <span class="rel">${timeAgo(it.date)}</span>
+               <span class="sep"> · </span><bdi class="clock">${clockIL(it.date)}\u200E</bdi>
+            </time>
+            <div class="news-tags">${tags.map(t => `<span class="tag">${escapeText(t)}</span>`).join('')}</div>
           </div>
-        </div>
-      `;
-      batchFrag.appendChild(el);
+        </div>`;
+      frag.appendChild(el);
     }
-
-    feedEl.appendChild(batchFrag);
+    feedEl.appendChild(frag);
     if (endIdx < items.length) requestAnimationFrame(() => renderBatch(endIdx));
   };
   renderBatch(0);
 }
 
-function getCache(key) {
-  const rec = memoryCache.byKey.get(key);
-  if (!rec) return null;
-  if ((Date.now() - rec.ts) > memoryCache.ttl) {
-    memoryCache.byKey.delete(key);
-    return null;
-  }
-  return rec.data;
-}
-
-function setCache(key, data) {
-  memoryCache.byKey.set(key, { data, ts: Date.now() });
-}
-
 async function loadNews(forceRefresh = false) {
-  const key = (state.genre || 'all').toLowerCase();
+  const key = state.genre.toLowerCase();
+  const cacheKey = `kitzer-feed-v1:${key}`;
 
   if (!forceRefresh) {
-    const ls = loadFromLocalStorage(key);
-    if (ls && Array.isArray(ls.data)) {
-      renderNews(ls.data);
-      setBusy(false);
-    }
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) renderNews(JSON.parse(cached).data);
   }
 
-  if (!feedEl.children.length) setBusy(true);
-
-  if (!forceRefresh) {
-    const mem = getCache(key);
-    if (mem) {
-      renderNews(mem);
-      setBusy(false);
-      return;
-    }
-  }
+  if (!feedEl.children.length) feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const url = new URL(FEED_ENDPOINT);
+    if (state.genre !== 'all') url.searchParams.set('genre', state.genre);
 
-    const url = buildUrl(state.genre);
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeoutId);
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
+    const res = await fetch(url);
     const data = await res.json();
-    // וידוא שהנתונים נלקחים משדה items
-    const items = Array.isArray(data) ? data : (data.items || []);
+    const items = data.items || [];
 
-    setCache(key, items);
-    saveToLocalStorage(key, items);
+    localStorage.setItem(cacheKey, JSON.stringify({ data: items, ts: Date.now() }));
     renderNews(items);
-
   } catch (e) {
-    console.error(e);
-    if (!feedEl.children.length) {
-      feedEl.innerHTML = `<p class="error">שגיאה בטעינה</p>`;
-    }
-  } finally {
-    setBusy(false);
-  }
-}
-
-function initFilters() {
-  qsa('[data-genre]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state.genre = (btn.getAttribute('data-genre') || 'all').toLowerCase();
-      setActiveGenre(state.genre);
-      persistStateToUrl();
-      loadNews();
-    });
-  });
-
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', () => loadNews(true));
-  }
-}
-
-function restoreStateFromUrl() {
-  const url = new URL(location.href);
-  const genre = (url.searchParams.get('genre') || 'all').toLowerCase();
-  state.genre = ['all', 'electronic', 'hebrew', 'international'].includes(genre) ? genre : 'all';
-  setActiveGenre(state.genre);
-}
-
-function warmupAPI() {
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => {
-      fetch(FEED_ENDPOINT, { method: 'HEAD' }).catch(() => {});
-    });
+    if (!feedEl.children.length) feedEl.innerHTML = `<p class="error">Connection Error</p>`;
   }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  restoreStateFromUrl();
-  initFilters();
+  qsa('[data-genre]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.genre = btn.getAttribute('data-genre') || 'all';
+      qsa('[data-genre]').forEach(b => b.classList.toggle('active', b === btn));
+      loadNews();
+    });
+  });
+  refreshBtn?.addEventListener('click', () => loadNews(true));
   loadNews();
-  warmupAPI();
 });
