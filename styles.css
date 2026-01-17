@@ -242,3 +242,18 @@ body::before {
   font-size: 0.9rem;
 }
 
+/* ---------- Defensive layout guards ---------- */
+
+.spacer:empty {
+  min-width: 0;
+}
+
+.toolbar > * {
+  flex-shrink: 0;
+}
+
+.site-title {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
