@@ -156,3 +156,89 @@ body::before {
   font-size: 0.85rem;
   color: var(--muted);
 }
+
+/* ======================================================
+   FIX PATCH — layout regression & responsive title
+   Safe additive patch (Jan 2026)
+   ====================================================== */
+
+/* ---------- Header ---------- */
+
+.site-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.site-title {
+  font-size: clamp(2.6rem, 4vw, 3.6rem);
+  line-height: 1.1;
+}
+
+.subtitle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  opacity: 0.9;
+}
+
+.subtitle img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+/* ---------- Toolbar ---------- */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.btn.ghost {
+  background: transparent;
+  border: 1px solid var(--border-color, #333);
+  opacity: 0.85;
+}
+
+.btn.ghost:hover {
+  opacity: 1;
+}
+
+.spotify-btn {
+  background: #1db954;
+  color: #000;
+  font-weight: 600;
+}
+
+/* ---------- Accessibility ---------- */
+
+.skip-link {
+  position: absolute;
+  inset-inline-start: 1rem;
+  top: -40px;
+  background: #000;
+  color: #fff;
+  padding: 0.5rem 0.75rem;
+  z-index: 1000;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+/* ---------- Footer ---------- */
+
+.footer {
+  margin-top: 3rem;
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--border-color, #333);
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
