@@ -1,2 +1,2 @@
-# קיצר - הפיד של דאסטי
+# Kitzer - הפיד של דאסטי
 Music News Aggregator 
