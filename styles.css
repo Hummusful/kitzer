@@ -54,7 +54,7 @@ body::before {
 }
 
 .site-title {
-  font-size: clamp(2.6rem, 4vw, 3.6rem);
+  font-size: clamp(2.6rem, 4vw, 5rem);
   font-weight: 900;
   margin: 0;
   line-height: 1.1;
@@ -284,3 +284,4 @@ body::before {
 @keyframes shimmer {
   100% { background-position: -200% 0; }
 }
+
