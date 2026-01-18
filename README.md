@@ -1,2 +1,2 @@
-# Bekitzer - הלאה בקיצר
+# קיצר - הפיד של דאסטי
 Music News Aggregator 
