@@ -141,7 +141,11 @@ async function loadNews(forceRefresh = false) {
     const url = new URL(FEED_ENDPOINT);
     if (state.genre !== 'all') url.searchParams.set('genre', state.genre);
 
-    const res = await fetch(url);
+    if (forceRefresh) {
+  url.searchParams.set('_t', Date.now());
+}
+
+const res = await fetch(url);
     if (!res.ok) throw new Error("API Response Error");
     
     const data = await res.json();
