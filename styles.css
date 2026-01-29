@@ -163,6 +163,11 @@ body::before {
   min-height: 40vh;
 }
 
+@media (max-width: 900px) {
+  .news-feed {
+    grid-template-columns: 1fr;
+  }
+}
 /**
  * News Card & Images
  */
@@ -285,6 +290,7 @@ body::before {
 @keyframes shimmer {
   100% { background-position: -200% 0; }
 }
+
 
 
 
