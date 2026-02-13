@@ -111,7 +111,7 @@ function renderNews(items) {
                <span class="rel">${timeAgo(it.date)}</span>
                <span class="sep"> · </span><bdi class="clock">${new Date(it.date).toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit', timeZone:TIMEZONE})}\u200E</bdi>
             </time>
-            <div class="news-tags">${tags.map(t => `<span class="tag">${cleanText(t)}</span>`).join('')}</div>
+            <div class="news-tags">${tags.map(t => `<span class="tag">${cleanText(t)}</span>`).join(' ')}</div>
           </div>
         </div>`;
       frag.appendChild(el);
@@ -196,5 +196,6 @@ document.addEventListener('DOMContentLoaded', () => {
   refreshBtn?.addEventListener('click', () => loadNews(true));
   loadNews();
 });
+
 
 
