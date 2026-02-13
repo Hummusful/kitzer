@@ -52,6 +52,15 @@ body::before {
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border-color);
 }
+.site-title a {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.site-title a:hover {
+  opacity: 0.85;
+}
 
 .site-title {
   font-size: clamp(2.6rem, 4vw, 8rem);
@@ -290,6 +299,7 @@ body::before {
 @keyframes shimmer {
   100% { background-position: -200% 0; }
 }
+
 
 
 
