@@ -6,6 +6,7 @@ const feedEl = document.getElementById('newsFeed');
 const refreshBtn = document.getElementById('refreshBtn');
 
 let state = { genre: 'all' };
+let currentController = null;
 
 /**
  * Utility: Scoped QuerySelector proxy
@@ -158,7 +159,15 @@ async function loadNews(forceRefresh = false) {
   url.searchParams.set('_t', Date.now());
 }
 
-const res = await fetch(url);
+if (currentController) {
+  currentController.abort();
+}
+
+currentController = new AbortController();
+
+const res = await fetch(url, {
+  signal: currentController.signal
+});
     if (!res.ok) throw new Error("API Response Error");
     
     const data = await res.json();
@@ -167,7 +176,8 @@ const res = await fetch(url);
     localStorage.setItem(cacheKey, JSON.stringify({ data: items, ts: Date.now() }));
     renderNews(items);
   } catch (e) {
-    console.error("LoadNews Failure:", e);
+  if (e.name === 'AbortError') return;
+  console.error("LoadNews Failure:", e);
     if (!feedEl.children.length) feedEl.innerHTML = `<p class="error">שגיאה בטעינת נתונים</p>`;
   }
 }
@@ -186,4 +196,5 @@ document.addEventListener('DOMContentLoaded', () => {
   refreshBtn?.addEventListener('click', () => loadNews(true));
   loadNews();
 });
+
 
