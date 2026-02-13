@@ -128,10 +128,23 @@ async function loadNews(forceRefresh = false) {
   const key = state.genre.toLowerCase();
   const cacheKey = `kitzer-feed-v1:${key}`;
 
+    const TTL_MS = 30 * 60 * 1000; // match worker: 1800s
   if (!forceRefresh) {
     const cached = localStorage.getItem(cacheKey);
-    if (cached) renderNews(JSON.parse(cached).data);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        const isFresh = parsed?.ts && (Date.now() - parsed.ts) < TTL_MS;
+        if (isFresh && Array.isArray(parsed.data)) {
+          renderNews(parsed.data);
+          return; // ✅ don't immediately refetch if cache is fresh
+        }
+      } catch {
+        // ignore corrupt cache
+      }
+    }
   }
+
 
   if (!feedEl.children.length) {
     feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
@@ -173,3 +186,4 @@ document.addEventListener('DOMContentLoaded', () => {
   refreshBtn?.addEventListener('click', () => loadNews(true));
   loadNews();
 });
+
