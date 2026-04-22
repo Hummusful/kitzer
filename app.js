@@ -91,7 +91,7 @@ function renderNews(items) {
       el.className = 'news-card';
 
       const coverHTML = it.cover 
-        ? `<img src="${safeUrl(it.cover)}" class="news-cover" loading="lazy" alt="">` 
+        ? `<img src="${safeUrl(it.cover)}" class="news-cover" loading="lazy" alt="" role="presentation">` 
         : '';
 
       const tags = makeTags(it);
@@ -128,6 +128,9 @@ function renderNews(items) {
 async function loadNews(forceRefresh = false) {
   const key = state.genre.toLowerCase();
   const cacheKey = `kitzer-feed-v1:${key}`;
+
+  // Set loading state for screen readers
+  if (feedEl) feedEl.setAttribute('aria-busy', 'true');
 
     const TTL_MS = 30 * 60 * 1000; // match worker: 1800s
   if (!forceRefresh) {
@@ -175,10 +178,14 @@ const res = await fetch(url, {
 
     localStorage.setItem(cacheKey, JSON.stringify({ data: items, ts: Date.now() }));
     renderNews(items);
+    if (feedEl) feedEl.setAttribute('aria-busy', 'false');
   } catch (e) {
   if (e.name === 'AbortError') return;
   console.error("LoadNews Failure:", e);
-    if (!feedEl.children.length) feedEl.innerHTML = `<p class="error">שגיאה בטעינת נתונים</p>`;
+    if (feedEl) {
+      feedEl.setAttribute('aria-busy', 'false');
+      if (!feedEl.children.length) feedEl.innerHTML = `<p class="error">שגיאה בטעינת נתונים</p>`;
+    }
   }
 }
 
