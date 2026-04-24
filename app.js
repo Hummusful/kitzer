@@ -134,7 +134,12 @@ async function loadNews(forceRefresh = false) {
 
     const TTL_MS = 30 * 60 * 1000; // match worker: 1800s
   if (!forceRefresh) {
-    const cached = localStorage.getItem(cacheKey);
+    let cached = null;
+    try {
+      cached = localStorage.getItem(cacheKey);
+    } catch {
+      cached = null;
+    }
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
@@ -159,8 +164,8 @@ async function loadNews(forceRefresh = false) {
     if (state.genre !== 'all') url.searchParams.set('genre', state.genre);
 
     if (forceRefresh) {
-  url.searchParams.set('_t', Date.now());
-}
+      url.searchParams.set('nocache', '1');
+    }
 
 if (currentController) {
   currentController.abort();
@@ -176,7 +181,9 @@ const res = await fetch(url, {
     const data = await res.json();
     const items = data.items || [];
 
-    localStorage.setItem(cacheKey, JSON.stringify({ data: items, ts: Date.now() }));
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify({ data: items, ts: Date.now() }));
+    } catch {}
     renderNews(items);
     if (feedEl) feedEl.setAttribute('aria-busy', 'false');
   } catch (e) {
@@ -184,7 +191,7 @@ const res = await fetch(url, {
   console.error("LoadNews Failure:", e);
     if (feedEl) {
       feedEl.setAttribute('aria-busy', 'false');
-      if (!feedEl.children.length) feedEl.innerHTML = `<p class="error">שגיאה בטעינת נתונים</p>`;
+      feedEl.innerHTML = `<p class="error">שגיאה בטעינת נתונים</p>`;
     }
   }
 }

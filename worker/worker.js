@@ -37,13 +37,33 @@ function cleanImageUrl(url) {
   try {
     const u = new URL(trimmed);
 
-    // מסיר tracking/query params כדי לשפר cache ולנקות URL
-    u.search = "";
+    // Remove known tracking params without breaking signed or transformed image URLs.
+    const trackingParams = [
+      "utm_source",
+      "utm_medium",
+      "utm_campaign",
+      "utm_term",
+      "utm_content",
+      "fbclid",
+      "gclid"
+    ];
+    for (const key of trackingParams) {
+      u.searchParams.delete(key);
+    }
     u.hash = "";
 
     return u.toString();
   } catch {
     return trimmed;
+  }
+}
+
+function isHttpUrl(value) {
+  try {
+    const u = new URL(value);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
   }
 }
 
@@ -150,11 +170,15 @@ function parseRSS(xmlText, feedConfig) {
     const title =
       content.match(/<title[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/i)?.[1] || "";
 
+    const guid =
+      content.match(/<guid[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/guid>/i)?.[1] ||
+      "";
+
     let link =
       content.match(/<link[^>]*rel=["']alternate["'][^>]*href=["']([^"']+)["']/i)?.[1] ||
       content.match(/<link[^>]*href=["']([^"']+)["']/i)?.[1] ||
       content.match(/<link[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/link>/i)?.[1] ||
-      content.match(/<guid[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/guid>/i)?.[1] ||
+      (isHttpUrl(guid.trim()) ? guid : "") ||
       "";
 
     let pubDate =
