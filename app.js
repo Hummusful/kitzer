@@ -144,7 +144,14 @@ async function loadNews(forceRefresh = false) {
       try {
         const parsed = JSON.parse(cached);
         const isFresh = parsed?.ts && (Date.now() - parsed.ts) < TTL_MS;
-        if (isFresh && Array.isArray(parsed.data)) {
+        const hasValidCachedItems = Array.isArray(parsed?.data) &&
+          parsed.data.every(it =>
+            it &&
+            typeof it === 'object' &&
+            typeof it.title === 'string' &&
+            typeof it.link === 'string'
+          );
+        if (isFresh && hasValidCachedItems) {
           renderNews(parsed.data);
           return; // ✅ don't immediately refetch if cache is fresh
         }
