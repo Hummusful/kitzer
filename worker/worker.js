@@ -302,6 +302,10 @@ export default {
       if (cachedRes && !url.searchParams.has("nocache")) {
         const r = new Response(cachedRes.body, cachedRes);
         r.headers.set("X-Worker-Cache", "HIT");
+        // Ensure CORS header is set for cached responses too
+        if (allowedOrigin) {
+          r.headers.set("X-Allow-Origin", allowedOrigin);
+        }
         return finalizeResponse(r);
       }
 
