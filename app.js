@@ -129,6 +129,11 @@ async function loadNews(forceRefresh = false) {
   const key = state.genre.toLowerCase();
   const cacheKey = `kitzer-feed-v1:${key}`;
 
+  if (currentController) {
+    currentController.abort();
+    currentController = null;
+  }
+
   // Set loading state for screen readers
   if (feedEl) feedEl.setAttribute('aria-busy', 'true');
 
