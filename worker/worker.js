@@ -9,13 +9,20 @@
 function finalizeResponse(resp, ttlSecs) {
   const r = new Response(resp.body, resp);
   const h = r.headers;
+  const origin = resp.headers.get("X-Allow-Origin");
 
   h.set("X-Content-Type-Options", "nosniff");
   h.set("X-Frame-Options", "DENY");
   h.set("Referrer-Policy", "strict-origin-when-cross-origin");
   h.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   h.set("Content-Security-Policy", "default-src 'self'; object-src 'none'; frame-ancestors 'none';");
-  h.set("access-control-allow-origin", "*");
+  if (origin) {
+    h.set("access-control-allow-origin", origin);
+    h.set("Vary", "Origin");
+    h.delete("X-Allow-Origin");
+  } else {
+    h.delete("access-control-allow-origin");
+  }
   h.set("access-control-allow-methods", "GET, HEAD, OPTIONS");
   h.set("access-control-allow-headers", "*");
 
@@ -23,6 +30,14 @@ function finalizeResponse(resp, ttlSecs) {
     h.set("cache-control", `public, max-age=${ttlSecs}, stale-while-revalidate=3600`);
   }
   return r;
+}
+
+function getAllowedOrigin(req) {
+  const origin = req.headers.get("Origin");
+  if (origin === "https://kitzer.net" || origin === "https://www.kitzer.net") {
+    return origin;
+  }
+  return null;
 }
 
 // ----------------------------------------------------
@@ -263,14 +278,21 @@ export default {
   async fetch(req, env, ctx) {
     try {
       const url = new URL(req.url);
+      const allowedOrigin = getAllowedOrigin(req);
 
       if (req.method === "OPTIONS") {
-        return finalizeResponse(new Response(null, { status: 204 }));
+        return finalizeResponse(new Response(null, {
+          status: 204,
+          headers: allowedOrigin ? { "X-Allow-Origin": allowedOrigin } : {}
+        }));
       }
 
       const p = url.pathname.replace(/\/+$/, "");
       if (!["", "/api", "/api/music"].includes(p)) {
-        return finalizeResponse(new Response("Not Found", { status: 404 }));
+        return finalizeResponse(new Response("Not Found", {
+          status: 404,
+          headers: allowedOrigin ? { "X-Allow-Origin": allowedOrigin } : {}
+        }));
       }
 
       const cacheKey = getNormalizedCacheKey(req.url);
@@ -392,7 +414,10 @@ export default {
       });
 
       const response = new Response(responseBody, {
-        headers: { "Content-Type": "application/json; charset=utf-8" }
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          ...(allowedOrigin ? { "X-Allow-Origin": allowedOrigin } : {})
+        }
       });
 
       const ttl = filterQ ? 300 : 1800;
@@ -409,7 +434,10 @@ export default {
           }),
           {
             status: 500,
-            headers: { "Content-Type": "application/json; charset=utf-8" }
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+              ...(allowedOrigin ? { "X-Allow-Origin": allowedOrigin } : {})
+            }
           }
         ),
         0
