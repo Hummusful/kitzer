@@ -401,13 +401,16 @@ export default {
       ctx.waitUntil(cache.put(cacheKey, finalRes.clone()));
       return finalRes;
     } catch (err) {
+      console.error("Worker failure:", err);
       return finalizeResponse(
         new Response(
           JSON.stringify({
-            error: "Server Error",
-            details: err.message
+            error: "Server Error"
           }),
-          { status: 500 }
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json; charset=utf-8" }
+          }
         ),
         0
       );
