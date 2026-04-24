@@ -77,6 +77,8 @@ function renderNews(items) {
   feedEl.innerHTML = '';
   if (!items?.length) {
     feedEl.innerHTML = `<p class="muted">אין חדשות כרגע.</p>`;
+    // Remove loading state
+    refreshBtn?.classList.remove('loading');
     return;
   }
 
@@ -205,6 +207,8 @@ const res = await fetch(url, {
       feedEl.setAttribute('aria-busy', 'false');
       feedEl.innerHTML = `<p class="error">שגיאה בטעינת נתונים</p>`;
     }
+    // Remove loading state on error
+    refreshBtn?.classList.remove('loading');
   }
 }
 
@@ -219,7 +223,10 @@ document.addEventListener('DOMContentLoaded', () => {
       loadNews();
     });
   });
-  refreshBtn?.addEventListener('click', () => loadNews(true));
+  refreshBtn?.addEventListener('click', () => {
+    refreshBtn.classList.add('loading');
+    loadNews(true);
+  });
   loadNews();
 });
 
