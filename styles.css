@@ -561,16 +561,16 @@ body::after {
   }
 
 .site-title {
-    text-align:center;
-    font-size:clamp(2.85rem,17vw,4.7rem);
-    line-height:1.16;
-    padding-top:.03em;
-    padding-bottom:.18em
-    font-family: 'Heebo', sans-serif;
-    font-weight: 800;
-  letter-spacing: -0.04em;
+  text-align:center;
+  font-size:clamp(2.85rem,17vw,4.7rem);
+  line-height:1.16;
+  padding-top:.03em;
+  padding-bottom:.18em;
 
-  }
+  font-family: 'Heebo', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
 
 .subtitle {
     text-align:center;
