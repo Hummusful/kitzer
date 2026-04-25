@@ -121,3 +121,37 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:900;op
 .tag{color:var(--purple)!important}
 .read-link{color:var(--purple)!important}
 .read-link:hover{color:var(--pink)!important}
+/* ===== Yellow accent (Dusty's tweak) ===== */
+:root {
+  --yellow: #ffd84d;
+}
+
+.live-strip .dot {
+  background: var(--yellow);
+  box-shadow: 0 0 10px rgba(255, 216, 77, 0.7);
+}
+
+.news-date {
+  color: var(--yellow);
+  opacity: 0.9;
+}
+
+.news-title a:hover,
+.news-title a:focus-visible {
+  color: var(--yellow);
+}
+
+.tag:hover {
+  border-color: var(--yellow);
+  color: var(--yellow);
+}
+
+.news-card::before {
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--yellow),
+    transparent
+  );
+  opacity: 0.35;
+}
