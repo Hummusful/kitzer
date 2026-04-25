@@ -40,3 +40,69 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:900;op
 .error,.muted{color:var(--muted);text-align:center;padding:1.25rem;border-bottom:1px solid var(--line)}.error{color:#ff7b8b}.skeleton{height:76px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(255,255,255,.025) 25%,rgba(141,146,255,.075) 50%,rgba(255,255,255,.025) 75%);background-size:200% 100%;animation:shimmer 1.25s infinite linear}@keyframes shimmer{100%{background-position:-200% 0}}
 .footer{margin-top:24px;padding:18px 0;border-top:1px solid var(--line);color:var(--muted-2);text-align:center;font-family:"Space Mono",monospace;font-size:.72rem;direction:ltr}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+
+.live-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 0 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-dim);
+  font-family: "Space Mono", monospace;
+  font-size: 0.72rem;
+  direction: ltr;
+}
+
+.live-strip .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff4f8b;
+  box-shadow: 0 0 8px rgba(255, 79, 139, 0.6);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+.live-strip .label {
+  color: #fff;
+  letter-spacing: 0.08em;
+}
+
+.live-strip .text {
+  opacity: 0.82;
+  direction: rtl;
+  font-family: "IBM Plex Sans Hebrew", system-ui, sans-serif;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.cover-link {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.cover-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(70, 217, 255, 0.16), transparent);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transform: translateX(-120%);
+}
+
+.news-card:hover .cover-link::after {
+  opacity: 1;
+  animation: scan 0.55s linear;
+}
+
+@keyframes scan {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
