@@ -3,108 +3,53 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta
-    http-equiv="Content-Security-Policy"
-    content="
-      default-src 'self';
-      script-src 'self';
-      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-      font-src 'self' https://fonts.gstatic.com;
-      img-src 'self' https: data:;
-      connect-src 'self' https://music-aggregator.dustrial.workers.dev;
-      object-src 'none';
-      base-uri 'none';
-      frame-ancestors 'none';
-    "
-  />
-
-  <title>קיצר</title>
-  <meta name="description" content="חדשות מוזיקה מהירות: ריליסים, אלבומים, סינגלים ועדכוני אמנים — בפיד חד ומהיר." />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self' https://music-aggregator.dustrial.workers.dev; object-src 'none'; base-uri 'none';">
+  <title>קיצר — תדר חדשות מוזיקה</title>
+  <meta name="description" content="פיד מהיר לחדשות מוזיקה: ריליסים, הופעות, אלבומים, סינגלים ועדכוני אמנים — בפורמט קצר לסריקה מהירה." />
   <meta name="robots" content="index,follow,max-image-preview:large" />
-
   <meta property="og:type" content="website" />
   <meta property="og:locale" content="he_IL" />
   <meta property="og:site_name" content="קיצר" />
-  <meta property="og:title" content="קיצר — חדשות מוזיקה מהירות" />
-  <meta property="og:description" content="Dusty's Music Feed: חדשות מוזיקה מהירות עם אופי." />
-
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "NewsMediaOrganization",
-    "name": "קיצר",
-    "inLanguage": "he"
-  }
-  </script>
-
-  <meta name="theme-color" content="#090b14" />
-  <link rel="icon" href="/favicon.ico" />
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800;900&display=swap" rel="stylesheet" />
-
-  <style>
-    :root{--bg:#090b14;--panel:#101522;--muted:#9aa3b2;--accent:#ffc700;--text:#edf2ff;}
-    *{box-sizing:border-box;}
-    html,body{min-height:100%;margin:0;padding:0;}
-    body{background:var(--bg);color:var(--text);font-family:system-ui,"Rubik","Segoe UI",Arial,sans-serif;line-height:1.5;}
-    .container{max-width:1120px;margin:0 auto;padding:18px;}
-    .news-feed{min-height:42vh;}
-    .skeleton{height:98px;border-radius:18px;margin:12px 0;background:linear-gradient(90deg,#111827 25%,#1c2740 50%,#111827 75%);background-size:200% 100%;animation:shimmer 1.3s infinite linear;}
-    @keyframes shimmer{100%{background-position:-200% 0;}}
-  </style>
-
-  <link rel="preconnect" href="https://music-aggregator.dustrial.workers.dev" />
-  <link rel="dns-prefetch" href="https://music-aggregator.dustrial.workers.dev" />
-  <link rel="prefetch" href="https://music-aggregator.dustrial.workers.dev/api/music" as="fetch" crossorigin />
-
-  <link rel="preload" href="./styles.css" as="style" />
-  <link rel="stylesheet" href="./styles.css" />
+  <meta property="og:title" content="קיצר — תדר חדשות מוזיקה" />
+  <meta property="og:description" content="חדשות מוזיקה בפיד מהיר, נקי וחי." />
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"NewsMediaOrganization","name":"קיצר","inLanguage":"he"}</script>
+  <meta name="theme-color" content="#080a12" />
+  <link rel="icon" href="/favicon.ico">
+  <link rel="preconnect" href="https://music-aggregator.dustrial.workers.dev">
+  <link rel="dns-prefetch" href="https://music-aggregator.dustrial.workers.dev">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="preload" href="./styles.css" as="style">
+  <link rel="stylesheet" href="./styles.css">
 </head>
-
-<body class="pulse-mode">
+<body>
   <a class="skip-link" href="#newsFeed">דלג לתוכן</a>
-
-  <div class="container">
+  <div class="shell">
     <header class="site-header" role="banner">
-      <div class="brand-mark" aria-hidden="true">●</div>
+      <div class="signal-mark" aria-hidden="true"><span></span><span></span><span></span></div>
       <div class="brand-copy">
-      <h1 class="site-title"><a href="/">קיצר</a></h1>
-        <p class="subtitle">הפיד של דאסטי</p>
+        <p class="eyebrow">LIVE MUSIC SIGNAL</p>
+        <h1 class="site-title"><a href="/" aria-label="קיצר — עמוד הבית">קיצר</a></h1>
+        <p class="subtitle">תדר קצר לחדשות מוזיקה. נכנסים, קולטים, ממשיכים.</p>
       </div>
     </header>
-
     <section class="control-panel" aria-label="בקרת פיד">
       <nav class="toolbar" role="toolbar" aria-label="מסנני תוכן">
-        <div class="btn-group" role="group" aria-label="Genre">
-          <button class="btn active" type="button" data-genre="all" aria-pressed="true">הכול</button>
-          <button class="btn" type="button" data-genre="hebrew" aria-pressed="false">ישראלי</button>
-          <button class="btn" type="button" data-genre="international" aria-pressed="false">בינלאומי</button>
-          <button class="btn" type="button" data-genre="electronic" aria-pressed="false" lang="en">Electronic</button>
+        <div class="btn-group" role="group" aria-label="סינון לפי ז'אנר">
+          <button class="btn active" data-genre="all" aria-pressed="true">הכול</button>
+          <button class="btn" data-genre="hebrew" aria-pressed="false">ישראלי</button>
+          <button class="btn" data-genre="international" aria-pressed="false">בינלאומי</button>
+          <button class="btn" data-genre="electronic" aria-pressed="false" lang="en">Electronic</button>
         </div>
-        <button id="refreshBtn" class="btn ghost" type="button" title="רענן">רענון</button>
+        <button id="refreshBtn" class="btn ghost" type="button" title="רענן את הפיד">קלוט מחדש</button>
       </nav>
-
-      <div class="pulse-strip" aria-hidden="true">
-        <span></span><span></span><span></span><span></span><span></span>
-      </div>
     </section>
-
     <main id="newsFeed" class="news-feed" role="feed" aria-live="polite" aria-busy="true">
-      <div class="skeleton"></div>
-      <div class="skeleton"></div>
-      <div class="skeleton"></div>
-      <div class="skeleton"></div>
-      <div class="skeleton"></div>
-      <div class="skeleton"></div>
+      <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
     </main>
-
-    <footer class="footer" role="contentinfo">
-      <p><img src="favicon-16x16.png" alt="" aria-hidden="true" /> "קיצר — Dusty's Music Feed"</p>
-    </footer>
+    <footer class="footer" role="contentinfo"><p>קיצר — signal locked</p></footer>
   </div>
-
   <script src="./app.js" defer></script>
 </body>
 </html>

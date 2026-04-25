@@ -97,20 +97,6 @@ function isBadGenericImage(url, feedConfig) {
     return true;
   }
 
-  // טיפול ממוקד וזהיר ב-Billboard בלבד
-  if (feedConfig?.source === "Billboard") {
-  if (
-    lower.includes("billboard-logo") ||
-    lower.includes("bb-logo") ||
-    (lower.includes("billboard.com") && lower.includes("logo")) ||
-    lower.includes("default") ||
-    lower.includes("placeholder") ||
-    lower.includes("fallback")
-  ) {
-    return true;
-  }
-}
-
   return false;
 }
 
@@ -131,14 +117,8 @@ function scoreImageUrl(url, feedConfig) {
   if (lower.includes("placeholder") || lower.includes("default") || lower.includes("fallback")) score -= 10;
   if (lower.match(/(16x16|32x32|48x48|64x64|80x80|100x100)/)) score -= 6;
 
-  // Billboard often includes transformed editorial images. Prefer those over logos/placeholders.
-  if (feedConfig?.source === "Billboard") {
-    if (lower.includes("billboard.com")) score += 2;
-    if (lower.includes("wp-content") || lower.includes("uploads")) score += 5;
-    if (lower.includes("resize") || lower.includes("crop") || lower.includes("cdn")) score += 2;
-  }
-
-  return score;
+  //often includes transformed editorial images. Prefer those over logos/placeholders.
+return score;
 }
 
 function getBestImageUrl(candidates, feedConfig) {
@@ -159,6 +139,103 @@ function getBestImageUrl(candidates, feedConfig) {
 
   return best;
 }
+
+
+// ----------------------------------------------------
+// 2B. Smart Music Relevance Scoring
+// ----------------------------------------------------
+const STRONG_MUSIC_KEYWORDS = [
+  "album", "single", "song", "track", "music", "musician", "artist", "band", "singer",
+  "rapper", "rap", "hip-hop", "hip hop", "pop star", "rock", "metal", "jazz", "country",
+  "dj", "producer", "remix", "ep", "lp", "record", "records", "label", "lyrics",
+  "playlist", "spotify", "apple music", "youtube music", "soundcloud",
+  "chart", "hot 100", "grammy", "tour", "concert", "festival", "gig", "venue",
+  "stage", "performance", "performed", "release", "drops", "debut", "music video",
+  "electronic", "edm", "trance", "techno", "house", "dubstep", "rave",
+  "מוזיקה", "מוסיקה", "שיר", "שירים", "אלבום", "סינגל", "קליפ", "להיט",
+  "זמר", "זמרת", "זמרים", "להקה", "להקות", "אמן", "אמנית", "אומנים", "אמנים",
+  "יוצר", "יוצרת", "ראפר", "ראפ", "היפ הופ", "די ג'יי", "דיג'יי", "מפיק",
+  "הופעה", "הופעות", "פסטיבל", "במה", "סיבוב הופעות", "טור", "מצעד", "פלייליסט"
+];
+
+const SOFT_MUSIC_KEYWORDS = [
+  "soundtrack", "score", "vinyl", "guitar", "piano", "drums", "vocal", "vocals",
+  "collaboration", "feat", "featuring", "duet", "cover", "tribute", "indie",
+  "dance", "club", "nightlife", "radio", "streaming", "catalog", "publishing",
+  "זכויות", "תמלוגים", "רדיו", "סטרימינג", "קאבר", "דואט", "מחווה"
+];
+
+const NON_MUSIC_RISK_KEYWORDS = [
+  "election", "senate", "congress", "president", "minister", "government", "politics",
+  "bible", "church", "christian", "religion", "religious", "jesus", "pastor",
+  "war", "military", "army", "terror", "crime", "murder", "trial", "court",
+  "sports", "nfl", "nba", "football", "soccer", "baseball", "movie review", "tv review",
+  "trailer", "box office", "בחירות", "ממשלה", "כנסת", "פוליטיקה", "ראש הממשלה",
+  "נשיא", "שר ", "תנך", "תנ״ך", "דת", "דתיים", "כנסייה", "ישו", "רב ",
+  "מלחמה", "צבא", "פיגוע", "טרור", "רצח", "משפט", "בית משפט", "מעצר",
+  "כדורגל", "כדורסל", "ספורט", "סרט", "סדרה", "טריילר"
+];
+
+const TRUSTED_MUSIC_SOURCES = new Set([
+  "Mako מוזיקה", "מעריב מוזיקה", "Walla מוזיקה", "Trancentral", "Your EDM",
+  "Dancing Astronaut", "DJ Mag", "EDM.com", "EDM Sauce", "Mixmag", "Magnetic Mag",
+  "Rolling Stone", "NY Times", "Pitchfork", "Stereogum", "The FADER",
+  "SPIN", "XXL Mag", "The Source", "Complex Music", "Loudwire", "MBW", "Hypebot", "DMN"
+]);
+
+function countKeywordHits(text, keywords) {
+  let hits = 0;
+  for (const keyword of keywords) {
+    if (text.includes(keyword.toLowerCase())) hits++;
+  }
+  return hits;
+}
+
+function scoreMusicRelevance(title, description, feedConfig) {
+  const text = `${title || ""} ${description || ""}`.toLowerCase();
+  const strongHits = countKeywordHits(text, STRONG_MUSIC_KEYWORDS);
+  const softHits = countKeywordHits(text, SOFT_MUSIC_KEYWORDS);
+  const riskHits = countKeywordHits(text, NON_MUSIC_RISK_KEYWORDS);
+
+  let score = 0;
+  score += strongHits * 4;
+  score += softHits * 2;
+
+  // Source is only a small hint. A bad item from a music feed can still be filtered.
+  if (TRUSTED_MUSIC_SOURCES.has(feedConfig?.source)) score += 1;
+  if (feedConfig?.genre === "electronic") score += 2;
+  if (feedConfig?.genre === "hebrew") score += 1;
+
+  // Stronger penalty for clearly non-music topics.
+  if (riskHits > 0 && strongHits === 0) score -= riskHits * 8;
+  if (riskHits > 0 && strongHits > 0) score -= riskHits * 2;
+
+  return score;
+}
+
+function hasHardNonMusicBlock(title, description) {
+  const text = `${title || ""} ${description || ""}`.toLowerCase();
+
+  const hardRisk = [
+    "bible", "christian", "church", "religion", "religious", "jesus", "pastor",
+    "election", "senate", "congress", "president", "government", "politics",
+    "war", "military", "army", "terror", "murder", "trial", "court",
+    "תנך", "תנ״ך", "נוצרי", "כנסייה", "דת", "בחירות", "פוליטיקה", "ממשלה",
+    "מלחמה", "צבא", "פיגוע", "טרור", "רצח", "משפט"
+  ];
+
+  const strongHits = countKeywordHits(text, STRONG_MUSIC_KEYWORDS);
+  const riskHits = countKeywordHits(text, hardRisk);
+
+  return riskHits > 0 && strongHits === 0;
+}
+
+function isMusicRelevantEnough(title, description, feedConfig) {
+  const score = scoreMusicRelevance(title, description, feedConfig);
+  const hardBlocked = hasHardNonMusicBlock(title, description);
+  return { keep: !hardBlocked && score >= 3, score, hardBlocked };
+}
+
 
 // ----------------------------------------------------
 // 3. מנוע פענוח RSS (RSS Parser Engine)
@@ -268,8 +345,9 @@ function parseRSS(xmlText, feedConfig) {
       .slice(0, 200);
 
     const cover = extractCoverFromItemContent(content, feedConfig);
+    const relevance = isMusicRelevantEnough(title, cleanedDescription, feedConfig);
 
-    if (title.trim() && link.trim()) {
+    if (title.trim() && link.trim() && relevance.keep) {
       items.push({
         title: title.trim(),
         link: link.trim(),
@@ -278,6 +356,7 @@ function parseRSS(xmlText, feedConfig) {
         source: feedConfig.source,
         lang: feedConfig.lang,
         genre: feedConfig.genre || "general",
+        music_score: relevance.score,
         cover: (typeof cover === "string" && cover.startsWith("http")) ? cover : null
       });
     }
@@ -298,6 +377,7 @@ function getNormalizedCacheKey(reqUrl) {
   });
   cleanParams.sort();
   u.search = cleanParams.toString();
+  u.searchParams.set("_filterv", "final2");
   return new Request(u.toString(), { method: "GET" });
 }
 
@@ -383,7 +463,6 @@ export default {
 
         // INTERNATIONAL 🌎
         { url: "https://www.rollingstone.com/music/music-news/feed/", source: "Rolling Stone", lang: "EN", genre: "international" },
-        { url: "https://www.billboard.com/feed/", source: "Billboard", lang: "EN", genre: "international" },
         { url: "https://rss.nytimes.com/services/xml/rss/nyt/Music.xml", source: "NY Times", lang: "EN", genre: "international" },
         { url: "https://pitchfork.com/rss/news/", source: "Pitchfork", lang: "EN", genre: "international" },
         { url: "https://www.stereogum.com/feed/", source: "Stereogum", lang: "EN", genre: "international" },
@@ -457,7 +536,13 @@ export default {
         allItems = allItems.filter(i => i.genre === filterGenre);
       }
 
-      allItems.sort((a, b) => new Date(b.date) - new Date(a.date));
+      allItems.sort((a, b) => {
+        // Keep the feed fresh, but prevent weakly-related stories from becoming the top story.
+        const aTier = (a.music_score || 0) >= 7 ? 1 : 0;
+        const bTier = (b.music_score || 0) >= 7 ? 1 : 0;
+        if (aTier !== bTier) return bTier - aTier;
+        return new Date(b.date) - new Date(a.date);
+      });
       const finalItems = allItems.slice(0, limit);
 
       const responseBody = JSON.stringify({
