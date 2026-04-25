@@ -89,7 +89,7 @@ function renderNews(items) {
   feedEl.innerHTML = '';
 
   if (!Array.isArray(items) || items.length === 0) {
-    feedEl.innerHTML = '<p class="muted">אין שידורים כרגע.</p>';
+    feedEl.innerHTML = '<p class="muted">אין מבזקי מוזיקה כרגע.</p>';
     refreshBtn?.classList.remove('loading');
     feedEl.setAttribute('aria-busy', 'false');
     return;
@@ -132,7 +132,7 @@ function renderNews(items) {
           ${summary ? `<p class="news-summary">${summary}</p>` : ''}
           <div class="news-footer-meta">
             <div class="news-tags">${tags.map(t => `<span class="tag">${cleanText(t)}</span>`).join('')}</div>
-            <a class="read-link" href="${link}" target="_blank" rel="noopener noreferrer">פתח תדר</a>
+            <a class="read-link" href="${link}" target="_blank" rel="noopener noreferrer">לפרטים</a>
           </div>
         </div>`;
 
@@ -205,7 +205,7 @@ async function loadNews(forceRefresh = false) {
     if (e.name === 'AbortError') return;
     console.error('LoadNews Failure:', e);
     feedEl.setAttribute('aria-busy', 'false');
-    feedEl.innerHTML = '<p class="error">שגיאה בקליטת התדר</p>';
+    feedEl.innerHTML = '<p class="error">שגיאה בטעינת המבזקים</p>';
     refreshBtn?.classList.remove('loading');
   }
 }
