@@ -1,5 +1,6 @@
 /**
- * Global Configuration & State
+ * Kitzer — Smart Visual Pulse UI
+ * Fast scanning, strong hierarchy, safe rendering.
  */
 const FEED_ENDPOINT = 'https://music-aggregator.dustrial.workers.dev/api/music';
 const feedEl = document.getElementById('newsFeed');
@@ -8,227 +9,229 @@ const refreshBtn = document.getElementById('refreshBtn');
 let state = { genre: 'all' };
 let currentController = null;
 
-/**
- * Utility: Scoped QuerySelector proxy
- */
 const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+const HEB_RTF = new Intl.RelativeTimeFormat('he-IL', { numeric: 'auto' });
+const TIMEZONE = 'Asia/Jerusalem';
+const CACHE_VERSION = 'kitzer-pulse-v1';
+const TTL_MS = 30 * 60 * 1000;
 
-/**
- * Sanitizes HTML input and decodes entities using DOMParser.
- * Protects against XSS by extracting textContent only.
- */
 function cleanText(input, limit = 0) {
   if (!input) return '';
   try {
-    const doc = new DOMParser().parseFromString(input, 'text/html');
-    let text = doc.body.textContent || "";
-    if (limit > 0 && text.length > limit) {
-      text = text.slice(0, limit).trim() + '...';
-    }
+    const doc = new DOMParser().parseFromString(String(input), 'text/html');
+    let text = (doc.body.textContent || '').replace(/\s+/g, ' ').trim();
+    if (limit > 0 && text.length > limit) text = text.slice(0, limit).trim() + '...';
     return text;
-  } catch (e) { 
-    console.error("Sanitization error:", e);
-    return ''; 
+  } catch {
+    return '';
   }
 }
 
-/**
- * URL Sanitizer: Restricts protocols to HTTP/HTTPS for security.
- */
 function safeUrl(href) {
   try {
     const u = new URL(href);
-    return (u.protocol === 'http:' || u.protocol === 'https:') ? u.toString() : '#';
-  } catch { return '#'; }
+    return ['http:', 'https:'].includes(u.protocol) ? u.toString() : '#';
+  } catch {
+    return '#';
+  }
 }
 
-/**
- * Localization: Hebrew Relative Time and Jerusalem Timezone.
- */
-const HEB_RTF = new Intl.RelativeTimeFormat('he-IL', { numeric: 'auto' });
-const TIMEZONE = 'Asia/Jerusalem';
+function parseTime(dateStr) {
+  const t = Date.parse(dateStr);
+  return Number.isNaN(t) ? 0 : t;
+}
 
 function timeAgo(dateStr) {
-  if (!dateStr) return '';
-  const t = Date.parse(dateStr);
-  if (Number.isNaN(t)) return '';
+  const t = parseTime(dateStr);
+  if (!t) return '';
   const diff = Date.now() - t;
-  const hr = Math.round(diff / 3600000);
-  if (hr < 1) return 'לפני רגע';
-  if (hr < 24) return HEB_RTF.format(-hr, 'hour');
-  return HEB_RTF.format(-Math.round(hr / 24), 'day');
+  const minutes = Math.round(diff / 60000);
+  const hours = Math.round(diff / 3600000);
+  if (minutes < 1) return 'עכשיו';
+  if (minutes < 60) return HEB_RTF.format(-minutes, 'minute');
+  if (hours < 24) return HEB_RTF.format(-hours, 'hour');
+  return HEB_RTF.format(-Math.round(hours / 24), 'day');
 }
 
-/**
- * Logic: Extracts and formats tags for display.
- */
+function clockTime(dateStr) {
+  const t = parseTime(dateStr);
+  if (!t) return '';
+  return new Date(t).toLocaleTimeString('he-IL', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: TIMEZONE
+  });
+}
+
 function makeTags(it) {
   const tags = [];
-  if (it.lang) tags.push(it.lang.toUpperCase());
+  if (it.lang) tags.push(String(it.lang).toUpperCase());
   if (it.genre && !['general', 'all'].includes(it.genre)) tags.push(it.genre);
   return tags;
 }
 
-/**
- * UI Renderer: Optimized batch processing using DocumentFragments.
- */
+function classifyItem(it, index) {
+  const ageMs = Date.now() - parseTime(it.date);
+  return {
+    isTop: index < 2,
+    isFresh: ageMs > 0 && ageMs <= 6 * 60 * 60 * 1000,
+    isOld: ageMs >= 24 * 60 * 60 * 1000
+  };
+}
+
 function renderNews(items) {
   if (!feedEl) return;
   feedEl.innerHTML = '';
-  if (!items?.length) {
-    feedEl.innerHTML = `<p class="muted">אין חדשות כרגע.</p>`;
-    // Remove loading state
+
+  if (!Array.isArray(items) || items.length === 0) {
+    feedEl.innerHTML = '<p class="muted">אין חדשות כרגע.</p>';
     refreshBtn?.classList.remove('loading');
+    feedEl.setAttribute('aria-busy', 'false');
     return;
   }
 
-  const batchSize = 8;
+  const batchSize = 10;
+
   const renderBatch = (startIdx) => {
     const endIdx = Math.min(startIdx + batchSize, items.length);
     const frag = document.createDocumentFragment();
 
     for (let i = startIdx; i < endIdx; i++) {
       const it = items[i];
-      const el = document.createElement('article');
-      el.className = 'news-card';
+      const link = safeUrl(it.link);
+      const title = cleanText(it.title);
+      if (!title || link === '#') continue;
 
-      const coverHTML = it.cover 
-        ? `<img src="${safeUrl(it.cover)}" class="news-cover" loading="lazy" alt="" role="presentation">` 
-        : '';
-
+      const { isTop, isFresh, isOld } = classifyItem(it, i);
       const tags = makeTags(it);
+      const el = document.createElement('article');
+      el.className = ['news-card', isTop ? 'top-story' : 'pulse-item', isFresh ? 'fresh' : '', isOld ? 'old' : '']
+        .filter(Boolean)
+        .join(' ');
+      el.setAttribute('role', 'article');
+
+      const cover = safeUrl(it.cover);
+      const shouldShowImage = cover !== '#' && (!isOld || isTop);
+      const coverHTML = shouldShowImage
+        ? `<a class="cover-link" href="${link}" target="_blank" rel="noopener noreferrer" tabindex="-1" aria-hidden="true"><img src="${cover}" class="news-cover" loading="lazy" alt="" role="presentation"></a>`
+        : `<div class="text-signal" aria-hidden="true">${isFresh ? '●' : '◇'}</div>`;
+
+      const badge = isFresh ? '<span class="hot-badge">חדש</span>' : '';
+      const summaryLimit = isTop ? 260 : 150;
+      const summary = it.description ? cleanText(it.description, summaryLimit) : '';
 
       el.innerHTML = `
         ${coverHTML}
         <div class="news-details">
-          <span class="news-source">${cleanText(it.source)}</span>
-          <h3 class="news-title">
-            <a href="${safeUrl(it.link)}" target="_blank" rel="noopener noreferrer">
-                ${cleanText(it.title)}
-            </a>
-          </h3>
-          ${it.description ? `<p class="news-summary">${cleanText(it.description, 200)}</p>` : ''}
-          <div class="news-footer-meta">
-            <time class="news-date">
-               <span class="rel">${timeAgo(it.date)}</span>
-               <span class="sep"> · </span><bdi class="clock">${new Date(it.date).toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit', timeZone:TIMEZONE})}\u200E</bdi>
+          <div class="news-kicker">
+            ${badge}
+            <span class="news-source">${cleanText(it.source)}</span>
+            <time class="news-date" datetime="${cleanText(it.date)}">
+              <span class="rel">${timeAgo(it.date)}</span>
+              ${clockTime(it.date) ? `<span class="sep"> · </span><bdi class="clock">${clockTime(it.date)}\u200E</bdi>` : ''}
             </time>
-            <div class="news-tags">${tags.map(t => `<span class="tag">${cleanText(t)}</span>`).join(' ')}</div>
+          </div>
+          <h2 class="news-title">
+            <a href="${link}" target="_blank" rel="noopener noreferrer">${title}</a>
+          </h2>
+          ${summary ? `<p class="news-summary">${summary}</p>` : ''}
+          <div class="news-footer-meta">
+            <div class="news-tags">${tags.map(t => `<span class="tag">${cleanText(t)}</span>`).join('')}</div>
+            <a class="read-link" href="${link}" target="_blank" rel="noopener noreferrer">לכתבה</a>
           </div>
         </div>`;
+
       frag.appendChild(el);
     }
+
     feedEl.appendChild(frag);
     if (endIdx < items.length) requestAnimationFrame(() => renderBatch(endIdx));
   };
+
   renderBatch(0);
+  refreshBtn?.classList.remove('loading');
+  feedEl.setAttribute('aria-busy', 'false');
 }
 
-/**
- * Controller: Handles API requests with Cache-First strategy.
- */
+function getCacheKey() {
+  return `${CACHE_VERSION}:${state.genre.toLowerCase()}`;
+}
+
+function readCache() {
+  try {
+    const cached = localStorage.getItem(getCacheKey());
+    if (!cached) return null;
+    const parsed = JSON.parse(cached);
+    const valid = parsed?.ts && Date.now() - parsed.ts < TTL_MS && Array.isArray(parsed?.data);
+    return valid ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(items) {
+  try {
+    localStorage.setItem(getCacheKey(), JSON.stringify({ data: items, ts: Date.now() }));
+  } catch {}
+}
+
 async function loadNews(forceRefresh = false) {
-  const key = state.genre.toLowerCase();
-  const cacheKey = `kitzer-feed-v1:${key}`;
+  if (!feedEl) return;
 
-  if (currentController) {
-    currentController.abort();
-    currentController = null;
-  }
+  if (currentController) currentController.abort();
+  currentController = new AbortController();
+  feedEl.setAttribute('aria-busy', 'true');
 
-  // Set loading state for screen readers
-  if (feedEl) feedEl.setAttribute('aria-busy', 'true');
-
-    const TTL_MS = 30 * 60 * 1000; // match worker: 1800s
   if (!forceRefresh) {
-    let cached = null;
-    try {
-      cached = localStorage.getItem(cacheKey);
-    } catch {
-      cached = null;
-    }
+    const cached = readCache();
     if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        const isFresh = parsed?.ts && (Date.now() - parsed.ts) < TTL_MS;
-        const hasValidCachedItems = Array.isArray(parsed?.data) &&
-          parsed.data.every(it =>
-            it &&
-            typeof it === 'object' &&
-            typeof it.title === 'string' &&
-            typeof it.link === 'string'
-          );
-        if (isFresh && hasValidCachedItems) {
-          renderNews(parsed.data);
-          return; // ✅ don't immediately refetch if cache is fresh
-        }
-      } catch {
-        // ignore corrupt cache
-      }
+      renderNews(cached);
+      return;
     }
   }
 
-
-  if (!feedEl.children.length) {
-    feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
-  }
+  feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
 
   try {
     const url = new URL(FEED_ENDPOINT);
+    url.searchParams.set('days', '3');
+    url.searchParams.set('limit', '120');
     if (state.genre !== 'all') url.searchParams.set('genre', state.genre);
+    if (forceRefresh) url.searchParams.set('nocache', String(Date.now()));
 
-    if (forceRefresh) {
-      url.searchParams.set('nocache', '1');
-    }
+    const res = await fetch(url, { signal: currentController.signal });
+    if (!res.ok) throw new Error(`API Response Error: ${res.status}`);
 
-if (currentController) {
-  currentController.abort();
-}
-
-currentController = new AbortController();
-
-const res = await fetch(url, {
-  signal: currentController.signal
-});
-    if (!res.ok) throw new Error("API Response Error");
-    
     const data = await res.json();
-    const items = data.items || [];
-
-    try {
-      localStorage.setItem(cacheKey, JSON.stringify({ data: items, ts: Date.now() }));
-    } catch {}
+    const items = Array.isArray(data.items) ? data.items : [];
+    writeCache(items);
     renderNews(items);
-    if (feedEl) feedEl.setAttribute('aria-busy', 'false');
   } catch (e) {
-  if (e.name === 'AbortError') return;
-  console.error("LoadNews Failure:", e);
-    if (feedEl) {
-      feedEl.setAttribute('aria-busy', 'false');
-      feedEl.innerHTML = `<p class="error">שגיאה בטעינת נתונים</p>`;
-    }
-    // Remove loading state on error
+    if (e.name === 'AbortError') return;
+    console.error('LoadNews Failure:', e);
+    feedEl.setAttribute('aria-busy', 'false');
+    feedEl.innerHTML = '<p class="error">שגיאה בטעינת נתונים</p>';
     refreshBtn?.classList.remove('loading');
   }
 }
 
-/**
- * Initialization: Application Bootstrap.
- */
 document.addEventListener('DOMContentLoaded', () => {
   qsa('[data-genre]').forEach(btn => {
     btn.addEventListener('click', () => {
       state.genre = btn.getAttribute('data-genre') || 'all';
-      qsa('[data-genre]').forEach(b => b.classList.toggle('active', b === btn));
-      loadNews();
+      qsa('[data-genre]').forEach(b => {
+        const active = b === btn;
+        b.classList.toggle('active', active);
+        b.setAttribute('aria-pressed', String(active));
+      });
+      loadNews(false);
     });
   });
+
   refreshBtn?.addEventListener('click', () => {
     refreshBtn.classList.add('loading');
     loadNews(true);
   });
-  loadNews();
+
+  loadNews(false);
 });
-
-
-

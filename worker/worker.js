@@ -114,14 +114,50 @@ function isBadGenericImage(url, feedConfig) {
   return false;
 }
 
-function getFirstValidImageUrl(candidates, feedConfig) {
+function scoreImageUrl(url, feedConfig) {
+  if (!url || typeof url !== "string") return -100;
+
+  let score = 0;
+  const lower = url.toLowerCase();
+
+  // Prefer real editorial image URLs and larger variants.
+  if (lower.includes("wp-content") || lower.includes("uploads")) score += 4;
+  if (lower.includes("image") || lower.includes("photo") || lower.includes("media")) score += 2;
+  if (lower.includes("large") || lower.includes("full") || lower.includes("master")) score += 3;
+  if (lower.match(/(1200|1024|900|800|768|640)[x_-]/)) score += 2;
+
+  // Penalize small, generic, or brand assets.
+  if (lower.includes("logo") || lower.includes("icon") || lower.includes("avatar")) score -= 8;
+  if (lower.includes("placeholder") || lower.includes("default") || lower.includes("fallback")) score -= 10;
+  if (lower.match(/(16x16|32x32|48x48|64x64|80x80|100x100)/)) score -= 6;
+
+  // Billboard often includes transformed editorial images. Prefer those over logos/placeholders.
+  if (feedConfig?.source === "Billboard") {
+    if (lower.includes("billboard.com")) score += 2;
+    if (lower.includes("wp-content") || lower.includes("uploads")) score += 5;
+    if (lower.includes("resize") || lower.includes("crop") || lower.includes("cdn")) score += 2;
+  }
+
+  return score;
+}
+
+function getBestImageUrl(candidates, feedConfig) {
+  let best = null;
+  let bestScore = -Infinity;
+
   for (const candidate of candidates) {
     const cleaned = cleanImageUrl(candidate);
     if (!cleaned) continue;
     if (isBadGenericImage(cleaned, feedConfig)) continue;
-    return cleaned;
+
+    const score = scoreImageUrl(cleaned, feedConfig);
+    if (score > bestScore) {
+      bestScore = score;
+      best = cleaned;
+    }
   }
-  return null;
+
+  return best;
 }
 
 // ----------------------------------------------------
@@ -160,15 +196,30 @@ function extractCoverFromItemContent(content, feedConfig) {
     const imgMatches = [
       ...htmlBlock.matchAll(/<img[^>]*\ssrc=["']([^"']+)["']/gi),
       ...htmlBlock.matchAll(/<img[^>]*\sdata-src=["']([^"']+)["']/gi),
-      ...htmlBlock.matchAll(/<img[^>]*\sdata-lazy-src=["']([^"']+)["']/gi)
+      ...htmlBlock.matchAll(/<img[^>]*\sdata-lazy-src=["']([^"']+)["']/gi),
+      ...htmlBlock.matchAll(/<img[^>]*\sdata-original=["']([^"']+)["']/gi)
     ];
 
     for (const m of imgMatches) {
       if (m?.[1]) candidates.push(m[1]);
     }
+
+    // srcset often contains better/larger editorial images.
+    const srcsetMatches = [
+      ...htmlBlock.matchAll(/<img[^>]*\ssrcset=["']([^"']+)["']/gi),
+      ...htmlBlock.matchAll(/<source[^>]*\ssrcset=["']([^"']+)["']/gi)
+    ];
+
+    for (const m of srcsetMatches) {
+      const parts = String(m?.[1] || "")
+        .split(",")
+        .map(part => part.trim().split(/\s+/)[0])
+        .filter(Boolean);
+      candidates.push(...parts);
+    }
   }
 
-  return getFirstValidImageUrl(candidates, feedConfig);
+  return getBestImageUrl(candidates, feedConfig);
 }
 
 function parseRSS(xmlText, feedConfig) {
