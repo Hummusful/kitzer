@@ -202,7 +202,7 @@ async function loadNews(forceRefresh = false) {
   try {
     const url = new URL(FEED_ENDPOINT);
     url.searchParams.set('days', '3');
-    url.searchParams.set('limit', '30');
+    url.searchParams.set('limit', '40');
     if (state.genre !== 'all') url.searchParams.set('genre', state.genre);
     if (forceRefresh) url.searchParams.set('nocache', String(Date.now()));
 
