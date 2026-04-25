@@ -123,7 +123,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:900;op
 .read-link:hover{color:var(--pink)!important}
 /* ===== Yellow accent (Dusty's tweak) ===== */
 :root {
-  --yellow: #ffd84d;
+  --yellow: #f5c542;
 }
 
 .live-strip .dot {
