@@ -107,18 +107,24 @@ function scoreImageUrl(url, feedConfig) {
   const lower = url.toLowerCase();
 
   // Prefer real editorial image URLs and larger variants.
+  if (lower.includes("wp-content/uploads")) score += 7;
   if (lower.includes("wp-content") || lower.includes("uploads")) score += 4;
   if (lower.includes("image") || lower.includes("photo") || lower.includes("media")) score += 2;
   if (lower.includes("large") || lower.includes("full") || lower.includes("master")) score += 3;
-  if (lower.match(/(1200|1024|900|800|768|640)[x_-]/)) score += 2;
+  if (lower.includes("featured") || lower.includes("lead") || lower.includes("article")) score += 3;
+  if (/(1200|1024|1000|960|900|800|768|640)[x_-]/i.test(lower)) score += 3;
+
+  // Source-specific gentle hints.
+  if (feedConfig?.source === "Rolling Stone" && lower.includes("rollingstone")) score += 4;
+  if (feedConfig?.source === "THR (Music)" && (lower.includes("hollywoodreporter") || lower.includes("thr"))) score += 4;
 
   // Penalize small, generic, or brand assets.
-  if (lower.includes("logo") || lower.includes("icon") || lower.includes("avatar")) score -= 8;
-  if (lower.includes("placeholder") || lower.includes("default") || lower.includes("fallback")) score -= 10;
-  if (lower.match(/(16x16|32x32|48x48|64x64|80x80|100x100)/)) score -= 6;
+  if (lower.includes("logo") || lower.includes("icon") || lower.includes("avatar")) score -= 10;
+  if (lower.includes("placeholder") || lower.includes("default") || lower.includes("fallback")) score -= 12;
+  if (/(16x16|32x32|48x48|64x64|80x80|100x100)/i.test(lower)) score -= 8;
+  if (/(150x150|200x200|300x300)/i.test(lower)) score -= 3;
 
-  //often includes transformed editorial images. Prefer those over logos/placeholders.
-return score;
+  return score;
 }
 
 function getBestImageUrl(candidates, feedConfig) {
@@ -237,62 +243,122 @@ function isMusicRelevantEnough(title, description, feedConfig) {
 }
 
 
+
+function decodeXmlEntities(value) {
+  if (!value || typeof value !== "string") return "";
+  return value
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+function stripCdata(value) {
+  if (!value || typeof value !== "string") return "";
+  return value
+    .replace(/^<!\[CDATA\[/i, "")
+    .replace(/\]\]>$/i, "")
+    .trim();
+}
+
+function pushUrlCandidate(candidates, value) {
+  const decoded = decodeXmlEntities(stripCdata(value || "")).trim();
+  if (decoded) candidates.push(decoded);
+}
+
+function pushSrcsetCandidates(candidates, srcset) {
+  const decoded = decodeXmlEntities(srcset || "");
+  if (!decoded) return;
+
+  decoded.split(",").forEach(part => {
+    const url = part.trim().split(/\s+/)[0];
+    if (url) candidates.push(url);
+  });
+}
+
+
+
 // ----------------------------------------------------
 // 3. מנוע פענוח RSS (RSS Parser Engine)
 // ----------------------------------------------------
 function extractCoverFromItemContent(content, feedConfig) {
   const candidates = [];
 
-  // media:content / media:thumbnail / enclosure
-  let matches = [
-    ...content.matchAll(/<media:content[^>]*\surl=["']([^"']+)["'][^>]*>/gi),
-    ...content.matchAll(/<media:thumbnail[^>]*\surl=["']([^"']+)["'][^>]*>/gi),
-    ...content.matchAll(/<enclosure[^>]*\surl=["']([^"']+)["'][^>]*>/gi)
+  // Direct RSS image attributes.
+  const attrPatterns = [
+    /<media:content[^>]*\surl=["']([^"']+)["'][^>]*>/gi,
+    /<media:thumbnail[^>]*\surl=["']([^"']+)["'][^>]*>/gi,
+    /<enclosure[^>]*\surl=["']([^"']+)["'][^>]*>/gi,
+    /<itunes:image[^>]*\shref=["']([^"']+)["'][^>]*>/gi,
+    /<image:image[^>]*\surl=["']([^"']+)["'][^>]*>/gi,
+    /<thumbnail[^>]*\surl=["']([^"']+)["'][^>]*>/gi
   ];
 
-  for (const m of matches) {
-    if (m?.[1]) candidates.push(m[1]);
+  for (const pattern of attrPatterns) {
+    for (const m of content.matchAll(pattern)) {
+      pushUrlCandidate(candidates, m?.[1]);
+    }
   }
 
-  // image/url
-  matches = [
-    ...content.matchAll(/<image>[\s\S]*?<url>([\s\S]*?)<\/url>[\s\S]*?<\/image>/gi)
+  // Feed image/url blocks.
+  const imageUrlPatterns = [
+    /<image>[\s\S]*?<url>([\s\S]*?)<\/url>[\s\S]*?<\/image>/gi,
+    /<(?:\w+:)?image[^>]*>(?:<!\[CDATA\[)?(https?:\/\/[\s\S]*?)(?:\]\]>)?<\/(?:\w+:)?image>/gi,
+    /<(?:\w+:)?featuredImage[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/(?:\w+:)?featuredImage>/gi,
+    /<(?:\w+:)?thumbnail[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/(?:\w+:)?thumbnail>/gi
   ];
 
-  for (const m of matches) {
-    if (m?.[1]) candidates.push(m[1]);
+  for (const pattern of imageUrlPatterns) {
+    for (const m of content.matchAll(pattern)) {
+      pushUrlCandidate(candidates, m?.[1]);
+    }
   }
 
-  // content:encoded או description עם <img>
-  const htmlBlock =
-    content.match(/<content:encoded>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/content:encoded>/i)?.[1] ||
-    content.match(/<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/i)?.[1] ||
-    "";
+  // Decode item content once so encoded HTML like &lt;img src=&quot;...&quot;&gt; can be parsed.
+  const decodedContent = decodeXmlEntities(content);
 
-  if (htmlBlock) {
-    const imgMatches = [
-      ...htmlBlock.matchAll(/<img[^>]*\ssrc=["']([^"']+)["']/gi),
-      ...htmlBlock.matchAll(/<img[^>]*\sdata-src=["']([^"']+)["']/gi),
-      ...htmlBlock.matchAll(/<img[^>]*\sdata-lazy-src=["']([^"']+)["']/gi),
-      ...htmlBlock.matchAll(/<img[^>]*\sdata-original=["']([^"']+)["']/gi)
+  const htmlBlockPatterns = [
+    /<content:encoded[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/content:encoded>/gi,
+    /<description[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/gi,
+    /<summary[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/summary>/gi,
+    /<content[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/content>/gi
+  ];
+
+  const htmlBlocks = [decodedContent];
+
+  for (const pattern of htmlBlockPatterns) {
+    for (const m of decodedContent.matchAll(pattern)) {
+      if (m?.[1]) htmlBlocks.push(decodeXmlEntities(m[1]));
+    }
+  }
+
+  for (const htmlBlock of htmlBlocks) {
+    const imgAttrPatterns = [
+      { re: /<img[^>]*\ssrc=["']([^"']+)["']/gi, srcset: false },
+      { re: /<img[^>]*\sdata-src=["']([^"']+)["']/gi, srcset: false },
+      { re: /<img[^>]*\sdata-lazy-src=["']([^"']+)["']/gi, srcset: false },
+      { re: /<img[^>]*\sdata-original=["']([^"']+)["']/gi, srcset: false },
+      { re: /<img[^>]*\sdata-image=["']([^"']+)["']/gi, srcset: false },
+      { re: /<meta[^>]*\sproperty=["']og:image["'][^>]*\scontent=["']([^"']+)["']/gi, srcset: false },
+      { re: /<meta[^>]*\sname=["']twitter:image["'][^>]*\scontent=["']([^"']+)["']/gi, srcset: false },
+      { re: /<source[^>]*\ssrcset=["']([^"']+)["']/gi, srcset: true },
+      { re: /<img[^>]*\ssrcset=["']([^"']+)["']/gi, srcset: true }
     ];
 
-    for (const m of imgMatches) {
-      if (m?.[1]) candidates.push(m[1]);
+    for (const item of imgAttrPatterns) {
+      for (const m of htmlBlock.matchAll(item.re)) {
+        const value = m?.[1];
+        if (!value) continue;
+        if (item.srcset) pushSrcsetCandidates(candidates, value);
+        else pushUrlCandidate(candidates, value);
+      }
     }
 
-    // srcset often contains better/larger editorial images.
-    const srcsetMatches = [
-      ...htmlBlock.matchAll(/<img[^>]*\ssrcset=["']([^"']+)["']/gi),
-      ...htmlBlock.matchAll(/<source[^>]*\ssrcset=["']([^"']+)["']/gi)
-    ];
-
-    for (const m of srcsetMatches) {
-      const parts = String(m?.[1] || "")
-        .split(",")
-        .map(part => part.trim().split(/\s+/)[0])
-        .filter(Boolean);
-      candidates.push(...parts);
+    // Raw image URLs inside item content.
+    for (const m of htmlBlock.matchAll(/https?:\/\/[^\s"'<>]+?\.(?:jpg|jpeg|png|webp)(?:\?[^\s"'<>]+)?/gi)) {
+      pushUrlCandidate(candidates, m?.[0]);
     }
   }
 
@@ -377,7 +443,7 @@ function getNormalizedCacheKey(reqUrl) {
   });
   cleanParams.sort();
   u.search = cleanParams.toString();
-  u.searchParams.set("_filterv", "final2");
+  u.searchParams.set("_filterv", "imgfix1");
   return new Request(u.toString(), { method: "GET" });
 }
 
