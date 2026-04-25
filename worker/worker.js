@@ -442,7 +442,7 @@ export default {
 
       const filterQ = (url.searchParams.get("q") || "").slice(0, 50).toLowerCase();
       const filterGenre = (url.searchParams.get("genre") || "").slice(0, 30).toLowerCase();
-      const limit = Math.min(parseInt(url.searchParams.get("limit")) || 100, 300);
+      const limit = Math.min(parseInt(url.searchParams.get("limit")) || 40, 80);
       const daysBack = Math.min(parseInt(url.searchParams.get("days")) || 3, 365);
 
       const FEEDS = [
