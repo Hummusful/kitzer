@@ -1,6 +1,6 @@
 /**
- * Kitzer — Smart Visual Pulse UI
- * Fast scanning, strong hierarchy, safe rendering.
+ * Kitzer — Fast Feed UI
+ * Fast scanning, compact hierarchy, safe rendering.
  */
 const FEED_ENDPOINT = 'https://music-aggregator.dustrial.workers.dev/api/music';
 const feedEl = document.getElementById('newsFeed');
@@ -12,7 +12,7 @@ let currentController = null;
 const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 const HEB_RTF = new Intl.RelativeTimeFormat('he-IL', { numeric: 'auto' });
 const TIMEZONE = 'Asia/Jerusalem';
-const CACHE_VERSION = 'kitzer-pulse-v1';
+const CACHE_VERSION = 'kitzer-fast-feed-v1';
 const TTL_MS = 30 * 60 * 1000;
 
 function cleanText(input, limit = 0) {
@@ -73,7 +73,8 @@ function makeTags(it) {
 function classifyItem(it, index) {
   const ageMs = Date.now() - parseTime(it.date);
   return {
-    isTop: index < 2,
+    isLead: index === 0,
+    isFeatured: index > 0 && index < 3,
     isFresh: ageMs > 0 && ageMs <= 6 * 60 * 60 * 1000,
     isOld: ageMs >= 24 * 60 * 60 * 1000
   };
@@ -90,7 +91,7 @@ function renderNews(items) {
     return;
   }
 
-  const batchSize = 10;
+  const batchSize = 14;
 
   const renderBatch = (startIdx) => {
     const endIdx = Math.min(startIdx + batchSize, items.length);
@@ -102,22 +103,28 @@ function renderNews(items) {
       const title = cleanText(it.title);
       if (!title || link === '#') continue;
 
-      const { isTop, isFresh, isOld } = classifyItem(it, i);
+      const { isLead, isFeatured, isFresh, isOld } = classifyItem(it, i);
       const tags = makeTags(it);
       const el = document.createElement('article');
-      el.className = ['news-card', isTop ? 'top-story' : 'pulse-item', isFresh ? 'fresh' : '', isOld ? 'old' : '']
-        .filter(Boolean)
-        .join(' ');
+
+      el.className = [
+        'news-card',
+        isLead ? 'lead-item' : '',
+        isFeatured ? 'featured-item' : '',
+        isFresh ? 'fresh' : '',
+        isOld ? 'old' : ''
+      ].filter(Boolean).join(' ');
+
       el.setAttribute('role', 'article');
 
       const cover = safeUrl(it.cover);
-      const shouldShowImage = cover !== '#' && (!isOld || isTop);
+      const shouldShowImage = cover !== '#' && (!isOld || isLead || isFeatured);
       const coverHTML = shouldShowImage
         ? `<a class="cover-link" href="${link}" target="_blank" rel="noopener noreferrer" tabindex="-1" aria-hidden="true"><img src="${cover}" class="news-cover" loading="lazy" alt="" role="presentation"></a>`
         : `<div class="text-signal" aria-hidden="true">${isFresh ? '●' : '◇'}</div>`;
 
-      const badge = isFresh ? '<span class="hot-badge">חדש</span>' : '';
-      const summaryLimit = isTop ? 260 : 150;
+      const badge = isFresh ? '<span class="fresh-badge">חדש</span>' : '';
+      const summaryLimit = isLead ? 190 : 120;
       const summary = it.description ? cleanText(it.description, summaryLimit) : '';
 
       el.innerHTML = `
@@ -190,7 +197,7 @@ async function loadNews(forceRefresh = false) {
     }
   }
 
-  feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(6);
+  feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(8);
 
   try {
     const url = new URL(FEED_ENDPOINT);
