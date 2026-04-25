@@ -159,11 +159,12 @@ body::after {
   font-weight:800;
   letter-spacing:-.075em;
   text-align:center;
-  background:linear-gradient(120deg, #ff6a9a 0%, #8d92ff 35%, #46d9ff 55%, #f5c542 70%,#f54242 70%, #ff6a9a 100%);
+  background:linear-gradient(120deg, #ff6a9a 0%, #8d92ff 35%, #46d9ff 55%, #f5c542 70%,#f54242 85%, #ff6a9a 100%);
   background-size:300% 300%;
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-  animation:gradientShift 6s ease infinite;
+ background-clip: text;
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+  animation:gradientShift 8s ease infinite;
   filter:saturate(1.1) contrast(1.05);
   overflow:visible;
 }
