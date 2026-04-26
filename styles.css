@@ -567,9 +567,9 @@ body::after {
   padding-top:.03em;
   padding-bottom:.18em;
 
-  font-family: 'Heebo', sans-serif;
+  font-family: 'Rubik', sans-serif;
   font-weight: 800;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.02em;
 }
 
 .subtitle {
