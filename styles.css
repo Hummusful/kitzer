@@ -157,7 +157,7 @@ body::after {
   line-height:1.25;
   padding-top:.08em;
   padding-bottom:.22em;
-  font-family:"Rubik","IBM Plex Sans Hebrew",system-ui,"Segoe UI",Arial,sans-serif;
+  font-family:"Heebo","IBM Plex Sans Hebrew",system-ui,"Segoe UI",Arial,sans-serif;
   font-weight:800;
   letter-spacing:-.025em;
   overflow:visible;
