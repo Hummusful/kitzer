@@ -45,16 +45,17 @@
     <section class="control-panel" aria-label="בקרת פיד">
       <nav class="toolbar" role="toolbar" aria-label="מסנני תוכן">
         <div class="btn-group" role="group" aria-label="סינון לפי ז'אנר">
-          <button class="btn active" data-genre="all" aria-pressed="true">הכול</button>
-          <button class="btn" data-genre="hebrew" aria-pressed="false">ישראלי</button>
-          <button class="btn" data-genre="international" aria-pressed="false">בינלאומי</button>
-          <button class="btn" data-genre="electronic" aria-pressed="false" lang="en">Electronic</button>
+          <button class="btn active" data-genre="all" aria-pressed="true" aria-label="הצג את כל המבזקים">הכול</button>
+          <button class="btn" data-genre="hebrew" aria-pressed="false" aria-label="הצג מבזקי מוזיקה ישראלית">ישראלי</button>
+          <button class="btn" data-genre="international" aria-pressed="false" aria-label="הצג מבזקי מוזיקה בינלאומית">בינלאומי</button>
+          <button class="btn" data-genre="electronic" aria-pressed="false" aria-label="הצג מבזקי מוזיקה אלקטרונית" lang="en">Electronic</button>
         </div>
-        <button id="refreshBtn" class="btn ghost" type="button" title="רענן את הפיד">רענון</button>
+        <button id="refreshBtn" class="btn ghost" type="button" title="רענן את הפיד" aria-label="רענן את פיד המוזיקה">רענון</button>
       </nav>
     </section>
     <main id="newsFeed" class="news-feed" role="feed" aria-live="polite" aria-busy="true">
-      <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+      <p class="loading-label">טוען מבזקי מוזיקה...</p>
+      <div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div>
     </main>
     <footer class="footer" role="contentinfo"><p>קיצר — Dusty’s Feed</p></footer>
   </div>

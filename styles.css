@@ -882,3 +882,46 @@ body::after {
   background: linear-gradient( to bottom, transparent, var(--yellow), transparent );
   opacity: 0.35;
 }
+
+/* ===== QA hardening patch: clearer loading, empty/error states, mobile affordance ===== */
+.loading-label {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  text-align: center;
+  grid-column: 1 / -1;
+}
+
+.feed-status {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 1.35rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.feed-status p {
+  margin: 0 0 0.75rem;
+}
+
+.feed-status p:only-child {
+  margin-bottom: 0;
+}
+
+.status-action {
+  margin-inline: auto;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+}
+
+@media (max-width: 860px) {
+  .read-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+  }
+}

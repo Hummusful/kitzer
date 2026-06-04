@@ -11,7 +11,7 @@ let currentController = null;
 const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 const HEB_RTF = new Intl.RelativeTimeFormat('he-IL', { numeric: 'auto' });
 const TIMEZONE = 'Asia/Jerusalem';
-const CACHE_VERSION = 'kitzer-radio-revolution-images-v1';
+const CACHE_VERSION = 'kitzer-radio-revolution-images-v2';
 const TTL_MS = 30 * 60 * 1000;
 
 function cleanText(input, limit = 0) {
@@ -77,21 +77,92 @@ function classifyItem(it) {
   };
 }
 
-function buildCoverHTML(cover, link) {
+function createTextSignal() {
+  const signal = document.createElement('div');
+  signal.className = 'text-signal';
+  signal.setAttribute('aria-hidden', 'true');
+  signal.textContent = '♫';
+  return signal;
+}
+
+function buildCoverNode(cover) {
   if (cover !== '#') {
-    return `<a class="cover-link" href="${link}" target="_blank" rel="noopener noreferrer" tabindex="-1" aria-hidden="true"><img src="${cover}" class="news-cover" loading="lazy" decoding="async" alt="" role="presentation" onerror="this.closest('.cover-link').outerHTML='<div class=&quot;text-signal&quot; aria-hidden=&quot;true&quot;>♫</div>'"></a>`;
+    const wrap = document.createElement('div');
+    wrap.className = 'cover-link';
+    wrap.setAttribute('aria-hidden', 'true');
+
+    const img = document.createElement('img');
+    img.src = cover;
+    img.className = 'news-cover';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.alt = '';
+    img.setAttribute('role', 'presentation');
+    img.addEventListener('error', () => wrap.replaceWith(createTextSignal()), { once: true });
+
+    wrap.appendChild(img);
+    return wrap;
   }
-  return `<div class="text-signal" aria-hidden="true">♫</div>`;
+
+  return createTextSignal();
+}
+
+function appendText(parent, tagName, className, text) {
+  const el = document.createElement(tagName);
+  if (className) el.className = className;
+  el.textContent = text;
+  parent.appendChild(el);
+  return el;
+}
+
+function renderStatus(message, type = 'muted', showRetry = false) {
+  if (!feedEl) return;
+  feedEl.replaceChildren();
+  const status = document.createElement('div');
+  status.className = `feed-status ${type}`;
+  status.setAttribute('role', type === 'error' ? 'alert' : 'status');
+
+  const p = document.createElement('p');
+  p.textContent = message;
+  status.appendChild(p);
+
+  if (showRetry) {
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'btn status-action';
+    retry.textContent = 'נסה שוב';
+    retry.addEventListener('click', () => loadNews(true));
+    status.appendChild(retry);
+  }
+
+  feedEl.appendChild(status);
+  refreshBtn?.classList.remove('loading');
+  feedEl.setAttribute('aria-busy', 'false');
+}
+
+function renderLoading() {
+  if (!feedEl) return;
+  feedEl.replaceChildren();
+
+  const loadingLabel = document.createElement('p');
+  loadingLabel.className = 'loading-label';
+  loadingLabel.textContent = 'טוען מבזקי מוזיקה...';
+  feedEl.appendChild(loadingLabel);
+
+  for (let i = 0; i < 8; i++) {
+    const skeleton = document.createElement('div');
+    skeleton.className = 'skeleton';
+    skeleton.setAttribute('aria-hidden', 'true');
+    feedEl.appendChild(skeleton);
+  }
 }
 
 function renderNews(items) {
   if (!feedEl) return;
-  feedEl.innerHTML = '';
+  feedEl.replaceChildren();
 
   if (!Array.isArray(items) || items.length === 0) {
-    feedEl.innerHTML = '<p class="muted">אין מבזקי מוזיקה כרגע.</p>';
-    refreshBtn?.classList.remove('loading');
-    feedEl.setAttribute('aria-busy', 'false');
+    renderStatus('אין מבזקי מוזיקה כרגע.', 'muted');
     return;
   }
 
@@ -109,33 +180,69 @@ function renderNews(items) {
       const { isFresh, isOld } = classifyItem(it);
       const tags = makeTags(it);
       const el = document.createElement('article');
+      const titleId = `news-title-${startIdx}-${i}`;
 
       el.className = ['news-card', isFresh ? 'fresh' : '', isOld ? 'old' : ''].filter(Boolean).join(' ');
       el.setAttribute('role', 'article');
+      el.setAttribute('aria-labelledby', titleId);
 
       const cover = safeUrl(it.cover);
-      const badge = isFresh ? '<span class="fresh-badge">LIVE</span>' : '';
+      el.appendChild(buildCoverNode(cover));
+
+      const details = document.createElement('div');
+      details.className = 'news-details';
+
+      const kicker = document.createElement('div');
+      kicker.className = 'news-kicker';
+
+      if (isFresh) appendText(kicker, 'span', 'fresh-badge', 'LIVE');
+      appendText(kicker, 'span', 'news-source', cleanText(it.source));
+
+      const time = document.createElement('time');
+      time.className = 'news-date';
+      time.dateTime = cleanText(it.date);
+      appendText(time, 'span', 'rel', timeAgo(it.date));
+      const clock = clockTime(it.date);
+      if (clock) {
+        appendText(time, 'span', 'sep', ' · ');
+        const bdi = appendText(time, 'bdi', 'clock', `${clock}\u200E`);
+        bdi.dir = 'ltr';
+      }
+      kicker.appendChild(time);
+      details.appendChild(kicker);
+
+      const h2 = document.createElement('h2');
+      h2.className = 'news-title';
+      h2.id = titleId;
+      const titleLink = document.createElement('a');
+      titleLink.href = link;
+      titleLink.target = '_blank';
+      titleLink.rel = 'noopener noreferrer';
+      titleLink.textContent = title;
+      h2.appendChild(titleLink);
+      details.appendChild(h2);
+
       const summary = it.description ? cleanText(it.description, 115) : '';
+      if (summary) appendText(details, 'p', 'news-summary', summary);
 
-      el.innerHTML = `
-        ${buildCoverHTML(cover, link)}
-        <div class="news-details">
-          <div class="news-kicker">
-            ${badge}
-            <span class="news-source">${cleanText(it.source)}</span>
-            <time class="news-date" datetime="${cleanText(it.date)}">
-              <span class="rel">${timeAgo(it.date)}</span>
-              ${clockTime(it.date) ? `<span class="sep"> · </span><bdi class="clock">${clockTime(it.date)}\u200E</bdi>` : ''}
-            </time>
-          </div>
-          <h2 class="news-title"><a href="${link}" target="_blank" rel="noopener noreferrer">${title}</a></h2>
-          ${summary ? `<p class="news-summary">${summary}</p>` : ''}
-          <div class="news-footer-meta">
-            <div class="news-tags">${tags.map(t => `<span class="tag">${cleanText(t)}</span>`).join('')}</div>
-            <a class="read-link" href="${link}" target="_blank" rel="noopener noreferrer">לפרטים</a>
-          </div>
-        </div>`;
+      const footer = document.createElement('div');
+      footer.className = 'news-footer-meta';
 
+      const tagWrap = document.createElement('div');
+      tagWrap.className = 'news-tags';
+      for (const tag of tags) appendText(tagWrap, 'span', 'tag', cleanText(tag));
+      footer.appendChild(tagWrap);
+
+      const readLink = document.createElement('a');
+      readLink.className = 'read-link';
+      readLink.href = link;
+      readLink.target = '_blank';
+      readLink.rel = 'noopener noreferrer';
+      readLink.textContent = 'לפרטים';
+      footer.appendChild(readLink);
+
+      details.appendChild(footer);
+      el.appendChild(details);
       frag.appendChild(el);
     }
 
@@ -185,7 +292,7 @@ async function loadNews(forceRefresh = false) {
     }
   }
 
-  feedEl.innerHTML = '<div class="skeleton"></div>'.repeat(8);
+  renderLoading();
 
   try {
     const url = new URL(FEED_ENDPOINT);
@@ -204,9 +311,7 @@ async function loadNews(forceRefresh = false) {
   } catch (e) {
     if (e.name === 'AbortError') return;
     console.error('LoadNews Failure:', e);
-    feedEl.setAttribute('aria-busy', 'false');
-    feedEl.innerHTML = '<p class="error">שגיאה בטעינת המבזקים</p>';
-    refreshBtn?.classList.remove('loading');
+    renderStatus('שגיאה בטעינת המבזקים. אפשר לנסות שוב בעוד רגע.', 'error', true);
   }
 }
 
