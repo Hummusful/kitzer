@@ -423,7 +423,8 @@ function parseRSS(xmlText, feedConfig) {
         lang: feedConfig.lang,
         genre: feedConfig.genre || "general",
         music_score: relevance.score,
-        cover: (typeof cover === "string" && cover.startsWith("http")) ? cover : null
+        cover: (typeof cover === "string" && cover.startsWith("http")) ? cover : null,
+cover_text: feedConfig.source
       });
     }
   }
@@ -473,9 +474,11 @@ async function fetchWithConcurrencyLimit(tasks, limit = 6) {
 // ----------------------------------------------------
 export default {
   async fetch(req, env, ctx) {
+    let allowedOrigin = null;
+
     try {
       const url = new URL(req.url);
-      const allowedOrigin = getAllowedOrigin(req);
+      allowedOrigin = getAllowedOrigin(req);
 
       if (req.method === "OPTIONS") {
         return finalizeResponse(new Response(null, {
