@@ -94,13 +94,17 @@ The site will automatically deploy to your GitHub Pages URL.
    cp worker/worker.js your-cloudflare-project/src/index.js
    ```
 
-3. **(Optional) Add Spotify API for Trending:**
+3. **(Optional) Enable Spotify Trending for Hebrew Genre:**
    - Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-   - Create an app and get `Client ID` and `Client Secret`
-   - Set environment variables in Cloudflare:
+   - Create a new App → Accept terms → Get credentials
+   - Copy your **Client ID** and **Client Secret**
+   - Add them to Cloudflare Worker secrets:
      ```bash
      wrangler secret put SPOTIFY_CLIENT_ID
+     # Paste your Client ID, press Enter
+     
      wrangler secret put SPOTIFY_CLIENT_SECRET
+     # Paste your Client Secret, press Enter
      ```
 
 4. **Deploy:**
@@ -108,24 +112,27 @@ The site will automatically deploy to your GitHub Pages URL.
    wrangler deploy
    ```
 
-5. **Update API endpoint** in `app.js` if needed
+5. **Update API endpoint** in `app.js` if using custom domain
+
+**Note:** Last.fm Trending requires no configuration—it works out of the box!
 
 ## Feed Sources
 
-### Hebrew (2 RSS + Spotify Trending)
-- Mako מוזיקה (RSS)
-- Walla מוזיקה (RSS)
-- Spotify Trending Israel (API, optional)
+### Hebrew (2 RSS + 1 API)
+- Mako מוזיקה (RSS) ✅
+- Walla מוזיקה (RSS) ✅
+- Bandcamp Hebrew (RSS) ✅
+- **Spotify Trending Israel** (API, requires setup) 🎵
 
-### Electronic (8 sources)
+### Electronic (8 RSS sources)
 - Trancentral, Your EDM, Dancing Astronaut, DJ Mag
 - EDM.com, EDM Sauce, Mixmag, Magnetic Mag
 
-### International (16 sources + Last.fm Trending)
-- Rolling Stone, NY Times, Pitchfork, Stereogum
+### International (16 RSS + 1 API)
+- Rolling Stone, NY Times, Pitchfork, Stereogum, Consequence
 - The FADER, SPIN, XXL Mag, The Source, Complex
-- Loudwire, MBW, Hypebot, DMN, Variety, THR, and more
-- Last.fm Trending (no auth required)
+- Loudwire, MBW, Hypebot, DMN, Variety, THR
+- **Last.fm Trending Charts** (no auth needed) 📊
 
 **To add more feeds**, edit the `FEEDS` array in `worker/worker.js`
 
