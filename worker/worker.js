@@ -469,6 +469,78 @@ async function fetchWithConcurrencyLimit(tasks, limit = 6) {
   return Promise.all(results);
 }
 
+// Spotify Trending for Israel
+async function fetchSpotifyTrending(env) {
+  try {
+    const clientId = env.SPOTIFY_CLIENT_ID;
+    const clientSecret = env.SPOTIFY_CLIENT_SECRET;
+    if (!clientId || !clientSecret) return [];
+
+    // Get access token
+    const authRes = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `grant_type=client_credentials&client_id=${clientId}&client_secret=${clientSecret}`
+    });
+    const auth = await authRes.json();
+    if (!auth.access_token) return [];
+
+    // Get trending tracks (Israeli top 50)
+    const res = await fetch('https://api.spotify.com/v1/playlists/37i9dQZEVXbJ5HYJdx0LFI', {
+      headers: { 'Authorization': `Bearer ${auth.access_token}` }
+    });
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    const items = [];
+    for (const track of data.tracks.items.slice(0, 10)) {
+      items.push({
+        title: `${track.name} — ${track.artists[0].name}`,
+        link: track.external_urls.spotify,
+        date: new Date().toISOString(),
+        description: track.artists.map(a => a.name).join(', '),
+        source: 'Spotify Trending IL',
+        lang: 'HE',
+        genre: 'hebrew',
+        music_score: 9,
+        cover: track.album.images[0]?.url || null,
+        cover_text: 'Spotify'
+      });
+    }
+    return items;
+  } catch {
+    return [];
+  }
+}
+
+// Last.fm Trending (no auth required)
+async function fetchLastFmTrending() {
+  try {
+    const res = await fetch('http://ws.audioscrobbler.com/2.0/?method=chart.getTopTracks&region=Israel&limit=15&format=json');
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    const items = [];
+    for (const track of data.tracks.track.slice(0, 10)) {
+      items.push({
+        title: `${track.name} — ${track.artist.name}`,
+        link: track.url,
+        date: new Date().toISOString(),
+        description: `Listeners: ${track.listeners}`,
+        source: 'Last.fm Trending',
+        lang: 'EN',
+        genre: 'international',
+        music_score: 8,
+        cover: null,
+        cover_text: 'Last.fm'
+      });
+    }
+    return items;
+  } catch {
+    return [];
+  }
+}
+
 // ----------------------------------------------------
 // 5. WORKER MAIN FETCH HANDLER
 // ----------------------------------------------------
@@ -517,8 +589,8 @@ export default {
       const FEEDS = [
         // HEBREW 🇮🇱
         { url: "https://rcs.mako.co.il/rss/f6750a2610f26110VgnVCM1000005201000aRCRD.xml", source: "Mako מוזיקה", lang: "HE", genre: "hebrew" },
-        { url: "https://www.maariv.co.il/Rss/RssFeedsMozika", source: "מעריב מוזיקה", lang: "HE", genre: "hebrew" },
         { url: "https://rss.walla.co.il/feed/272", source: "Walla מוזיקה", lang: "HE", genre: "hebrew" },
+        { url: "https://www.bandcamp.com/?feed=1&s=hebrew&g=music", source: "Bandcamp Hebrew", lang: "HE", genre: "hebrew" },
 
         // ELECTRONIC 🔊
         { url: "https://trancentral.tv/feed/", source: "Trancentral", lang: "EN", genre: "electronic" },
@@ -587,6 +659,18 @@ export default {
       const resultsArray = await fetchWithConcurrencyLimit(tasks, 10);
 
       let allItems = resultsArray.flat();
+
+      // Add trending data from APIs
+      if (!filterGenre || filterGenre === 'hebrew') {
+        const spotifyItems = await fetchSpotifyTrending(env);
+        allItems.push(...spotifyItems);
+      }
+
+      if (!filterGenre || filterGenre === 'international') {
+        const lastfmItems = await fetchLastFmTrending();
+        allItems.push(...lastfmItems);
+      }
+
       const cutoff = Date.now() - daysBack * 24 * 60 * 60 * 1000;
 
       allItems = allItems.filter(i => {

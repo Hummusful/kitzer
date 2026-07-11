@@ -94,35 +94,58 @@ The site will automatically deploy to your GitHub Pages URL.
    cp worker/worker.js your-cloudflare-project/src/index.js
    ```
 
-3. **Deploy:**
+3. **(Optional) Add Spotify API for Trending:**
+   - Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+   - Create an app and get `Client ID` and `Client Secret`
+   - Set environment variables in Cloudflare:
+     ```bash
+     wrangler secret put SPOTIFY_CLIENT_ID
+     wrangler secret put SPOTIFY_CLIENT_SECRET
+     ```
+
+4. **Deploy:**
    ```bash
    wrangler deploy
    ```
 
-4. **Update API endpoint** in `app.js` if needed
+5. **Update API endpoint** in `app.js` if needed
 
 ## Feed Sources
 
-### Hebrew (3 sources)
-- Mako מוזיקה
-- מעריב מוזיקה
-- Walla מוזיקה
+### Hebrew (2 RSS + Spotify Trending)
+- Mako מוזיקה (RSS)
+- Walla מוזיקה (RSS)
+- Spotify Trending Israel (API, optional)
 
 ### Electronic (8 sources)
 - Trancentral, Your EDM, Dancing Astronaut, DJ Mag
 - EDM.com, EDM Sauce, Mixmag, Magnetic Mag
 
-### International (16 sources)
+### International (16 sources + Last.fm Trending)
 - Rolling Stone, NY Times, Pitchfork, Stereogum
 - The FADER, SPIN, XXL Mag, The Source, Complex
 - Loudwire, MBW, Hypebot, DMN, Variety, THR, and more
+- Last.fm Trending (no auth required)
 
 **To add more feeds**, edit the `FEEDS` array in `worker/worker.js`
 
 ## Configuration
 
 ### Environment Variables (Worker)
-Set in Cloudflare dashboard or `wrangler.toml`:
+
+**Required (if using Spotify Trending):**
+```
+SPOTIFY_CLIENT_ID=your_spotify_client_id
+SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+```
+
+Get credentials from [Spotify Developer Dashboard](https://developer.spotify.com/dashboard):
+1. Create a new App
+2. Accept terms and create
+3. Copy `Client ID` and `Client Secret`
+4. Store securely in Cloudflare
+
+**Optional Settings:**
 ```toml
 [env.production]
 vars = { CACHE_TTL = "1800" }
