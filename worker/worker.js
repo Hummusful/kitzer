@@ -470,10 +470,13 @@ async function fetchWithConcurrencyLimit(tasks, limit = 6) {
 }
 
 // Spotify Trending for Israel
+// TODO: Add SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET to Cloudflare secrets:
+// wrangler secret put SPOTIFY_CLIENT_ID
+// wrangler secret put SPOTIFY_CLIENT_SECRET
 async function fetchSpotifyTrending(env) {
   try {
-    const clientId = env.SPOTIFY_CLIENT_ID;
-    const clientSecret = env.SPOTIFY_CLIENT_SECRET;
+    const clientId = env.SPOTIFY_CLIENT_ID;  // YOUR_SPOTIFY_CLIENT_ID_HERE
+    const clientSecret = env.SPOTIFY_CLIENT_SECRET;  // YOUR_SPOTIFY_CLIENT_SECRET_HERE
     if (!clientId || !clientSecret) return [];
 
     // Get access token
