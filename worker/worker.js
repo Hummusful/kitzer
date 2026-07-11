@@ -477,7 +477,11 @@ async function fetchSpotifyTrending(env) {
   try {
     const clientId = env.SPOTIFY_CLIENT_ID;
     const clientSecret = env.SPOTIFY_CLIENT_SECRET;
-    if (!clientId || !clientSecret) return [];
+    console.log('Spotify - clientId exists:', !!clientId, 'clientSecret exists:', !!clientSecret);
+    if (!clientId || !clientSecret) {
+      console.log('Spotify credentials missing');
+      return [];
+    }
 
     // Get access token
     const authRes = await fetch('https://accounts.spotify.com/api/token', {
@@ -486,13 +490,21 @@ async function fetchSpotifyTrending(env) {
       body: `grant_type=client_credentials&client_id=${clientId}&client_secret=${clientSecret}`
     });
     const auth = await authRes.json();
-    if (!auth.access_token) return [];
+    console.log('Spotify auth response:', auth.access_token ? 'got token' : 'no token');
+    if (!auth.access_token) {
+      console.log('Spotify auth failed:', auth);
+      return [];
+    }
 
     // Get trending tracks (Israeli top 50)
     const res = await fetch('https://api.spotify.com/v1/playlists/37i9dQZEVXbJ5HYJdx0LFI', {
       headers: { 'Authorization': `Bearer ${auth.access_token}` }
     });
-    if (!res.ok) return [];
+    console.log('Spotify playlist response:', res.status);
+    if (!res.ok) {
+      console.log('Spotify playlist failed:', res.status);
+      return [];
+    }
 
     const data = await res.json();
     const items = [];
@@ -510,8 +522,10 @@ async function fetchSpotifyTrending(env) {
         cover_text: 'Spotify'
       });
     }
+    console.log('Spotify returned:', items.length, 'items');
     return items;
-  } catch {
+  } catch (err) {
+    console.error('Spotify error:', err);
     return [];
   }
 }
@@ -520,9 +534,14 @@ async function fetchSpotifyTrending(env) {
 async function fetchLastFmTrending() {
   try {
     const res = await fetch('http://ws.audioscrobbler.com/2.0/?method=chart.getTopTracks&region=Israel&limit=15&format=json');
-    if (!res.ok) return [];
+    console.log('Last.fm response:', res.status);
+    if (!res.ok) {
+      console.log('Last.fm failed:', res.status);
+      return [];
+    }
 
     const data = await res.json();
+    console.log('Last.fm data received, tracks:', data.tracks?.track?.length);
     const items = [];
     for (const track of data.tracks.track.slice(0, 10)) {
       items.push({
@@ -538,8 +557,10 @@ async function fetchLastFmTrending() {
         cover_text: 'Last.fm'
       });
     }
+    console.log('Last.fm returned:', items.length, 'items');
     return items;
-  } catch {
+  } catch (err) {
+    console.error('Last.fm error:', err);
     return [];
   }
 }
