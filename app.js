@@ -1,7 +1,8 @@
 /**
  * Kitzer Revolution — RADIO/SIGNAL frontend + Album Strip
  */
-const FEED_ENDPOINT = 'https://music-aggregator.dustrial.workers.dev/api/music';
+const FEED_ENDPOINT = window.CONFIG?.API_ENDPOINT || 'https://music-aggregator.dustrial.workers.dev/api/music';
+const FETCH_TIMEOUT = window.CONFIG?.FETCH_TIMEOUT || 10000;
 const feedEl = document.getElementById('newsFeed');
 const refreshBtn = document.getElementById('refreshBtn');
 
@@ -294,7 +295,10 @@ async function loadNews(forceRefresh = false) {
 
   renderLoading();
 
+  let timeoutId = null;
   try {
+    timeoutId = setTimeout(() => currentController.abort(), FETCH_TIMEOUT);
+
     const url = new URL(FEED_ENDPOINT);
     url.searchParams.set('days', '3');
     url.searchParams.set('limit', '40');
@@ -309,9 +313,22 @@ async function loadNews(forceRefresh = false) {
     writeCache(items);
     renderNews(items);
   } catch (e) {
-    if (e.name === 'AbortError') return;
+    if (e.name === 'AbortError') {
+      const message = !navigator.onLine 
+        ? 'אין חיבור אינטרנט. בדוק את ההגדרות שלך.'
+        : 'הבקשה ארכה יותר מדי. אנא נסה שוב.';
+      renderStatus(message, 'error', true);
+      return;
+    }
     console.error('LoadNews Failure:', e);
-    renderStatus('שגיאה בטעינת המבזקים. אפשר לנסות שוב בעוד רגע.', 'error', true);
+    const message = e.message?.includes('JSON')
+      ? 'תגובה שגויה מהשרת'
+      : e.message?.includes('Response Error: 5')
+      ? 'שגיאה בשרת. אנא נסה שוב בעוד דקה.'
+      : 'שגיאה בטעינת המבזקים. אפשר לנסות שוב בעוד רגע.';
+    renderStatus(message, 'error', true);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
   }
 }
 
