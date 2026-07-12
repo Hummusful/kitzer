@@ -5,9 +5,59 @@ const FEED_ENDPOINT = window.CONFIG?.API_ENDPOINT || 'https://music-aggregator.d
 const FETCH_TIMEOUT = window.CONFIG?.FETCH_TIMEOUT || 10000;
 const feedEl = document.getElementById('newsFeed');
 const refreshBtn = document.getElementById('refreshBtn');
+const themeToggle = document.getElementById('themeToggle');
 
 let state = { genre: 'all' };
 let currentController = null;
+
+// ============================================================
+// Theme Management
+// ============================================================
+const THEME_STORAGE_KEY = 'kitzer-theme-preference';
+const DEFAULT_THEME = 'dark';
+
+function getStoredTheme() {
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY) || DEFAULT_THEME;
+  } catch {
+    return DEFAULT_THEME;
+  }
+}
+
+function setTheme(theme) {
+  const validTheme = theme === 'light' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', validTheme);
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, validTheme);
+  } catch {
+    // Silently ignore storage errors
+  }
+  updateThemeButton(validTheme);
+}
+
+function updateThemeButton(theme) {
+  if (themeToggle) {
+    themeToggle.textContent = theme === 'light' ? '🌙' : '☀️';
+    themeToggle.setAttribute('aria-label', theme === 'light' ? 'החלף לעיצוב כהה' : 'החלף לעיצוב בהיר');
+  }
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme') || DEFAULT_THEME;
+  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+  setTheme(newTheme);
+}
+
+// Initialize theme
+(function initTheme() {
+  const storedTheme = getStoredTheme();
+  setTheme(storedTheme);
+  if (themeToggle) {
+    themeToggle.addEventListener('click', toggleTheme);
+  }
+})();
+
+// ============================================================
 
 const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 const HEB_RTF = new Intl.RelativeTimeFormat('he-IL', { numeric: 'auto' });
