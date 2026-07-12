@@ -709,7 +709,8 @@ export default {
         );
       }
 
-      if (filterGenre) {
+      // Only filter by genre if it's not 'all' (genre=all means fetch everything)
+      if (filterGenre && filterGenre !== 'all') {
         allItems = allItems.filter(i => i.genre === filterGenre);
       }
 
