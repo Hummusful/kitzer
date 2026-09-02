@@ -183,7 +183,8 @@ const NON_MUSIC_RISK_KEYWORDS = [
 ];
 
 const TRUSTED_MUSIC_SOURCES = new Set([
-  "Mako מוזיקה", "מעריב מוזיקה", "Walla מוזיקה", "Trancentral", "Your EDM",
+  "Mako מוזיקה", "מעריב מוזיקה", "Walla מוזיקה", "קולומבוס", "הבלוג של יובל אראל",
+  "Trancentral", "Your EDM",
   "Dancing Astronaut", "DJ Mag", "EDM.com", "EDM Sauce", "Mixmag", "Magnetic Mag",
   "Rolling Stone", "NY Times", "Pitchfork", "Stereogum", "The FADER",
   "SPIN", "XXL Mag", "The Source", "Complex Music", "Loudwire", "MBW", "Hypebot", "DMN"
@@ -444,7 +445,7 @@ function getNormalizedCacheKey(reqUrl) {
   });
   cleanParams.sort();
   u.search = cleanParams.toString();
-  u.searchParams.set("_filterv", "imgfix1");
+  u.searchParams.set("_filterv", "d1feedgroups1");
   return new Request(u.toString(), { method: "GET" });
 }
 
@@ -564,7 +565,27 @@ async function fetchLastFmTrending() {
     return [];
   }
 }
+async function loadEnabledRssFeeds(env) {
+  const result = await env.KITZER_NEWS_DB.prepare(`
+    SELECT
+      name,
+      feed_url,
+      language,
+      feed_group
+    FROM sources
+    WHERE enabled = 1
+      AND source_type = 'rss'
+      AND feed_url IS NOT NULL
+    ORDER BY trust_score DESC, name ASC
+  `).all();
 
+  return (result.results || []).map(row => ({
+    url: row.feed_url,
+    source: row.name,
+    lang: String(row.language || "en").toUpperCase(),
+    genre: String(row.feed_group || "international").toLowerCase()
+  }));
+}
 // ----------------------------------------------------
 // 5. WORKER MAIN FETCH HANDLER
 // ----------------------------------------------------
@@ -584,6 +605,32 @@ export default {
       }
 
       const p = url.pathname.replace(/\/+$/, "");
+      if (p === "/api/news-db-health") {
+  const dbStatus = await env.KITZER_NEWS_DB.prepare(`
+    SELECT
+      COUNT(*) AS total_sources,
+      SUM(CASE WHEN enabled = 1 THEN 1 ELSE 0 END) AS enabled_sources
+    FROM sources
+  `).first();
+
+  return finalizeResponse(
+    new Response(
+      JSON.stringify({
+        ok: true,
+        total_sources: Number(dbStatus?.total_sources || 0),
+        enabled_sources: Number(dbStatus?.enabled_sources || 0)
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          ...(allowedOrigin ? { "X-Allow-Origin": allowedOrigin } : {})
+        }
+      }
+    ),
+    0
+  );
+}
       if (!["", "/api", "/api/music"].includes(p)) {
         return finalizeResponse(new Response("Not Found", {
           status: 404,
@@ -610,41 +657,47 @@ export default {
       const limit = Math.min(parseInt(url.searchParams.get("limit")) || 40, 80);
       const daysBack = Math.min(parseInt(url.searchParams.get("days")) || 3, 365);
 
-      const FEEDS = [
+      const FALLBACK_FEEDS = [
         // HEBREW 🇮🇱
-        { url: "https://rcs.mako.co.il/rss/f6750a2610f26110VgnVCM1000005201000aRCRD.xml", source: "Mako מוזיקה", lang: "HE", genre: "hebrew" },
         { url: "https://rss.walla.co.il/feed/272", source: "Walla מוזיקה", lang: "HE", genre: "hebrew" },
-        { url: "https://www.bandcamp.com/?feed=1&s=hebrew&g=music", source: "Bandcamp Hebrew", lang: "HE", genre: "hebrew" },
+        { url: "https://columbusmusicmagazine.com/feed/", source: "קולומבוס", lang: "HE", genre: "hebrew" },
+        { url: "https://www.maariv.co.il/rss/rssfeedsmozika", source: "מעריב - מוזיקה", lang: "HE", genre: "hebrew" },
+        // Ynet's official culture feed is broader than music, so every item still
+        // passes through the worker's music relevance filter before publication.
+        { url: "https://www.ynet.co.il/Integration/StoryRss538.xml", source: "Ynet תרבות", lang: "HE", genre: "hebrew" },
 
         // ELECTRONIC 🔊
-        { url: "https://trancentral.tv/feed/", source: "Trancentral", lang: "EN", genre: "electronic" },
         { url: "https://www.youredm.com/feed/", source: "Your EDM", lang: "EN", genre: "electronic" },
         { url: "https://dancingastronaut.com/feed/", source: "Dancing Astronaut", lang: "EN", genre: "electronic" },
         { url: "https://djmag.com/feeds/all", source: "DJ Mag", lang: "EN", genre: "electronic" },
         { url: "https://edm.com/.rss/full/", source: "EDM.com", lang: "EN", genre: "electronic" },
-        { url: "https://www.edmsauce.com/feed/", source: "EDM Sauce", lang: "EN", genre: "electronic" },
         { url: "https://mixmag.net/rss", source: "Mixmag", lang: "EN", genre: "electronic" },
         { url: "https://www.magneticmag.com/feed/", source: "Magnetic Mag", lang: "EN", genre: "electronic" },
 
         // INTERNATIONAL 🌎
-        { url: "https://www.rollingstone.com/music/music-news/feed/", source: "Rolling Stone", lang: "EN", genre: "international" },
-        { url: "https://rss.nytimes.com/services/xml/rss/nyt/Music.xml", source: "NY Times", lang: "EN", genre: "international" },
-        { url: "https://pitchfork.com/rss/news/", source: "Pitchfork", lang: "EN", genre: "international" },
-        { url: "https://www.stereogum.com/feed/", source: "Stereogum", lang: "EN", genre: "international" },
-        { url: "https://consequence.net/feed/", source: "Consequence", lang: "EN", genre: "international" },
         { url: "https://www.thefader.com/feed/rss", source: "The FADER", lang: "EN", genre: "international" },
-        { url: "https://www.spin.com/feed/", source: "SPIN", lang: "EN", genre: "international" },
-        { url: "https://www.xxlmag.com/feed/", source: "XXL Mag", lang: "EN", genre: "international" },
         { url: "https://thesource.com/feed/", source: "The Source", lang: "EN", genre: "international" },
         { url: "https://www.complex.com/music/rss", source: "Complex Music", lang: "EN", genre: "international" },
-        { url: "https://loudwire.com/feed/", source: "Loudwire", lang: "EN", genre: "international" },
         { url: "https://www.musicbusinessworldwide.com/feed/", source: "MBW", lang: "EN", genre: "international" },
-        { url: "https://variety.com/v/music/feed/", source: "Variety (Music)", lang: "EN", genre: "international" },
         { url: "https://www.hollywoodreporter.com/c/music/music-news/feed/", source: "THR (Music)", lang: "EN", genre: "international" },
         { url: "https://www.hypebot.com/feed", source: "Hypebot", lang: "EN", genre: "international" },
         { url: "https://www.digitalmusicnews.com/feed/", source: "DMN", lang: "EN", genre: "international" }
         
       ];
+
+      let FEEDS;
+
+      try {
+        const dbFeeds = await loadEnabledRssFeeds(env);
+        if (dbFeeds.length === 0) {
+          throw new Error("D1 returned no enabled RSS sources");
+        }
+        // D1 is the source of truth for ingestion whenever it is available.
+        FEEDS = dbFeeds;
+      } catch (error) {
+        console.error("D1 source loading failed; using fallback feeds", error);
+        FEEDS = FALLBACK_FEEDS;
+      }
 
       // ✅ PERFORMANCE OPTIMIZATION: Filter feeds by genre BEFORE fetching
       // This reduces first-visit load time by 60-75% for specific genres
@@ -652,7 +705,7 @@ export default {
       
       if (filterGenre && filterGenre !== 'all') {
         feedsToFetch = FEEDS.filter(f => f.genre === filterGenre);
-        // Hebrew: 3 feeds instead of 27 (75% reduction)
+        // Hebrew: fetch only the Israeli/music sources.
         // Electronic: 8 feeds instead of 27 (60% reduction)
         // International: 16 feeds instead of 27 (40% reduction)
       }
@@ -726,8 +779,9 @@ export default {
       const responseBody = JSON.stringify({
         meta: {
           count: finalItems.length,
+          feeds_checked: feedsToFetch.length,
           generated_at: new Date().toISOString()
-        },
+},
         items: finalItems
       });
 
