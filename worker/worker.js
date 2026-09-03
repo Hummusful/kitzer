@@ -620,6 +620,15 @@ async function recordSourceHealth(env, feed, errorMessage = null) {
   `).bind(now, error, now, error, now, feed.sourceId).run();
 }
 
+async function recordSourceHealthSafely(env, feed, errorMessage = null) {
+  try {
+    await recordSourceHealth(env, feed, errorMessage);
+  } catch (healthError) {
+    // Observability must never suppress otherwise valid articles.
+    console.error("Source health update failed", feed?.source, healthError);
+  }
+}
+
 const STORY_STOP_WORDS = new Set([
   "the","a","an","and","or","of","to","in","on","for","with","from","at","by",
   "new","music","song","album","video","says","after","about","into","their","his","her",
@@ -791,6 +800,12 @@ export default {
         { url: "https://www.ynet.co.il/Integration/StoryRss538.xml", source: "Ynet תרבות", lang: "HE", genre: "hebrew" },
 
         // ELECTRONIC 🔊
+        { url: "https://trancentral.tv/feed/", source: "Trancentral", lang: "EN", genre: "electronic" },
+        { url: "https://dancingastronaut.com/feed/", source: "Dancing Astronaut", lang: "EN", genre: "electronic" },
+        { url: "https://djmag.com/rss.xml", source: "DJ Mag", lang: "EN", genre: "electronic" },
+        { url: "https://www.edmsauce.com/feed/", source: "EDM Sauce", lang: "EN", genre: "electronic" },
+        { url: "https://mixmag.net/rss.xml", source: "Mixmag", lang: "EN", genre: "electronic" },
+        { url: "https://www.magneticmag.com/feed/", source: "Magnetic Mag", lang: "EN", genre: "electronic" },
 
         // INTERNATIONAL 🌎
         { url: "https://www.thefader.com/feed/rss", source: "The FADER", lang: "EN", genre: "international" },
@@ -843,20 +858,20 @@ export default {
           });
 
           if (!res.ok) {
-            await recordSourceHealth(env, feed, `HTTP ${res.status}`);
+            await recordSourceHealthSafely(env, feed, `HTTP ${res.status}`);
             return [];
           }
 
           const text = await res.text();
           const items = parseRSS(text, feed);
-          await recordSourceHealth(env, feed);
+          await recordSourceHealthSafely(env, feed);
           return items;
         } catch (error) {
-          try {
-            await recordSourceHealth(env, feed, error?.name === "AbortError" ? "Timeout" : error?.message || "Fetch failed");
-          } catch (healthError) {
-            console.error("Source health update failed", feed.source, healthError);
-          }
+          await recordSourceHealthSafely(
+            env,
+            feed,
+            error?.name === "AbortError" ? "Timeout" : error?.message || "Fetch failed"
+          );
           return [];
         } finally {
           if (timeout) clearTimeout(timeout);
