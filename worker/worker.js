@@ -247,13 +247,33 @@ function isMusicRelevantEnough(title, description, feedConfig) {
 
 function decodeXmlEntities(value) {
   if (!value || typeof value !== "string") return "";
-  return value
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
-    .replace(/&apos;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
+
+  const named = {
+    amp: "&", quot: '"', apos: "'", lt: "<", gt: ">", nbsp: " ",
+    hellip: "…", ndash: "–", mdash: "—", lsquo: "‘", rsquo: "’",
+    ldquo: "“", rdquo: "”"
+  };
+
+  let decoded = value;
+  for (let pass = 0; pass < 3; pass++) {
+    const next = decoded
+      .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+      .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+      .replace(/&([a-z]+);/gi, (match, name) => named[name.toLowerCase()] ?? match);
+    if (next === decoded) break;
+    decoded = next;
+  }
+  return decoded;
+}
+
+function cleanFeedText(value, maxLength = 500) {
+  return decodeXmlEntities(stripCdata(value || ""))
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength);
 }
 
 function stripCdata(value) {
@@ -402,22 +422,17 @@ function parseRSS(xmlText, feedConfig) {
       content.match(/<content[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/content>/i)?.[1] ||
       "";
 
-    const cleanedDescription = descriptionRaw
-      .replace(/<!\[CDATA\[[\s\S]*?\]\]>/gi, "")
-      .replace(/<script[\s\S]*?<\/script>/gi, "")
-      .replace(/<style[\s\S]*?<\/style>/gi, "")
-      .replace(/<[^>]+>/g, "")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 200);
+    const cleanedTitle = cleanFeedText(title, 500);
+    const cleanedDescription = cleanFeedText(descriptionRaw, 200);
+    link = decodeXmlEntities(stripCdata(link)).trim();
 
     const cover = extractCoverFromItemContent(content, feedConfig);
-    const relevance = isMusicRelevantEnough(title, cleanedDescription, feedConfig);
+    const relevance = isMusicRelevantEnough(cleanedTitle, cleanedDescription, feedConfig);
 
-    if (title.trim() && link.trim() && relevance.keep) {
+    if (cleanedTitle && link && relevance.keep) {
       items.push({
-        title: title.trim(),
-        link: link.trim(),
+        title: cleanedTitle,
+        link,
         date: pubDate,
         description: cleanedDescription,
         source: feedConfig.source,
@@ -445,7 +460,7 @@ function getNormalizedCacheKey(reqUrl) {
   });
   cleanParams.sort();
   u.search = cleanParams.toString();
-  u.searchParams.set("_filterv", "d1feedgroups1");
+  u.searchParams.set("_filterv", "healthdedup2");
   return new Request(u.toString(), { method: "GET" });
 }
 
@@ -568,6 +583,8 @@ async function fetchLastFmTrending() {
 async function loadEnabledRssFeeds(env) {
   const result = await env.KITZER_NEWS_DB.prepare(`
     SELECT
+      id,
+      slug,
       name,
       feed_url,
       language,
@@ -580,12 +597,111 @@ async function loadEnabledRssFeeds(env) {
   `).all();
 
   return (result.results || []).map(row => ({
+    sourceId: row.id,
+    slug: row.slug,
     url: row.feed_url,
     source: row.name,
     lang: String(row.language || "en").toUpperCase(),
     genre: String(row.feed_group || "international").toLowerCase()
   }));
 }
+async function recordSourceHealth(env, feed, errorMessage = null) {
+  if (!feed?.sourceId) return;
+
+  const now = new Date().toISOString();
+  const error = errorMessage ? String(errorMessage).slice(0, 500) : null;
+  await env.KITZER_NEWS_DB.prepare(`
+    UPDATE sources
+    SET last_checked_at = ?,
+        last_success_at = CASE WHEN ? IS NULL THEN ? ELSE last_success_at END,
+        last_error = ?,
+        updated_at = ?
+    WHERE id = ?
+  `).bind(now, error, now, error, now, feed.sourceId).run();
+}
+
+const STORY_STOP_WORDS = new Set([
+  "the","a","an","and","or","of","to","in","on","for","with","from","at","by",
+  "new","music","song","album","video","says","after","about","into","their","his","her",
+  "של","את","על","עם","לא","זה","זו","חדש","חדשה","שיר","אלבום","מוזיקה","מוסיקה",
+  "אחרי","לקראת","מתוך","הוא","היא","וגם","אבל"
+]);
+
+function normalizeStoryTitle(title) {
+  return decodeXmlEntities(title || "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getStoryTokens(title) {
+  return new Set(
+    normalizeStoryTitle(title)
+      .split(" ")
+      .filter(token => token.length >= 3 && !STORY_STOP_WORDS.has(token))
+  );
+}
+
+function areRelatedStories(a, b) {
+  const aTitle = normalizeStoryTitle(a.title);
+  const bTitle = normalizeStoryTitle(b.title);
+  if (!aTitle || !bTitle) return false;
+  if (aTitle === bTitle) return true;
+
+  const timeA = new Date(a.date).getTime();
+  const timeB = new Date(b.date).getTime();
+  if (Number.isFinite(timeA) && Number.isFinite(timeB) &&
+      Math.abs(timeA - timeB) > 72 * 60 * 60 * 1000) return false;
+
+  const aTokens = getStoryTokens(a.title);
+  const bTokens = getStoryTokens(b.title);
+  const intersection = [...aTokens].filter(token => bTokens.has(token)).length;
+  const union = new Set([...aTokens, ...bTokens]).size;
+  return intersection >= 3 && union > 0 && intersection / union >= 0.55;
+}
+
+function mergeRelatedStories(items) {
+  const merged = [];
+
+  for (const item of items) {
+    const match = merged.find(existing => areRelatedStories(existing, item));
+    if (!match) {
+      merged.push({
+        ...item,
+        sources: [{ name: item.source, url: item.link }],
+        source_count: 1
+      });
+      continue;
+    }
+
+    if (!match.sources.some(source => source.url === item.link)) {
+      match.sources.push({ name: item.source, url: item.link });
+      match.source_count = match.sources.length;
+    }
+
+    const itemScore = Number(item.music_score || 0);
+    const matchScore = Number(match.music_score || 0);
+    if (itemScore > matchScore || (!match.cover && item.cover)) {
+      match.title = item.title;
+      match.description = item.description;
+      match.cover = item.cover || match.cover;
+      match.cover_text = item.cover_text;
+      match.music_score = item.music_score;
+      match.link = item.link;
+      match.source = item.source;
+    }
+
+    if (new Date(item.date).getTime() > new Date(match.date).getTime()) {
+      match.date = item.date;
+    }
+  }
+
+  return merged;
+}
+
 // ----------------------------------------------------
 // 5. WORKER MAIN FETCH HANDLER
 // ----------------------------------------------------
@@ -606,31 +722,39 @@ export default {
 
       const p = url.pathname.replace(/\/+$/, "");
       if (p === "/api/news-db-health") {
-  const dbStatus = await env.KITZER_NEWS_DB.prepare(`
-    SELECT
-      COUNT(*) AS total_sources,
-      SUM(CASE WHEN enabled = 1 THEN 1 ELSE 0 END) AS enabled_sources
-    FROM sources
-  `).first();
+        const sourceResult = await env.KITZER_NEWS_DB.prepare(`
+          SELECT
+            id, slug, name, feed_group, enabled,
+            last_checked_at, last_success_at, last_error,
+            CASE
+              WHEN enabled = 0 THEN 'disabled'
+              WHEN last_checked_at IS NULL THEN 'never_checked'
+              WHEN last_error IS NOT NULL THEN 'failed'
+              ELSE 'ok'
+            END AS status
+          FROM sources
+          ORDER BY feed_group, name
+        `).all();
 
-  return finalizeResponse(
-    new Response(
-      JSON.stringify({
-        ok: true,
-        total_sources: Number(dbStatus?.total_sources || 0),
-        enabled_sources: Number(dbStatus?.enabled_sources || 0)
-      }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-          ...(allowedOrigin ? { "X-Allow-Origin": allowedOrigin } : {})
-        }
+        const sources = sourceResult.results || [];
+        const summary = sources.reduce((acc, source) => {
+          acc.total++;
+          if (source.enabled) acc.enabled++;
+          acc[source.status] = (acc[source.status] || 0) + 1;
+          return acc;
+        }, { total: 0, enabled: 0, ok: 0, failed: 0, never_checked: 0, disabled: 0 });
+
+        return finalizeResponse(
+          new Response(JSON.stringify({ ok: summary.failed === 0, summary, sources }), {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+              ...(allowedOrigin ? { "X-Allow-Origin": allowedOrigin } : {})
+            }
+          }),
+          0
+        );
       }
-    ),
-    0
-  );
-}
       if (!["", "/api", "/api/music"].includes(p)) {
         return finalizeResponse(new Response("Not Found", {
           status: 404,
@@ -667,12 +791,6 @@ export default {
         { url: "https://www.ynet.co.il/Integration/StoryRss538.xml", source: "Ynet תרבות", lang: "HE", genre: "hebrew" },
 
         // ELECTRONIC 🔊
-        { url: "https://www.youredm.com/feed/", source: "Your EDM", lang: "EN", genre: "electronic" },
-        { url: "https://dancingastronaut.com/feed/", source: "Dancing Astronaut", lang: "EN", genre: "electronic" },
-        { url: "https://djmag.com/feeds/all", source: "DJ Mag", lang: "EN", genre: "electronic" },
-        { url: "https://edm.com/.rss/full/", source: "EDM.com", lang: "EN", genre: "electronic" },
-        { url: "https://mixmag.net/rss", source: "Mixmag", lang: "EN", genre: "electronic" },
-        { url: "https://www.magneticmag.com/feed/", source: "Magnetic Mag", lang: "EN", genre: "electronic" },
 
         // INTERNATIONAL 🌎
         { url: "https://www.thefader.com/feed/rss", source: "The FADER", lang: "EN", genre: "international" },
@@ -711,9 +829,10 @@ export default {
       }
 
       const tasks = feedsToFetch.map(feed => async () => {
+        let timeout;
         try {
           const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 6000);
+          timeout = setTimeout(() => controller.abort(), 6000);
 
           const res = await fetch(feed.url, {
             headers: {
@@ -723,13 +842,24 @@ export default {
             signal: controller.signal
           });
 
-          clearTimeout(timeout);
+          if (!res.ok) {
+            await recordSourceHealth(env, feed, `HTTP ${res.status}`);
+            return [];
+          }
 
-          if (!res.ok) return [];
           const text = await res.text();
-          return parseRSS(text, feed);
-        } catch {
+          const items = parseRSS(text, feed);
+          await recordSourceHealth(env, feed);
+          return items;
+        } catch (error) {
+          try {
+            await recordSourceHealth(env, feed, error?.name === "AbortError" ? "Timeout" : error?.message || "Fetch failed");
+          } catch (healthError) {
+            console.error("Source health update failed", feed.source, healthError);
+          }
           return [];
+        } finally {
+          if (timeout) clearTimeout(timeout);
         }
       });
 
@@ -767,6 +897,10 @@ export default {
         allItems = allItems.filter(i => i.genre === filterGenre);
       }
 
+      const storiesBeforeMerge = allItems.length;
+      allItems = mergeRelatedStories(allItems);
+      const duplicatesMerged = storiesBeforeMerge - allItems.length;
+
       allItems.sort((a, b) => {
         // Keep the feed fresh, but prevent weakly-related stories from becoming the top story.
         const aTier = (a.music_score || 0) >= 7 ? 1 : 0;
@@ -780,6 +914,7 @@ export default {
         meta: {
           count: finalItems.length,
           feeds_checked: feedsToFetch.length,
+          duplicates_merged: duplicatesMerged,
           generated_at: new Date().toISOString()
 },
         items: finalItems
