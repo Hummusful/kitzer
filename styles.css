@@ -242,7 +242,7 @@ body::after {
   top:0;
   z-index:60;
   margin:10px 0 8px;
-  padding:8px 0;
+  padding:8px 10px;
   border-bottom:1px solid var(--line);
   background:rgba(8,10,18,.74);
   backdrop-filter:blur(14px)
@@ -649,9 +649,9 @@ body::after {
     font-size:.84rem
   }
 
-.control-panel {
+  .control-panel {
     margin:8px 0 6px;
-    padding:7px 0
+    padding:7px 8px
   }
 
 .toolbar {
