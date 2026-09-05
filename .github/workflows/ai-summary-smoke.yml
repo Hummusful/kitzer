@@ -30,13 +30,21 @@ jobs:
           HEALTH = 'https://kitzer-summary.dustrial.workers.dev/health'
           SUMMARY = 'https://kitzer-summary.dustrial.workers.dev/api/summarize'
           FEED = 'https://music-aggregator.dustrial.workers.dev/api/music?days=3&limit=20&nocache=smoke'
+          ORIGIN = 'https://kitzer.net'
 
           def get_json(url, headers=None, timeout=20):
               req = urllib.request.Request(url, headers=headers or {})
-              with urllib.request.urlopen(req, timeout=timeout) as r:
-                  return r.status, json.loads(r.read().decode('utf-8'))
+              try:
+                  with urllib.request.urlopen(req, timeout=timeout) as r:
+                      return r.status, json.loads(r.read().decode('utf-8'))
+              except urllib.error.HTTPError as exc:
+                  detail = exc.read().decode('utf-8', errors='replace')
+                  print(f'GET {url} -> HTTP {exc.code}', file=sys.stderr)
+                  print('headers:', dict(exc.headers.items()), file=sys.stderr)
+                  print('body:', detail[:2000], file=sys.stderr)
+                  raise
 
-          status, health = get_json(HEALTH)
+          status, health = get_json(HEALTH, {'Origin': ORIGIN, 'User-Agent': 'KITZER-GitHub-Smoke-Test/1.0'})
           print('health:', json.dumps(health, ensure_ascii=False))
           assert status == 200, status
           assert health.get('ok') is True, health
@@ -63,7 +71,7 @@ jobs:
                   method='POST',
                   headers={
                       'Content-Type': 'application/json',
-                      'Origin': 'https://kitzer.net',
+                      'Origin': ORIGIN,
                       'User-Agent': 'KITZER-GitHub-Smoke-Test/1.0'
                   }
               )
