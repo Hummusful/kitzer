@@ -79,6 +79,7 @@ async function summarizeCard(card, button, box) {
   try {
     const response = await fetch(SUMMARY_ENDPOINT, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: titleLink.href, title, source }),
       signal: controller.signal
