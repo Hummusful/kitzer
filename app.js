@@ -1,7 +1,7 @@
 /**
  * Kitzer Revolution — RADIO/SIGNAL frontend + Album Strip
  */
-const FEED_ENDPOINT = window.CONFIG?.API_ENDPOINT || 'https://api.kitzer.net/api/music';
+const FEED_ENDPOINT = window.CONFIG?.API_ENDPOINT || '/api/music';
 const FETCH_TIMEOUT = window.CONFIG?.FETCH_TIMEOUT || 10000;
 const feedEl = document.getElementById('newsFeed');
 const refreshBtn = document.getElementById('refreshBtn');
