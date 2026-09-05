@@ -18,6 +18,7 @@ function finalizeResponse(resp, ttlSecs) {
   h.set("Content-Security-Policy", "default-src 'self'; object-src 'none'; frame-ancestors 'none';");
   if (origin) {
     h.set("access-control-allow-origin", origin);
+    h.set("access-control-allow-credentials", "true");
     h.set("Vary", "Origin");
     h.delete("X-Allow-Origin");
   } else {
