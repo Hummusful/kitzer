@@ -1,0 +1,29 @@
+name: Yuval Erel Feed Probe
+on:
+  push:
+    branches: [feature/yuval-erel-source]
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe feeds
+        shell: bash
+        run: |
+          set -euo pipefail
+          urls=(
+            'https://yuvalerel.com/feed/'
+            'https://yuvalerel.com/category/%D7%97%D7%93%D7%A9%D7%95%D7%AA-%D7%91%D7%A1%D7%A6%D7%A0%D7%94/%D7%97%D7%93%D7%A9%D7%95%D7%AA-%D7%9E%D7%A7%D7%95%D7%9E%D7%99%D7%95%D7%AA/feed/'
+            'https://yuvalerel.com/category/%D7%9E%D7%95%D7%96%D7%99%D7%A7%D7%94-%D7%97%D7%93%D7%A9%D7%94/feed/'
+          )
+          for url in "${urls[@]}"; do
+            echo "=== $url ==="
+            tmp=$(mktemp)
+            code=$(curl -L -A 'Mozilla/5.0' -sS --max-time 20 -o "$tmp" -w '%{http_code}' "$url" || true)
+            ctype=$(curl -L -A 'Mozilla/5.0' -sSI --max-time 20 "$url" | tr -d '\r' | awk -F': ' 'tolower($1)=="content-type" {print $2}' | tail -1 || true)
+            echo "HTTP=$code CONTENT_TYPE=$ctype BYTES=$(wc -c < "$tmp")"
+            head -c 180 "$tmp" | tr '\n' ' '; echo
+            if grep -Eqi '<rss|<feed|<channel|<item|<entry' "$tmp"; then echo 'FEED_MARKUP=yes'; else echo 'FEED_MARKUP=no'; fi
+            rm -f "$tmp"
+          done
