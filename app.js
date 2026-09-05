@@ -362,7 +362,10 @@ async function loadNews(forceRefresh = false) {
     if (state.genre !== 'all') url.searchParams.set('genre', state.genre);
     if (forceRefresh) url.searchParams.set('nocache', String(Date.now()));
 
-    const res = await fetch(url, {\n      signal: currentController.signal,\n      credentials: 'include'\n    });
+    const res = await fetch(url, {
+      signal: currentController.signal,
+      credentials: 'include'
+    });
     if (!res.ok) throw new Error(`API Response Error: ${res.status}`);
 
     const data = await res.json();
