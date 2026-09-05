@@ -258,16 +258,25 @@ async function fetchArticleHtml(env, articleUrl) {
 }
 
 function parseAiJson(raw) {
-  const text = String(raw || "").trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-  try {
-    const parsed = JSON.parse(text);
-    return {
-      summary: String(parsed.summary || "").trim(),
-      why_it_matters: String(parsed.why_it_matters || "").trim()
-    };
-  } catch {
-    return { summary: text, why_it_matters: "" };
+  if (typeof raw !== "string" || !raw.trim()) throw new Error("AI_EMPTY_SUMMARY");
+  const text = raw.trim().replace(/^\x60\x60\x60(?:json)?\s*/i, "").replace(/\s*\x60\x60\x60$/, "");
+  let parsed;
+  try { parsed = JSON.parse(text); } catch { throw new Error("AI_INVALID_SUMMARY"); }
+  if (!parsed || typeof parsed.summary !== "string" || parsed.summary.trim().length < 20) {
+    throw new Error("AI_EMPTY_SUMMARY");
   }
+  if (parsed.why_it_matters != null && typeof parsed.why_it_matters !== "string") {
+    throw new Error("AI_INVALID_SUMMARY");
+  }
+  return { summary: parsed.summary.trim(), why_it_matters: (parsed.why_it_matters || "").trim() };
+}
+
+function readAiSummary(result) {
+  const payload = result?.result ?? result;
+  const choice = payload?.choices?.[0];
+  if (choice?.finish_reason === "length") throw new Error("AI_TRUNCATED_SUMMARY");
+  if (choice?.message?.refusal) throw new Error("AI_REFUSED_SUMMARY");
+  return parseAiJson(choice?.message?.content ?? payload?.response);
 }
 
 async function summarizeWithAi(env, { title, source, articleText, limited }) {
@@ -294,14 +303,13 @@ async function summarizeWithAi(env, { title, source, articleText, limited }) {
 
   const result = await env.AI.run(AI_MODEL, {
     messages,
-    max_tokens: 260,
+    max_completion_tokens: 1024,
+    chat_template_kwargs: { enable_thinking: false },
+    response_format: { type: "json_object" },
     temperature: 0.2
   });
 
-  const raw = result?.response ?? result?.result?.response ?? "";
-  const parsed = parseAiJson(raw);
-  if (!parsed.summary || parsed.summary.length < 20) throw new Error("AI_EMPTY_SUMMARY");
-  return parsed;
+  return readAiSummary(result);
 }
 
 async function getCachedSummary(env, key) {
