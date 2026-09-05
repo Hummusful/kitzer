@@ -1,0 +1,42 @@
+.ai-usage-wrap { position: relative; }
+.ai-usage-toggle { font-family: 'Space Mono', monospace; min-width: 92px; }
+.ai-usage-toggle[data-status="warn"] { border-color: color-mix(in srgb, #f2b84b 65%, transparent); }
+.ai-usage-toggle[data-status="critical"],
+.ai-usage-toggle[data-status="blocked"] { border-color: color-mix(in srgb, #ff6b6b 72%, transparent); }
+
+.ai-usage-panel {
+  position: absolute;
+  z-index: 50;
+  inset-inline-end: 0;
+  top: calc(100% + 10px);
+  width: min(380px, calc(100vw - 32px));
+  padding: 16px;
+  border: 1px solid var(--border, rgba(255,255,255,.14));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface, #111522) 96%, transparent);
+  box-shadow: 0 20px 60px rgba(0,0,0,.28);
+  backdrop-filter: blur(18px);
+}
+.ai-usage-panel[hidden] { display: none; }
+.ai-usage-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.ai-usage-head > div { display: grid; gap: 3px; }
+.ai-usage-kicker { font: 10px/1.2 'Space Mono', monospace; letter-spacing: .08em; opacity: .6; }
+.ai-usage-status { font: 700 11px/1 'Space Mono', monospace; padding: 6px 8px; border-radius: 999px; background: rgba(76, 217, 100, .12); }
+.ai-usage-panel[data-status="warn"] .ai-usage-status { background: rgba(242,184,75,.14); }
+.ai-usage-panel[data-status="critical"] .ai-usage-status,
+.ai-usage-panel[data-status="blocked"] .ai-usage-status { background: rgba(255,107,107,.14); }
+.ai-usage-meter { height: 8px; margin: 16px 0 9px; overflow: hidden; border-radius: 999px; background: rgba(127,127,127,.18); }
+.ai-usage-meter span { display: block; height: 100%; width: 0; border-radius: inherit; background: currentColor; transition: width .35s ease; }
+.ai-usage-main { direction: ltr; text-align: right; font-family: 'Space Mono', monospace; font-size: 12px; opacity: .8; }
+.ai-usage-main strong { font-size: 24px; opacity: 1; }
+.ai-usage-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; margin-top: 14px; }
+.ai-usage-grid div { display: grid; gap: 3px; padding: 10px; border-radius: 10px; background: rgba(127,127,127,.07); }
+.ai-usage-grid span { font-size: 11px; opacity: .62; }
+.ai-usage-grid strong { font: 700 13px/1.2 'Space Mono', monospace; direction: ltr; text-align: right; }
+.ai-usage-foot { display: flex; justify-content: space-between; gap: 12px; margin-top: 12px; font-size: 10px; opacity: .55; }
+.ai-usage-note { margin: 10px 0 0; font-size: 10px; line-height: 1.55; opacity: .48; }
+
+@media (max-width: 620px) {
+  .ai-usage-panel { position: fixed; inset-inline: 16px; top: auto; bottom: 16px; width: auto; }
+  .ai-usage-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
