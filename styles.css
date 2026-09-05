@@ -531,7 +531,7 @@ body::after {
   font-size:.78rem;
   font-weight:300;
   display:-webkit-box;
-  -webkit-line-clamp:1;
+  -webkit-line-clamp:2;
   -webkit-box-orient:vertical;
   overflow:hidden
 }
@@ -691,7 +691,11 @@ body::after {
   }
 
 .news-summary {
-    display:none
+    display:-webkit-box;
+    margin-top:4px;
+    font-size:.72rem;
+    line-height:1.32;
+    -webkit-line-clamp:2
   }
 
 .read-link {

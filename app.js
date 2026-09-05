@@ -273,7 +273,7 @@ function renderNews(items) {
       h2.appendChild(titleLink);
       details.appendChild(h2);
 
-      const summary = it.description ? cleanText(it.description, 115) : '';
+      const summary = it.description ? cleanText(it.description, 190) : '';
       if (summary) appendText(details, 'p', 'news-summary', summary);
 
       const footer = document.createElement('div');
