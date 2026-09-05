@@ -1,0 +1,55 @@
+name: RSS Probe
+
+on:
+  push:
+    branches:
+      - feature/ai-kitzer-summary
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Print real article links from KITZER source feeds
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import html, re, urllib.request
+          feeds=[
+            ('MBW','https://www.musicbusinessworldwide.com/feed/'),
+            ('Trancentral','https://trancentral.tv/feed/'),
+            ('Dancing Astronaut','https://dancingastronaut.com/feed/'),
+            ('Maariv','https://www.maariv.co.il/rss/rssfeedsmozika'),
+            ('Columbus','https://columbusmusicmagazine.com/feed/'),
+          ]
+          ua='Mozilla/5.0 AppleWebKit/537.36 Chrome/152 Safari/537.36'
+          for name,url in feeds:
+            print('\n###',name)
+            try:
+              req=urllib.request.Request(url,headers={'User-Agent':ua,'Accept':'application/rss+xml,application/xml,text/xml,*/*'})
+              with urllib.request.urlopen(req,timeout=12) as r:
+                xml=r.read(1200000).decode('utf-8',errors='replace')
+              blocks=[m.group(1) for m in re.finditer(r'<item\b[^>]*>([\s\S]*?)</item>',xml,flags=re.I)]
+              if not blocks:
+                blocks=[m.group(1) for m in re.finditer(r'<entry\b[^>]*>([\s\S]*?)</entry>',xml,flags=re.I)]
+              found=[]
+              for block in blocks[:8]:
+                candidates=[]
+                m=re.search(r'<link[^>]+rel=["\']alternate["\'][^>]+href=["\']([^"\']+)["\']',block,flags=re.I)
+                if m: candidates.append(m.group(1))
+                m=re.search(r'<link[^>]*>(?:<!\[CDATA\[)?\s*([\s\S]*?)\s*(?:\]\]>)?</link>',block,flags=re.I)
+                if m: candidates.append(m.group(1))
+                m=re.search(r'<guid[^>]*>(?:<!\[CDATA\[)?\s*(https?://[\s\S]*?)\s*(?:\]\]>)?</guid>',block,flags=re.I)
+                if m: candidates.append(m.group(1))
+                for raw in candidates:
+                  link=html.unescape(re.sub(r'<[^>]+>','',raw)).strip()
+                  if link.startswith(('http://','https://')) and link not in found:
+                    found.append(link)
+              for link in found[:5]: print(link)
+            except Exception as exc:
+              print('ERROR',type(exc).__name__,exc)
+          PY
