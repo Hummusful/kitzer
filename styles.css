@@ -17,20 +17,19 @@
 
 /* Light theme */
 :root[data-theme="light"] {
-  --pink:#e74c8c;
-  --purple:#6366f1;
-  --cyan:#0891b2;
-  --bg:#ffffff;
-  --text:#1a202c;
-  --text-dim:#4a5568;
-  --muted:#718096;
-  --muted-2:#a0aec0;
-  --signal:#6366f1;
-  --signal-2:#e74c8c;
-  --cyan:#0891b2;
-  --line:rgba(0,0,0,.08);
-  --line-strong:rgba(0,0,0,.12);
-  --surface-hover:rgba(0,0,0,.04)
+  --pink:#f52f86;
+  --purple:#6046c8;
+  --cyan:#007f98;
+  --bg:#1caec1;
+  --text:#08182d;
+  --text-dim:#173c52;
+  --muted:#315c6a;
+  --muted-2:#527984;
+  --signal:#5d3fc0;
+  --signal-2:#f52f86;
+  --line:rgba(5,32,51,.15);
+  --line-strong:rgba(5,32,51,.26);
+  --surface-hover:rgba(244,255,246,.24)
 }
 
 * {
@@ -77,12 +76,12 @@ body::after {
 
 /* Light theme backgrounds */
 :root[data-theme="light"] body::before {
-  background:radial-gradient(70vmax 55vmax at 86% -18%,rgba(99,102,241,.08),transparent 48%),radial-gradient(58vmax 70vmax at 6% 112%,rgba(231,76,140,.04),transparent 56%),radial-gradient(40vmax 40vmax at 48% 0%,rgba(8,145,178,.03),transparent 60%),linear-gradient(180deg,#fafafa 0%,#f5f5f5 100%)
+  background:radial-gradient(54vmax 42vmax at 82% -8%,rgba(239,255,224,.58),transparent 58%),radial-gradient(42vmax 50vmax at -4% 92%,rgba(245,47,134,.18),transparent 62%),radial-gradient(34vmax 34vmax at 48% 12%,rgba(255,255,255,.18),transparent 65%),linear-gradient(145deg,#65d1cf 0%,#24b7c5 40%,#10a1bd 100%)
 }
 
 :root[data-theme="light"] body::after {
-  background:repeating-linear-gradient(0deg,rgba(0,0,0,.008),rgba(0,0,0,.008) 1px,transparent 1px,transparent 3px);
-  opacity:.08
+  background:repeating-linear-gradient(0deg,rgba(5,27,45,.025),rgba(5,27,45,.025) 1px,transparent 1px,transparent 4px);
+  opacity:.16
 }
 
 .shell {
@@ -106,8 +105,8 @@ body::after {
 
 /* Light theme dot pattern */
 :root[data-theme="light"] .shell::before {
-  background-image:radial-gradient(circle at 20% 30%,rgba(0,0,0,.08) 0 1px,transparent 1px),radial-gradient(circle at 80% 70%,rgba(0,0,0,.06) 0 1px,transparent 1px),radial-gradient(circle at 40% 80%,rgba(0,0,0,.05) 0 1px,transparent 1px);
-  opacity:.08
+  background-image:radial-gradient(circle at 20% 30%,rgba(255,255,255,.5) 0 1px,transparent 1px),radial-gradient(circle at 80% 70%,rgba(7,40,59,.16) 0 1px,transparent 1px),radial-gradient(circle at 40% 80%,rgba(245,47,134,.18) 0 1px,transparent 1px);
+  opacity:.18
 }
 
 .skip-link {
@@ -302,27 +301,27 @@ body::after {
 
 /* Light theme buttons */
 :root[data-theme="light"] .btn {
-  background:#f5f5f5;
-  border-color:#d0d0d0;
-  color:#1a202c
+  background:rgba(239,255,242,.5);
+  border-color:rgba(8,38,57,.22);
+  color:#08182d
 }
 
 :root[data-theme="light"] .btn:hover,
 :root[data-theme="light"] .btn:focus-visible {
-  border-color:#6366f1;
-  background:#e8e8ff;
-  box-shadow:0 0 12px rgba(99,102,241,.15)
+  border-color:#f52f86;
+  background:rgba(255,242,248,.72);
+  box-shadow:0 0 18px rgba(245,47,134,.2)
 }
 
 :root[data-theme="light"] .btn.active {
   color:#fff;
-  border-color:#6366f1;
-  background:linear-gradient(90deg,rgba(99,102,241,.8),rgba(8,145,178,.6))
+  border-color:#5d3fc0;
+  background:linear-gradient(90deg,#5d3fc0,#f52f86)
 }
 
 :root[data-theme="light"] .btn.ghost {
-  color:#6366f1;
-  background:#e8e8ff
+  color:#17304f;
+  background:rgba(239,255,242,.46)
 }
 
 .btn.ghost {
@@ -935,6 +934,46 @@ body::after {
 .news-date {
   color: var(--yellow);
   opacity: 0.9;
+}
+
+/* Bright mode — cyan cyberpunk palette inspired by Aleksey Kostiuk's concept. */
+:root[data-theme="light"] .control-panel {
+  background:rgba(205,247,238,.58);
+  border-color:rgba(8,38,57,.2);
+  box-shadow:0 8px 28px rgba(6,74,94,.1)
+}
+
+:root[data-theme="light"] .eyebrow,
+:root[data-theme="light"] .tag,
+:root[data-theme="light"] .read-link {
+  color:#3d287f!important
+}
+
+:root[data-theme="light"] .subtitle {
+  color:#173c52!important
+}
+
+:root[data-theme="light"] .live-strip .label {
+  color:#073149!important
+}
+
+:root[data-theme="light"] .live-strip .dot {
+  background:#f52f86!important;
+  box-shadow:0 0 12px rgba(245,47,134,.72)!important
+}
+
+:root[data-theme="light"] .news-card {
+  background:rgba(232,255,239,.16)
+}
+
+:root[data-theme="light"] .news-card:hover {
+  background:rgba(242,255,244,.38);
+  box-shadow:0 10px 30px rgba(7,67,86,.12)
+}
+
+:root[data-theme="light"] .news-date {
+  color:#8a245f;
+  opacity:1
 }
 
 .news-title a:hover, .news-title a:focus-visible {
