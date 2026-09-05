@@ -938,9 +938,27 @@ body::after {
 
 /* Bright mode — cyan cyberpunk palette inspired by Aleksey Kostiuk's concept. */
 :root[data-theme="light"] .control-panel {
-  background:rgba(205,247,238,.58);
-  border-color:rgba(8,38,57,.2);
-  box-shadow:0 8px 28px rgba(6,74,94,.1)
+  background:rgba(255,255,255,.82);
+  border:1px solid rgba(255,255,255,.92);
+  box-shadow:0 10px 32px rgba(6,74,94,.16)
+}
+
+:root[data-theme="light"] .site-header,
+:root[data-theme="light"] .live-strip,
+:root[data-theme="light"] .news-feed {
+  border-color:rgba(255,255,255,.72)
+}
+
+:root[data-theme="light"] .btn {
+  background:rgba(255,255,255,.8);
+  border-color:rgba(255,255,255,.95)
+}
+
+:root[data-theme="light"] .btn.active {
+  color:#08182d!important;
+  border-color:#fff!important;
+  background:#fff!important;
+  box-shadow:0 0 0 2px rgba(245,47,134,.72),0 8px 22px rgba(7,65,84,.16)
 }
 
 :root[data-theme="light"] .eyebrow,
@@ -963,12 +981,22 @@ body::after {
 }
 
 :root[data-theme="light"] .news-card {
-  background:rgba(232,255,239,.16)
+  margin-block:5px;
+  padding-inline:12px;
+  background:rgba(255,255,255,.72);
+  border:1px solid rgba(255,255,255,.88);
+  border-radius:12px;
+  box-shadow:0 8px 24px rgba(7,67,86,.08)
 }
 
 :root[data-theme="light"] .news-card:hover {
-  background:rgba(242,255,244,.38);
-  box-shadow:0 10px 30px rgba(7,67,86,.12)
+  background:#fff;
+  box-shadow:0 12px 34px rgba(7,67,86,.17)
+}
+
+:root[data-theme="light"] .skeleton {
+  background:linear-gradient(90deg,rgba(255,255,255,.38),rgba(255,255,255,.82),rgba(255,255,255,.38));
+  border-color:rgba(255,255,255,.78)
 }
 
 :root[data-theme="light"] .news-date {
