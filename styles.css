@@ -130,8 +130,8 @@ body::after {
   flex-direction:column;
   align-items:center;
   text-align:center;
-  gap:6px;
-  padding:18px 0 14px;
+  gap:2px;
+  padding:8px 0 5px;
   border-bottom:1px solid var(--line);
   overflow:visible
 }
@@ -189,10 +189,10 @@ body::after {
 .site-title {
   margin:0;
   text-align:center;
-  font-size:clamp(2.65rem,6vw,5.8rem);
-  line-height:1.25;
-  padding-top:.08em;
-  padding-bottom:.22em;
+  font-size:clamp(2.5rem,5vw,4.6rem);
+  line-height:1.05;
+  padding-top:.02em;
+  padding-bottom:.08em;
   font-family:"IBM Plex Sans Hebrew",system-ui,"Segoe UI",Arial,sans-serif;
   font-weight:800;
   letter-spacing:-.025em;
@@ -622,9 +622,9 @@ body::after {
     grid-template-columns:1fr;
     justify-items:center;
     text-align:center;
-    gap:7px;
-    padding-top:12px;
-    padding-bottom:12px
+    gap:2px;
+    padding-top:6px;
+    padding-bottom:5px
   }
 
 .signal-mark {
@@ -636,10 +636,10 @@ body::after {
   }
 
 .site-title {
-    font-size:clamp(2.85rem,17vw,4.7rem);
-    line-height:1.25;
-    padding-top:.08em;
-    padding-bottom:.24em;
+    font-size:clamp(2.7rem,14vw,4rem);
+    line-height:1.05;
+    padding-top:.02em;
+    padding-bottom:.08em;
     letter-spacing:-.02em;
   }
 
@@ -784,7 +784,7 @@ body::after {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 8px 0 10px;
+  padding: 6px 0 7px;
   border-bottom: 1px solid var(--line);
   color: var(--text-dim);
   font-family: "Space Mono", monospace;
