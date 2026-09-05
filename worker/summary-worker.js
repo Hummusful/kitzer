@@ -31,6 +31,7 @@ function responseHeaders(origin) {
     "referrer-policy": "strict-origin-when-cross-origin",
     ...(origin ? {
       "access-control-allow-origin": origin,
+      "access-control-allow-credentials": "true",
       "access-control-allow-methods": "POST, OPTIONS",
       "access-control-allow-headers": "Content-Type",
       "vary": "Origin"
