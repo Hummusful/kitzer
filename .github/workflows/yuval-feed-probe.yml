@@ -13,9 +13,8 @@ jobs:
         run: |
           set -euo pipefail
           urls=(
-            'https://yuvalerel.com/feed/'
-            'https://yuvalerel.com/category/%D7%97%D7%93%D7%A9%D7%95%D7%AA-%D7%91%D7%A1%D7%A6%D7%A0%D7%94/%D7%97%D7%93%D7%A9%D7%95%D7%AA-%D7%9E%D7%A7%D7%95%D7%9E%D7%99%D7%95%D7%AA/feed/'
-            'https://yuvalerel.com/category/%D7%9E%D7%95%D7%96%D7%99%D7%A7%D7%94-%D7%97%D7%93%D7%A9%D7%94/feed/'
+            'https://yuvalerel.com/?feed=rss2'
+            'https://yuvalerel.com/category/%D7%97%D7%93%D7%A9%D7%95%D7%AA-%D7%91%D7%A1%D7%A6%D7%A0%D7%94/%D7%97%D7%93%D7%A9%D7%95%D7%AA-%D7%9E%D7%A7%D7%95%D7%9E%D7%99%D7%95%D7%AA/?feed=rss2'
           )
           for url in "${urls[@]}"; do
             echo "=== $url ==="
