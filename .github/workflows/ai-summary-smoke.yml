@@ -1,0 +1,89 @@
+name: AI Summary Smoke Test
+
+on:
+  push:
+    branches:
+      - feature/ai-kitzer-summary
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check summary worker health and summarize a live KITZER article
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import sys
+          import urllib.request
+          import urllib.error
+
+          HEALTH = 'https://kitzer-summary.dustrial.workers.dev/health'
+          SUMMARY = 'https://kitzer-summary.dustrial.workers.dev/api/summarize'
+          FEED = 'https://music-aggregator.dustrial.workers.dev/api/music?days=3&limit=20&nocache=smoke'
+
+          def get_json(url, headers=None, timeout=20):
+              req = urllib.request.Request(url, headers=headers or {})
+              with urllib.request.urlopen(req, timeout=timeout) as r:
+                  return r.status, json.loads(r.read().decode('utf-8'))
+
+          status, health = get_json(HEALTH)
+          print('health:', json.dumps(health, ensure_ascii=False))
+          assert status == 200, status
+          assert health.get('ok') is True, health
+          assert health.get('ai_binding') is True, health
+          assert health.get('d1_binding') is True, health
+
+          _, feed = get_json(FEED)
+          items = feed.get('items') or []
+          assert items, 'KITZER feed returned no items'
+
+          errors = []
+          for item in items:
+              link = item.get('link')
+              if not isinstance(link, str) or not link.startswith(('https://', 'http://')):
+                  continue
+              payload = json.dumps({
+                  'url': link,
+                  'title': item.get('title') or '',
+                  'source': item.get('source') or ''
+              }).encode('utf-8')
+              req = urllib.request.Request(
+                  SUMMARY,
+                  data=payload,
+                  method='POST',
+                  headers={
+                      'Content-Type': 'application/json',
+                      'Origin': 'https://kitzer.net',
+                      'User-Agent': 'KITZER-GitHub-Smoke-Test/1.0'
+                  }
+              )
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as r:
+                      body = json.loads(r.read().decode('utf-8'))
+                      print('summary candidate:', item.get('source'), link)
+                      print('summary response:', json.dumps(body, ensure_ascii=False))
+                      if r.status == 200 and body.get('ok') is True and len(body.get('summary') or '') >= 20:
+                          print('SMOKE TEST PASSED')
+                          sys.exit(0)
+                      errors.append(f"{item.get('source')}: HTTP {r.status} {body}")
+              except urllib.error.HTTPError as exc:
+                  detail = exc.read().decode('utf-8', errors='replace')
+                  errors.append(f"{item.get('source')}: HTTP {exc.code} {detail}")
+              except Exception as exc:
+                  errors.append(f"{item.get('source')}: {type(exc).__name__}: {exc}")
+
+          print('No article summarized successfully. Attempts:', file=sys.stderr)
+          for e in errors[:10]:
+              print(' -', e, file=sys.stderr)
+          raise SystemExit(1)
+          PY
