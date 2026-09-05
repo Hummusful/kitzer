@@ -1,4 +1,4 @@
-const SUMMARY_ENDPOINT = window.CONFIG?.SUMMARY_ENDPOINT || 'https://kitzer-summary.dustrial.workers.dev/api/summarize';
+const SUMMARY_ENDPOINT = window.CONFIG?.SUMMARY_ENDPOINT || '/api/summarize';
 
 const summaryState = new WeakMap();
 
