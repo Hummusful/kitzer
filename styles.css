@@ -17,19 +17,19 @@
 
 /* Light theme */
 :root[data-theme="light"] {
-  --pink:#f52f86;
-  --purple:#6046c8;
-  --cyan:#007f98;
-  --bg:#1caec1;
-  --text:#08182d;
-  --text-dim:#173c52;
-  --muted:#315c6a;
-  --muted-2:#527984;
-  --signal:#5d3fc0;
-  --signal-2:#f52f86;
-  --line:rgba(5,32,51,.15);
-  --line-strong:rgba(5,32,51,.26);
-  --surface-hover:rgba(244,255,246,.24)
+  --pink:#c92f27;
+  --purple:#9d241f;
+  --cyan:#203e3e;
+  --bg:#e8deca;
+  --text:#171816;
+  --text-dim:#3e403a;
+  --muted:#66665d;
+  --muted-2:#858277;
+  --signal:#c92f27;
+  --signal-2:#171816;
+  --line:rgba(23,24,22,.2);
+  --line-strong:rgba(23,24,22,.42);
+  --surface-hover:rgba(255,252,239,.62)
 }
 
 * {
@@ -76,12 +76,12 @@ body::after {
 
 /* Light theme backgrounds */
 :root[data-theme="light"] body::before {
-  background:radial-gradient(54vmax 42vmax at 82% -8%,rgba(239,255,224,.58),transparent 58%),radial-gradient(42vmax 50vmax at -4% 92%,rgba(245,47,134,.18),transparent 62%),radial-gradient(34vmax 34vmax at 48% 12%,rgba(255,255,255,.18),transparent 65%),linear-gradient(145deg,#65d1cf 0%,#24b7c5 40%,#10a1bd 100%)
+  background:radial-gradient(55vmax 42vmax at 80% -12%,rgba(255,252,235,.82),transparent 62%),radial-gradient(45vmax 48vmax at -8% 96%,rgba(155,60,43,.1),transparent 68%),linear-gradient(145deg,#f1e8d5 0%,#e7dcc6 48%,#d8ccb6 100%)
 }
 
 :root[data-theme="light"] body::after {
-  background:repeating-linear-gradient(0deg,rgba(5,27,45,.025),rgba(5,27,45,.025) 1px,transparent 1px,transparent 4px);
-  opacity:.16
+  background:repeating-linear-gradient(0deg,rgba(39,32,23,.025),rgba(39,32,23,.025) 1px,transparent 1px,transparent 3px);
+  opacity:.34
 }
 
 .shell {
@@ -105,8 +105,8 @@ body::after {
 
 /* Light theme dot pattern */
 :root[data-theme="light"] .shell::before {
-  background-image:radial-gradient(circle at 20% 30%,rgba(255,255,255,.5) 0 1px,transparent 1px),radial-gradient(circle at 80% 70%,rgba(7,40,59,.16) 0 1px,transparent 1px),radial-gradient(circle at 40% 80%,rgba(245,47,134,.18) 0 1px,transparent 1px);
-  opacity:.18
+  background-image:radial-gradient(circle at 20% 30%,rgba(41,33,23,.22) 0 1px,transparent 1px),radial-gradient(circle at 80% 70%,rgba(255,255,255,.42) 0 1px,transparent 1px),radial-gradient(circle at 40% 80%,rgba(128,46,35,.15) 0 1px,transparent 1px);
+  opacity:.2
 }
 
 .skip-link {
@@ -1002,6 +1002,87 @@ body::after {
 :root[data-theme="light"] .news-date {
   color:#8a245f;
   opacity:1
+}
+
+/* Editorial bright mode — warm paper, ink black and signal red. */
+:root[data-theme="light"] .site-title a {
+  color:#171816;
+  background:none;
+  -webkit-text-fill-color:#171816;
+  filter:none;
+  animation:none
+}
+
+:root[data-theme="light"] .site-header,
+:root[data-theme="light"] .live-strip,
+:root[data-theme="light"] .news-feed {
+  border-color:rgba(23,24,22,.38)
+}
+
+:root[data-theme="light"] .control-panel {
+  background:rgba(245,238,220,.9);
+  border:1px solid rgba(23,24,22,.5);
+  border-inline:0;
+  border-radius:0;
+  box-shadow:0 7px 0 rgba(23,24,22,.08)
+}
+
+:root[data-theme="light"] .btn,
+:root[data-theme="light"] .btn.ghost {
+  color:#171816;
+  background:#f8f1df;
+  border-color:#171816;
+  border-radius:2px
+}
+
+:root[data-theme="light"] .btn:hover,
+:root[data-theme="light"] .btn:focus-visible {
+  color:#fff;
+  background:#171816;
+  border-color:#171816;
+  box-shadow:4px 4px 0 #c92f27
+}
+
+:root[data-theme="light"] .btn.active {
+  color:#fff!important;
+  background:#c92f27!important;
+  border-color:#171816!important;
+  box-shadow:4px 4px 0 #171816
+}
+
+:root[data-theme="light"] .eyebrow,
+:root[data-theme="light"] .tag,
+:root[data-theme="light"] .read-link,
+:root[data-theme="light"] .news-date {
+  color:#a3231e!important
+}
+
+:root[data-theme="light"] .subtitle,
+:root[data-theme="light"] .live-strip .label {
+  color:#171816!important
+}
+
+:root[data-theme="light"] .live-strip .dot {
+  background:#c92f27!important;
+  box-shadow:0 0 0 2px rgba(201,47,39,.18)!important
+}
+
+:root[data-theme="light"] .news-card {
+  background:rgba(250,244,227,.74);
+  border:1px solid rgba(23,24,22,.4);
+  border-radius:0;
+  box-shadow:5px 5px 0 rgba(23,24,22,.1)
+}
+
+:root[data-theme="light"] .news-card:hover {
+  background:#fffaf0;
+  box-shadow:7px 7px 0 #c92f27
+}
+
+:root[data-theme="light"] .skeleton {
+  background:linear-gradient(90deg,#ded3bd,#f8f1df,#ded3bd);
+  border-color:rgba(23,24,22,.28);
+  border-radius:0
 }
 
 .news-title a:hover, .news-title a:focus-visible {
