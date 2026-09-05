@@ -7,9 +7,16 @@
  *
  * POST /api/summarize
  * body: { url, title?, source? }
+ * GET /api/ai-usage
  */
 
 const AI_MODEL = "@cf/zai-org/glm-4.7-flash";
+const AI_DAILY_FREE_NEURONS = 10_000;
+const AI_SOFT_LIMIT_NEURONS = 8_500;
+const AI_WARN_NEURONS = 7_500;
+const AI_CRITICAL_NEURONS = 8_000;
+const AI_INPUT_NEURONS_PER_MILLION_TOKENS = 5_500;
+const AI_OUTPUT_NEURONS_PER_MILLION_TOKENS = 36_400;
 const MAX_HTML_BYTES = 1_500_000;
 const MAX_ARTICLE_CHARS = 24_000;
 const FETCH_TIMEOUT_MS = 8_000;
@@ -17,6 +24,8 @@ const ALLOWED_ORIGINS = new Set([
   "https://kitzer.net",
   "https://www.kitzer.net"
 ]);
+
+let aiUsageSchemaReady = false;
 
 function allowedOrigin(request) {
   const origin = request.headers.get("Origin");
@@ -32,7 +41,7 @@ function responseHeaders(origin) {
     ...(origin ? {
       "access-control-allow-origin": origin,
       "access-control-allow-credentials": "true",
-      "access-control-allow-methods": "POST, OPTIONS",
+      "access-control-allow-methods": "GET, POST, OPTIONS",
       "access-control-allow-headers": "Content-Type",
       "vary": "Origin"
     } : {})
@@ -272,12 +281,150 @@ function parseAiJson(raw) {
   return { summary: parsed.summary.trim(), why_it_matters: (parsed.why_it_matters || "").trim() };
 }
 
+function readAiResponseText(result) {
+  const payload = result?.result ?? result;
+  const choice = payload?.choices?.[0];
+  return choice?.message?.content ?? payload?.response ?? "";
+}
+
 function readAiSummary(result) {
   const payload = result?.result ?? result;
   const choice = payload?.choices?.[0];
   if (choice?.finish_reason === "length") throw new Error("AI_TRUNCATED_SUMMARY");
   if (choice?.message?.refusal) throw new Error("AI_REFUSED_SUMMARY");
-  return parseAiJson(choice?.message?.content ?? payload?.response);
+  return parseAiJson(readAiResponseText(result));
+}
+
+function estimateTokensFromText(value) {
+  const text = String(value || "");
+  if (!text) return 0;
+  // Conservative fallback only. Workers AI normally returns exact usage.
+  return Math.max(1, Math.ceil(text.length / 2.5));
+}
+
+function extractAiUsage(result, promptText, outputText) {
+  const payload = result?.result ?? result;
+  const usage = result?.usage ?? payload?.usage ?? {};
+  const promptTokens = Number(
+    usage.prompt_tokens ?? usage.input_tokens ?? estimateTokensFromText(promptText)
+  ) || 0;
+  const completionTokens = Number(
+    usage.completion_tokens ?? usage.output_tokens ?? estimateTokensFromText(outputText)
+  ) || 0;
+  const totalTokens = Number(usage.total_tokens) || (promptTokens + completionTokens);
+  const neurons =
+    (promptTokens * AI_INPUT_NEURONS_PER_MILLION_TOKENS / 1_000_000) +
+    (completionTokens * AI_OUTPUT_NEURONS_PER_MILLION_TOKENS / 1_000_000);
+
+  return {
+    prompt_tokens: Math.max(0, Math.round(promptTokens)),
+    completion_tokens: Math.max(0, Math.round(completionTokens)),
+    total_tokens: Math.max(0, Math.round(totalTokens)),
+    neurons: Math.max(0, neurons)
+  };
+}
+
+function utcDay(date = new Date()) {
+  return date.toISOString().slice(0, 10);
+}
+
+function dayOffsetUtc(days) {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + days);
+  return utcDay(date);
+}
+
+function nextUtcResetIso() {
+  const now = new Date();
+  return new Date(Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate() + 1,
+    0, 0, 0, 0
+  )).toISOString();
+}
+
+async function ensureAiUsageTable(env) {
+  if (aiUsageSchemaReady) return;
+  await env.KITZER_NEWS_DB.prepare(`
+    CREATE TABLE IF NOT EXISTS ai_usage_daily (
+      day_utc TEXT PRIMARY KEY,
+      requests INTEGER NOT NULL DEFAULT 0,
+      prompt_tokens INTEGER NOT NULL DEFAULT 0,
+      completion_tokens INTEGER NOT NULL DEFAULT 0,
+      total_tokens INTEGER NOT NULL DEFAULT 0,
+      neurons REAL NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL
+    )
+  `).run();
+  aiUsageSchemaReady = true;
+}
+
+async function getAiUsageForDay(env, day = utcDay()) {
+  await ensureAiUsageTable(env);
+  return await env.KITZER_NEWS_DB.prepare(`
+    SELECT day_utc, requests, prompt_tokens, completion_tokens, total_tokens, neurons, updated_at
+    FROM ai_usage_daily
+    WHERE day_utc = ?
+    LIMIT 1
+  `).bind(day).first();
+}
+
+async function assertAiBudget(env) {
+  const row = await getAiUsageForDay(env);
+  const used = Number(row?.neurons || 0);
+  if (used >= AI_SOFT_LIMIT_NEURONS) {
+    throw new Error("AI_DAILY_SOFT_LIMIT");
+  }
+}
+
+async function recordAiUsage(env, usage) {
+  await ensureAiUsageTable(env);
+  const now = new Date().toISOString();
+  await env.KITZER_NEWS_DB.prepare(`
+    INSERT INTO ai_usage_daily (
+      day_utc, requests, prompt_tokens, completion_tokens, total_tokens, neurons, updated_at
+    ) VALUES (?, 1, ?, ?, ?, ?, ?)
+    ON CONFLICT(day_utc) DO UPDATE SET
+      requests = requests + 1,
+      prompt_tokens = prompt_tokens + excluded.prompt_tokens,
+      completion_tokens = completion_tokens + excluded.completion_tokens,
+      total_tokens = total_tokens + excluded.total_tokens,
+      neurons = neurons + excluded.neurons,
+      updated_at = excluded.updated_at
+  `).bind(
+    utcDay(),
+    usage.prompt_tokens,
+    usage.completion_tokens,
+    usage.total_tokens,
+    usage.neurons,
+    now
+  ).run();
+}
+
+async function runTrackedAi(env, messages) {
+  await assertAiBudget(env);
+
+  const result = await env.AI.run(AI_MODEL, {
+    messages,
+    max_tokens: 2048,
+    chat_template_kwargs: { enable_thinking: false },
+    response_format: { type: "json_object" },
+    temperature: 0.2
+  });
+
+  const promptText = messages.map(message => `${message.role}: ${message.content}`).join("\n");
+  const outputText = readAiResponseText(result);
+  const usage = extractAiUsage(result, promptText, outputText);
+
+  try {
+    await recordAiUsage(env, usage);
+  } catch (error) {
+    // Do not fail a valid summary only because telemetry could not be stored.
+    console.error("KITZER AI usage tracking failed", String(error?.message || error));
+  }
+
+  return result;
 }
 
 async function summarizeWithAi(env, { title, source, articleText, limited }) {
@@ -303,13 +450,7 @@ async function summarizeWithAi(env, { title, source, articleText, limited }) {
         content: `כותרת: ${title || "לא סופקה"}\nמקור: ${source || "לא סופק"}\n${limited ? "הערה: הטקסט הזמין חלקי בלבד.\n" : ""}\n<article>\n${text}\n</article>`
       }
     ];
-    return env.AI.run(AI_MODEL, {
-      messages,
-      max_tokens: 2048,
-      chat_template_kwargs: { enable_thinking: false },
-      response_format: { type: "json_object" },
-      temperature: 0.2
-    });
+    return runTrackedAi(env, messages);
   }
 
   const firstText = articleText.slice(0, 8_000);
@@ -354,6 +495,69 @@ async function saveSummary(env, row) {
     now,
     now
   ).run();
+}
+
+async function handleAiUsage(request, env, origin) {
+  if (request.method !== "GET") return json({ error: "METHOD_NOT_ALLOWED" }, 405, origin);
+  if (!origin) return json({ error: "ORIGIN_NOT_ALLOWED" }, 403, null);
+  if (!env.KITZER_NEWS_DB) return json({ error: "D1_BINDING_MISSING" }, 503, origin);
+
+  try {
+    await ensureAiUsageTable(env);
+    const startDay = dayOffsetUtc(-6);
+    const result = await env.KITZER_NEWS_DB.prepare(`
+      SELECT day_utc, requests, prompt_tokens, completion_tokens, total_tokens, neurons, updated_at
+      FROM ai_usage_daily
+      WHERE day_utc >= ?
+      ORDER BY day_utc DESC
+    `).bind(startDay).all();
+
+    const rows = result.results || [];
+    const today = utcDay();
+    const yesterday = dayOffsetUtc(-1);
+    const todayRow = rows.find(row => row.day_utc === today) || {};
+    const yesterdayRow = rows.find(row => row.day_utc === yesterday) || {};
+
+    const neuronsUsed = Number(todayRow.neurons || 0);
+    const totalTokensToday = Number(todayRow.total_tokens || 0);
+    const requestsToday = Number(todayRow.requests || 0);
+    const sevenDayTotalNeurons = rows.reduce((sum, row) => sum + Number(row.neurons || 0), 0);
+    const sevenDayRequests = rows.reduce((sum, row) => sum + Number(row.requests || 0), 0);
+    const sevenDayAvgNeurons = sevenDayTotalNeurons / 7;
+    const avgNeuronsPerRequest = sevenDayRequests > 0 ? sevenDayTotalNeurons / sevenDayRequests : 0;
+    const softRemaining = Math.max(0, AI_SOFT_LIMIT_NEURONS - neuronsUsed);
+
+    let status = "safe";
+    if (neuronsUsed >= AI_SOFT_LIMIT_NEURONS) status = "blocked";
+    else if (neuronsUsed >= AI_CRITICAL_NEURONS) status = "critical";
+    else if (neuronsUsed >= AI_WARN_NEURONS) status = "warn";
+
+    return json({
+      ok: true,
+      model: AI_MODEL,
+      day_utc: today,
+      neurons_used: neuronsUsed,
+      neurons_remaining: Math.max(0, AI_DAILY_FREE_NEURONS - neuronsUsed),
+      hard_limit_neurons: AI_DAILY_FREE_NEURONS,
+      soft_limit_neurons: AI_SOFT_LIMIT_NEURONS,
+      percent_used: (neuronsUsed / AI_DAILY_FREE_NEURONS) * 100,
+      requests_today: requestsToday,
+      total_tokens_today: totalTokensToday,
+      prompt_tokens_today: Number(todayRow.prompt_tokens || 0),
+      completion_tokens_today: Number(todayRow.completion_tokens || 0),
+      yesterday_neurons: Number(yesterdayRow.neurons || 0),
+      seven_day_avg_neurons: sevenDayAvgNeurons,
+      estimated_summaries_remaining: avgNeuronsPerRequest > 0
+        ? Math.floor(softRemaining / avgNeuronsPerRequest)
+        : null,
+      status,
+      reset_at: nextUtcResetIso(),
+      source: "kitzer-live-counter"
+    }, 200, origin);
+  } catch (error) {
+    console.error("KITZER AI usage read failed", String(error?.message || error));
+    return json({ error: "AI_USAGE_UNAVAILABLE" }, 503, origin);
+  }
 }
 
 async function handleSummary(request, env, origin) {
@@ -428,7 +632,10 @@ async function handleSummary(request, env, origin) {
   } catch (error) {
     const code = error?.name === "AbortError" ? "ARTICLE_TIMEOUT" : String(error?.message || "SUMMARY_FAILED");
     console.error("KITZER summary failed", code);
-    const status = code === "AI_BINDING_MISSING" ? 503 : 502;
+    const status =
+      code === "AI_DAILY_SOFT_LIMIT" ? 429 :
+      code === "AI_BINDING_MISSING" ? 503 :
+      502;
     return json({ error: code }, status, origin);
   }
 }
@@ -451,6 +658,10 @@ export default {
         d1_binding: Boolean(env.KITZER_NEWS_DB),
         model: AI_MODEL
       }, 200, origin);
+    }
+
+    if (path === "/api/ai-usage") {
+      return handleAiUsage(request, env, origin);
     }
 
     if (path === "/api/summarize") {
