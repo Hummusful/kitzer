@@ -15,133 +15,92 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 3
     steps:
       - name: Check summary worker and summarize a live music article
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import html
-          import json
-          import re
-          import sys
-          import urllib.request
-          import urllib.error
+          import html, json, re, sys, urllib.request, urllib.error
           from urllib.parse import urlparse
 
-          HEALTH = 'https://kitzer-summary.dustrial.workers.dev/health'
-          SUMMARY = 'https://kitzer-summary.dustrial.workers.dev/api/summarize'
-          ORIGIN = 'https://kitzer.net'
-          UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/152 Safari/537.36'
-
-          FEEDS = [
-              ('Walla מוזיקה', 'https://rss.walla.co.il/feed/272'),
-              ('מעריב - מוזיקה', 'https://www.maariv.co.il/rss/rssfeedsmozika'),
-              ('קולומבוס', 'https://columbusmusicmagazine.com/feed/'),
-              ('Trancentral', 'https://trancentral.tv/feed/'),
-              ('Dancing Astronaut', 'https://dancingastronaut.com/feed/'),
-              ('MBW', 'https://www.musicbusinessworldwide.com/feed/'),
-              ('The FADER', 'https://www.thefader.com/feed/rss'),
+          HEALTH='https://kitzer-summary.dustrial.workers.dev/health'
+          SUMMARY='https://kitzer-summary.dustrial.workers.dev/api/summarize'
+          ORIGIN='https://kitzer.net'
+          UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/152 Safari/537.36'
+          FEEDS=[
+            ('MBW','https://www.musicbusinessworldwide.com/feed/'),
+            ('Trancentral','https://trancentral.tv/feed/'),
+            ('Dancing Astronaut','https://dancingastronaut.com/feed/'),
+            ('The FADER','https://www.thefader.com/feed/rss'),
           ]
 
-          def request_json(req, timeout=30):
-              with urllib.request.urlopen(req, timeout=timeout) as r:
-                  return r.status, json.loads(r.read().decode('utf-8'))
+          def open_json(req, timeout):
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+              return r.status, json.loads(r.read().decode('utf-8'))
 
-          health_req = urllib.request.Request(HEALTH, headers={'Origin': ORIGIN, 'User-Agent': UA})
-          status, health_data = request_json(health_req, 20)
-          print('health:', json.dumps(health_data, ensure_ascii=False))
-          assert status == 200
-          assert health_data.get('ok') is True
-          assert health_data.get('ai_binding') is True
-          assert health_data.get('d1_binding') is True
+          req=urllib.request.Request(HEALTH, headers={'Origin':ORIGIN,'User-Agent':UA})
+          status,health=open_json(req,15)
+          print('health:',json.dumps(health,ensure_ascii=False))
+          assert status==200 and health.get('ok') is True
+          assert health.get('ai_binding') is True and health.get('d1_binding') is True
 
-          def fetch_feed(feed_url):
-              req = urllib.request.Request(feed_url, headers={
-                  'User-Agent': UA,
-                  'Accept': 'application/rss+xml, application/xml, text/xml, */*'
-              })
-              with urllib.request.urlopen(req, timeout=20) as r:
-                  return r.read(1_500_000).decode('utf-8', errors='replace')
-
-          def extract_links(xml_text, feed_url):
-              links = []
-              patterns = [
-                  r'<link[^>]+rel=["\']alternate["\'][^>]+href=["\']([^"\']+)["\']',
-                  r'<link[^>]*>(?:<!\[CDATA\[)?\s*(https?://[^<\s]+?)\s*(?:\]\]>)?</link>',
-                  r'<guid[^>]*>(?:<!\[CDATA\[)?\s*(https?://[^<\s]+?)\s*(?:\]\]>)?</guid>',
-              ]
-              feed_host = urlparse(feed_url).hostname or ''
-              for pattern in patterns:
-                  for raw in re.findall(pattern, xml_text, flags=re.I):
-                      link = html.unescape(raw).strip()
-                      if not link.startswith(('https://', 'http://')):
-                          continue
-                      host = urlparse(link).hostname or ''
-                      if link == feed_url or not host:
-                          continue
-                      # Ignore obvious feed/self URLs, but allow same-site article links.
-                      if link.rstrip('/').endswith('/feed') or '/feed/' in link:
-                          continue
-                      if link not in links:
-                          links.append(link)
-              return links[:8]
-
-          def post_summary(link, source):
-              payload = json.dumps({
-                  'url': link,
-                  'title': '',
-                  'source': source
-              }).encode('utf-8')
-              req = urllib.request.Request(
-                  SUMMARY,
-                  data=payload,
-                  method='POST',
-                  headers={
-                      'Content-Type': 'application/json',
-                      'Origin': ORIGIN,
-                      'User-Agent': UA
-                  }
-              )
-              return request_json(req, 35)
-
-          failures = []
-          for source, feed_url in FEEDS:
-              try:
-                  xml = fetch_feed(feed_url)
-                  links = extract_links(xml, feed_url)
-                  print(f'{source}: {len(links)} candidate links')
-              except Exception as exc:
-                  failures.append(f'{source} feed: {type(exc).__name__}: {exc}')
+          def first_article(feed_url):
+            req=urllib.request.Request(feed_url,headers={'User-Agent':UA,'Accept':'application/rss+xml, application/xml, text/xml, */*'})
+            with urllib.request.urlopen(req,timeout=12) as r:
+              xml=r.read(1_200_000).decode('utf-8',errors='replace')
+            patterns=[
+              r'<link[^>]+rel=["\']alternate["\'][^>]+href=["\']([^"\']+)["\']',
+              r'<link[^>]*>(?:<!\[CDATA\[)?\s*(https?://[^<\s]+?)\s*(?:\]\]>)?</link>',
+              r'<guid[^>]*>(?:<!\[CDATA\[)?\s*(https?://[^<\s]+?)\s*(?:\]\]>)?</guid>',
+            ]
+            feed_host=urlparse(feed_url).hostname or ''
+            for pattern in patterns:
+              for raw in re.findall(pattern,xml,flags=re.I):
+                link=html.unescape(raw).strip()
+                host=urlparse(link).hostname or ''
+                if not link.startswith(('http://','https://')) or not host:
                   continue
+                if link==feed_url or link.rstrip('/').endswith('/feed') or '/feed/' in link:
+                  continue
+                # Prefer links on the same registrable site as the feed.
+                if feed_host.split('.')[-2:] == host.split('.')[-2:]:
+                  return link
+            return None
 
-              for link in links:
-                  try:
-                      status, body = post_summary(link, source)
-                      print('candidate:', source, link)
-                      print('summary:', json.dumps(body, ensure_ascii=False))
-                      if status != 200 or body.get('ok') is not True or len(body.get('summary') or '') < 20:
-                          failures.append(f'{source} {link}: bad response {status} {body}')
-                          continue
+          def summarize(link,source):
+            data=json.dumps({'url':link,'title':'','source':source}).encode('utf-8')
+            req=urllib.request.Request(SUMMARY,data=data,method='POST',headers={
+              'Content-Type':'application/json','Origin':ORIGIN,'User-Agent':UA})
+            return open_json(req,18)
 
-                      # Second request must be served from D1 cache.
-                      status2, body2 = post_summary(link, source)
-                      print('cached summary:', json.dumps(body2, ensure_ascii=False))
-                      assert status2 == 200
-                      assert body2.get('ok') is True
-                      assert body2.get('cached') is True, body2
-                      assert body2.get('summary') == body.get('summary')
-                      print('SMOKE TEST PASSED')
-                      sys.exit(0)
-                  except urllib.error.HTTPError as exc:
-                      detail = exc.read().decode('utf-8', errors='replace')
-                      failures.append(f'{source} {link}: HTTP {exc.code} {detail[:600]}')
-                  except Exception as exc:
-                      failures.append(f'{source} {link}: {type(exc).__name__}: {exc}')
+          failures=[]
+          for source,feed in FEEDS:
+            try:
+              link=first_article(feed)
+              print(source,'candidate:',link)
+              if not link:
+                failures.append(source+': no article link')
+                continue
+              status,body=summarize(link,source)
+              print(source,'summary:',json.dumps(body,ensure_ascii=False))
+              if status!=200 or body.get('ok') is not True or len(body.get('summary') or '')<20:
+                failures.append(f'{source}: bad summary {status} {body}')
+                continue
+              status2,body2=summarize(link,source)
+              print(source,'cached:',json.dumps(body2,ensure_ascii=False))
+              assert status2==200 and body2.get('ok') is True
+              assert body2.get('cached') is True
+              assert body2.get('summary')==body.get('summary')
+              print('SMOKE TEST PASSED')
+              sys.exit(0)
+            except urllib.error.HTTPError as exc:
+              failures.append(f'{source}: HTTP {exc.code} '+exc.read().decode('utf-8',errors='replace')[:500])
+            except Exception as exc:
+              failures.append(f'{source}: {type(exc).__name__}: {exc}')
 
-          print('No source article completed the summary + cache smoke test.', file=sys.stderr)
-          for failure in failures[:25]:
-              print(' -', failure, file=sys.stderr)
+          print('SMOKE TEST FAILED',file=sys.stderr)
+          for f in failures: print(' -',f,file=sys.stderr)
           raise SystemExit(1)
           PY
