@@ -513,7 +513,7 @@ async function fetchSpotifyTrending(env) {
     }
 
     // Get trending tracks (Israeli top 50)
-    const res = await fetch('https://api.spotify.com/v1/playlists/37i9dQZEVXbJ5HYJdx0LFI', {
+    const res = await fetch('https://api.spotify.com/v1/playlists/37i9dQZEVXbJ6IpvItkve3', {
       headers: { 'Authorization': `Bearer ${auth.access_token}` }
     });
     console.log('Spotify playlist response:', res.status);
@@ -547,9 +547,17 @@ async function fetchSpotifyTrending(env) {
 }
 
 // Last.fm Trending (no auth required)
-async function fetchLastFmTrending() {
+async function fetchLastFmTrending(env) {
   try {
-    const res = await fetch('http://ws.audioscrobbler.com/2.0/?method=chart.getTopTracks&region=Israel&limit=15&format=json');
+    const apiKey = env.LASTFM_API_KEY;
+    if (!apiKey) return [];
+
+    const url = new URL('https://ws.audioscrobbler.com/2.0/');
+    url.searchParams.set('method', 'chart.getTopTracks');
+    url.searchParams.set('limit', '15');
+    url.searchParams.set('format', 'json');
+    url.searchParams.set('api_key', apiKey);
+    const res = await fetch(url);
     console.log('Last.fm response:', res.status);
     if (!res.ok) {
       console.log('Last.fm failed:', res.status);
@@ -805,7 +813,7 @@ export default {
         { url: "https://djmag.com/rss.xml", source: "DJ Mag", lang: "EN", genre: "electronic" },
         { url: "https://www.edmsauce.com/feed/", source: "EDM Sauce", lang: "EN", genre: "electronic" },
         { url: "https://mixmag.net/rss.xml", source: "Mixmag", lang: "EN", genre: "electronic" },
-        { url: "https://www.magneticmag.com/feed/", source: "Magnetic Mag", lang: "EN", genre: "electronic" },
+        { url: "https://news.google.com/rss/search?q=site%3Amagneticmag.com&hl=en-US&gl=US&ceid=US%3Aen", source: "Magnetic Mag", lang: "EN", genre: "electronic" },
 
         // INTERNATIONAL 🌎
         { url: "https://www.thefader.com/feed/rss", source: "The FADER", lang: "EN", genre: "international" },
@@ -813,7 +821,7 @@ export default {
         { url: "https://www.complex.com/music/rss", source: "Complex Music", lang: "EN", genre: "international" },
         { url: "https://www.musicbusinessworldwide.com/feed/", source: "MBW", lang: "EN", genre: "international" },
         { url: "https://www.hollywoodreporter.com/c/music/music-news/feed/", source: "THR (Music)", lang: "EN", genre: "international" },
-        { url: "https://www.hypebot.com/feed", source: "Hypebot", lang: "EN", genre: "international" },
+        { url: "https://news.google.com/rss/search?q=site%3Ahypebot.com&hl=en-US&gl=US&ceid=US%3Aen", source: "Hypebot", lang: "EN", genre: "international" },
         { url: "https://www.digitalmusicnews.com/feed/", source: "DMN", lang: "EN", genre: "international" }
         
       ];
@@ -889,7 +897,7 @@ export default {
       }
 
       if (!filterGenre || filterGenre === 'international') {
-        const lastfmItems = await fetchLastFmTrending();
+        const lastfmItems = await fetchLastFmTrending(env);
         allItems.push(...lastfmItems);
       }
 
