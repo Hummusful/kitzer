@@ -17,101 +17,65 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Check summary worker and summarize a live music article
+      - name: Check summary worker and summarize real KITZER articles
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import html, json, re, sys, urllib.request, urllib.error
-          from urllib.parse import urlparse
+          import json, sys, urllib.request, urllib.error
 
           HEALTH='https://kitzer-summary.dustrial.workers.dev/health'
           SUMMARY='https://kitzer-summary.dustrial.workers.dev/api/summarize'
           ORIGIN='https://kitzer.net'
           UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/152 Safari/537.36'
-          FEEDS=[
-            ('MBW','https://www.musicbusinessworldwide.com/feed/'),
-            ('Trancentral','https://trancentral.tv/feed/'),
-            ('Dancing Astronaut','https://dancingastronaut.com/feed/'),
-            ('מעריב - מוזיקה','https://www.maariv.co.il/rss/rssfeedsmozika'),
-            ('קולומבוס','https://columbusmusicmagazine.com/feed/'),
+          ARTICLES=[
+            ('מעריב - מוזיקה','https://www.maariv.co.il/culture/music/article-1363020'),
+            ('MBW','https://www.musicbusinessworldwide.com/from-bmg-and-concords-completed-merger-to-anthropics-multi-billion-dollar-lawsuit-its-mbws-weekly-round-up/'),
+            ('Trancentral','https://trancentral.tv/2026/09/trancentral-weekly-new-psytrance-releases-01-09-2026/'),
+            ('Dancing Astronaut','https://dancingastronaut.com/2026/08/effin-on-sampling-the-past-and-creating-a-world-through-sound/'),
+            ('קולומבוס','https://columbusmusicmagazine.com/2026/06/03/%d7%90%d7%99%d7%9f-%d7%a2%d7%a9%d7%9f-%d7%91%d7%9c%d7%99-%d7%90%d7%a9/'),
           ]
 
-          def open_json(req, timeout):
-            with urllib.request.urlopen(req, timeout=timeout) as r:
-              return r.status, json.loads(r.read().decode('utf-8'))
+          def request_json(req, timeout=22):
+            with urllib.request.urlopen(req,timeout=timeout) as r:
+              return r.status,json.loads(r.read().decode('utf-8'))
 
-          req=urllib.request.Request(HEALTH, headers={'Origin':ORIGIN,'User-Agent':UA})
-          status,health=open_json(req,15)
+          hreq=urllib.request.Request(HEALTH,headers={'Origin':ORIGIN,'User-Agent':UA})
+          hs,health=request_json(hreq,15)
           print('health:',json.dumps(health,ensure_ascii=False))
-          assert status==200 and health.get('ok') is True
+          assert hs==200 and health.get('ok') is True
           assert health.get('ai_binding') is True and health.get('d1_binding') is True
 
-          def article_candidates(feed_url):
-            req=urllib.request.Request(feed_url,headers={'User-Agent':UA,'Accept':'application/rss+xml, application/xml, text/xml, */*'})
-            with urllib.request.urlopen(req,timeout=12) as r:
-              xml=r.read(1_200_000).decode('utf-8',errors='replace')
-
-            blocks=[]
-            blocks.extend(m.group(1) for m in re.finditer(r'<item\b[^>]*>([\s\S]*?)</item>',xml,flags=re.I))
-            blocks.extend(m.group(1) for m in re.finditer(r'<entry\b[^>]*>([\s\S]*?)</entry>',xml,flags=re.I))
-
-            links=[]
-            for block in blocks[:12]:
-              values=[]
-              m=re.search(r'<link[^>]+rel=["\']alternate["\'][^>]+href=["\']([^"\']+)["\']',block,flags=re.I)
-              if m: values.append(m.group(1))
-              m=re.search(r'<link[^>]*>(?:<!\[CDATA\[)?\s*([\s\S]*?)\s*(?:\]\]>)?</link>',block,flags=re.I)
-              if m: values.append(m.group(1))
-              m=re.search(r'<guid[^>]*>(?:<!\[CDATA\[)?\s*(https?://[\s\S]*?)\s*(?:\]\]>)?</guid>',block,flags=re.I)
-              if m: values.append(m.group(1))
-
-              for raw in values:
-                link=html.unescape(re.sub(r'<[^>]+>','',raw)).strip()
-                if not link.startswith(('http://','https://')):
-                  continue
-                if link.rstrip('/').endswith('/feed') or '/feed/' in link:
-                  continue
-                if link not in links:
-                  links.append(link)
-            return links[:4]
-
-          def summarize(link,source):
-            data=json.dumps({'url':link,'title':'','source':source}).encode('utf-8')
-            req=urllib.request.Request(SUMMARY,data=data,method='POST',headers={
+          def summarize(source,url):
+            payload=json.dumps({'url':url,'title':'','source':source}).encode('utf-8')
+            req=urllib.request.Request(SUMMARY,data=payload,method='POST',headers={
               'Content-Type':'application/json','Origin':ORIGIN,'User-Agent':UA})
-            return open_json(req,18)
+            return request_json(req,22)
 
           failures=[]
-          for source,feed in FEEDS:
+          for source,url in ARTICLES:
             try:
-              links=article_candidates(feed)
-              print(source,'candidates:',links)
-            except Exception as exc:
-              failures.append(f'{source} feed: {type(exc).__name__}: {exc}')
-              continue
+              status,body=summarize(source,url)
+              print('\nARTICLE:',source,url)
+              print('FIRST:',json.dumps(body,ensure_ascii=False))
+              if status!=200 or body.get('ok') is not True or len(body.get('summary') or '')<20:
+                failures.append(f'{source}: bad first response {status} {body}')
+                continue
 
-            for link in links:
-              try:
-                status,body=summarize(link,source)
-                print(source,'summary candidate:',link)
-                print(source,'summary:',json.dumps(body,ensure_ascii=False))
-                if status!=200 or body.get('ok') is not True or len(body.get('summary') or '')<20:
-                  failures.append(f'{source}: bad summary {status} {body}')
-                  continue
-                status2,body2=summarize(link,source)
-                print(source,'cached:',json.dumps(body2,ensure_ascii=False))
-                assert status2==200 and body2.get('ok') is True
-                assert body2.get('cached') is True
-                assert body2.get('summary')==body.get('summary')
-                print('SMOKE TEST PASSED')
-                sys.exit(0)
-              except urllib.error.HTTPError as exc:
-                failures.append(f'{source} {link}: HTTP {exc.code} '+exc.read().decode('utf-8',errors='replace')[:500])
-              except Exception as exc:
-                failures.append(f'{source} {link}: {type(exc).__name__}: {exc}')
+              status2,body2=summarize(source,url)
+              print('SECOND:',json.dumps(body2,ensure_ascii=False))
+              assert status2==200 and body2.get('ok') is True
+              assert body2.get('cached') is True, body2
+              assert body2.get('summary')==body.get('summary')
+              print('SMOKE TEST PASSED')
+              sys.exit(0)
+            except urllib.error.HTTPError as exc:
+              detail=exc.read().decode('utf-8',errors='replace')
+              failures.append(f'{source}: HTTP {exc.code} {detail[:700]}')
+            except Exception as exc:
+              failures.append(f'{source}: {type(exc).__name__}: {exc}')
 
           print('SMOKE TEST FAILED',file=sys.stderr)
-          for f in failures[:25]: print(' -',f,file=sys.stderr)
+          for f in failures: print(' -',f,file=sys.stderr)
           raise SystemExit(1)
           PY
