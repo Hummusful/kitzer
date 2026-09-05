@@ -195,9 +195,15 @@ function renderLoading() {
   if (!feedEl) return;
   feedEl.replaceChildren();
 
-  const loadingLabel = document.createElement('p');
+  const loadingLabel = document.createElement('div');
   loadingLabel.className = 'loading-label';
-  loadingLabel.textContent = 'טוען מבזקי מוזיקה...';
+  loadingLabel.setAttribute('role', 'status');
+  loadingLabel.innerHTML = `
+    <span class="loader-equalizer" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+    </span>
+    <span>מכוונים תדר...</span>
+  `;
   feedEl.appendChild(loadingLabel);
 
   for (let i = 0; i < 8; i++) {
@@ -233,7 +239,8 @@ function renderNews(items) {
       const el = document.createElement('article');
       const titleId = `news-title-${startIdx}-${i}`;
 
-      el.className = ['news-card', isFresh ? 'fresh' : '', isOld ? 'old' : ''].filter(Boolean).join(' ');
+      el.className = ['news-card', 'signal-entry', isFresh ? 'fresh' : '', isOld ? 'old' : ''].filter(Boolean).join(' ');
+      el.style.setProperty('--entry-index', String(i % batchSize));
       el.setAttribute('role', 'article');
       el.setAttribute('aria-labelledby', titleId);
 
