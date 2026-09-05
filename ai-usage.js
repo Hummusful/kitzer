@@ -62,7 +62,7 @@ function buildUsageWidget() {
       <span data-k="model">—</span>
       <span>איפוס: <b data-k="reset">—</b></span>
     </div>
-    <p class="ai-usage-note">Live counter של KITZER. עצירה אוטומטית ב־8,500 Neurons כדי להשאיר מרווח ביטחון מהמכסה החינמית.</p>
+    <p class="ai-usage-note">Live counter של KITZER. עצירה אוטומטית לפני המכסה החינמית כדי להשאיר מרווח ביטחון.</p>
   `;
 
   button.addEventListener('click', () => {
@@ -80,10 +80,12 @@ function renderUsage(widget, data) {
   const { button, panel } = widget;
   const pct = Math.max(0, Math.min(100, Number(data.percent_used || 0)));
   const status = data.status || 'safe';
+  const hardLimit = Number(data.hard_limit_neurons || 10_000);
+  const softLimit = Number(data.soft_limit_neurons || 8_500);
 
   button.textContent = `🤖 AI ${Math.round(pct)}%`;
   button.dataset.status = status;
-  button.title = `${formatNumber(data.neurons_used, 1)} / ${formatNumber(data.hard_limit_neurons)} Neurons`;
+  button.title = `${formatNumber(data.neurons_used, 1)} / ${formatNumber(hardLimit)} Neurons`;
 
   panel.dataset.status = status;
   const statusEl = panel.querySelector('.ai-usage-status');
@@ -94,6 +96,7 @@ function renderUsage(widget, data) {
   meter.querySelector('span').style.width = `${pct}%`;
 
   panel.querySelector('.ai-usage-main strong').textContent = formatNumber(data.neurons_used, 1);
+  panel.querySelector('.ai-usage-main span').textContent = ` / ${formatNumber(hardLimit)} Neurons`;
   panel.querySelector('[data-k="remaining"]').textContent = formatNumber(data.neurons_remaining, 1);
   panel.querySelector('[data-k="requests"]').textContent = formatNumber(data.requests_today);
   panel.querySelector('[data-k="tokens"]').textContent = formatNumber(data.total_tokens_today);
@@ -102,6 +105,8 @@ function renderUsage(widget, data) {
   panel.querySelector('[data-k="summaries"]').textContent = data.estimated_summaries_remaining == null ? '—' : `~${formatNumber(data.estimated_summaries_remaining)}`;
   panel.querySelector('[data-k="model"]').textContent = String(data.model || '').split('/').pop() || 'Workers AI';
   panel.querySelector('[data-k="reset"]').textContent = formatReset(data.reset_at);
+  panel.querySelector('.ai-usage-note').textContent =
+    `Live counter של KITZER. עצירה אוטומטית ב־${formatNumber(softLimit)} Neurons כדי להשאיר מרווח ביטחון מהמכסה החינמית.`;
 }
 
 function renderUsageError(widget) {
@@ -113,7 +118,12 @@ function renderUsageError(widget) {
 
 async function refreshAiUsage(widget) {
   try {
-    const response = await fetch(AI_USAGE_ENDPOINT, { cache: 'no-store' });
+    const response = await fetch(AI_USAGE_ENDPOINT, {
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store',
+      headers: { 'Accept': 'application/json' }
+    });
     if (!response.ok) throw new Error(`HTTP_${response.status}`);
     const data = await response.json();
     if (!data?.ok) throw new Error(data?.error || 'USAGE_FAILED');
