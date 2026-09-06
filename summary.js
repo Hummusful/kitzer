@@ -50,7 +50,10 @@ function setSummaryError(box, errorCode) {
     NOT_ENOUGH_ARTICLE_TEXT: 'לא הצלחתי לחלץ מספיק תוכן מהכתבה כדי לסכם אותה.',
     ARTICLE_TIMEOUT: 'האתר המקורי לא הגיב בזמן. אפשר לנסות שוב.',
     AI_BINDING_MISSING: 'שירות הסיכום עדיין לא מחובר ב-Cloudflare.',
-    D1_BINDING_MISSING: 'מסד הנתונים של הסיכומים עדיין לא מחובר.'
+    D1_BINDING_MISSING: 'מסד הנתונים של הסיכומים עדיין לא מחובר.',
+    AI_RATE_LIMITED: 'בוצעו יותר מדי בקשות בזמן קצר. אפשר לנסות שוב בעוד דקה.',
+    AI_DAILY_REQUEST_LIMIT: 'מכסת הסיכומים היומית נוצלה. השירות יחזור בחצות UTC.',
+    AI_DAILY_SOFT_LIMIT: 'מכסת ה-AI היומית נוצלה. השירות יחזור בחצות UTC.'
   };
 
   box.replaceChildren();
