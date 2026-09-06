@@ -356,7 +356,7 @@ async function loadNews(forceRefresh = false) {
   try {
     timeoutId = setTimeout(() => currentController.abort(), FETCH_TIMEOUT);
 
-    const url = new URL(FEED_ENDPOINT);
+    const url = new URL(FEED_ENDPOINT, window.location.origin);
     url.searchParams.set('days', '3');
     url.searchParams.set('limit', '40');
     if (state.genre !== 'all') url.searchParams.set('genre', state.genre);
