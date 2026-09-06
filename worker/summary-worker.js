@@ -13,6 +13,8 @@
 const AI_MODEL = "@cf/zai-org/glm-4.7-flash";
 const AI_DAILY_FREE_NEURONS = 10_000;
 const AI_SOFT_LIMIT_NEURONS = 8_500;
+const AI_DAILY_REQUEST_LIMIT = 40;
+const AI_REQUESTS_PER_MINUTE = 5;
 const AI_WARN_NEURONS = 7_500;
 const AI_CRITICAL_NEURONS = 8_000;
 const AI_INPUT_NEURONS_PER_MILLION_TOKENS = 5_500;
@@ -357,6 +359,13 @@ async function ensureAiUsageTable(env) {
       updated_at TEXT NOT NULL
     )
   `).run();
+  await env.KITZER_NEWS_DB.prepare(`
+    CREATE TABLE IF NOT EXISTS ai_request_limits (
+      bucket TEXT PRIMARY KEY,
+      requests INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL
+    )
+  `).run();
   aiUsageSchemaReady = true;
 }
 
@@ -368,6 +377,38 @@ async function getAiUsageForDay(env, day = utcDay()) {
     WHERE day_utc = ?
     LIMIT 1
   `).bind(day).first();
+}
+
+async function reserveAiRequest(env) {
+  await ensureAiUsageTable(env);
+  const now = new Date().toISOString();
+  const day = utcDay();
+  const minuteBucket = now.slice(0, 16);
+
+  const daily = await env.KITZER_NEWS_DB.prepare(`
+    INSERT INTO ai_usage_daily (
+      day_utc, requests, prompt_tokens, completion_tokens, total_tokens, neurons, updated_at
+    ) VALUES (?, 1, 0, 0, 0, 0, ?)
+    ON CONFLICT(day_utc) DO UPDATE SET
+      requests = requests + 1,
+      updated_at = excluded.updated_at
+    WHERE requests < ?
+    RETURNING requests
+  `).bind(day, now, AI_DAILY_REQUEST_LIMIT).first();
+
+  if (!daily) throw new Error("AI_DAILY_REQUEST_LIMIT");
+
+  const minute = await env.KITZER_NEWS_DB.prepare(`
+    INSERT INTO ai_request_limits (bucket, requests, updated_at)
+    VALUES (?, 1, ?)
+    ON CONFLICT(bucket) DO UPDATE SET
+      requests = requests + 1,
+      updated_at = excluded.updated_at
+    WHERE requests < ?
+    RETURNING requests
+  `).bind(minuteBucket, now, AI_REQUESTS_PER_MINUTE).first();
+
+  if (!minute) throw new Error("AI_RATE_LIMITED");
 }
 
 async function assertAiBudget(env) {
@@ -384,9 +425,8 @@ async function recordAiUsage(env, usage) {
   await env.KITZER_NEWS_DB.prepare(`
     INSERT INTO ai_usage_daily (
       day_utc, requests, prompt_tokens, completion_tokens, total_tokens, neurons, updated_at
-    ) VALUES (?, 1, ?, ?, ?, ?, ?)
+    ) VALUES (?, 0, ?, ?, ?, ?, ?)
     ON CONFLICT(day_utc) DO UPDATE SET
-      requests = requests + 1,
       prompt_tokens = prompt_tokens + excluded.prompt_tokens,
       completion_tokens = completion_tokens + excluded.completion_tokens,
       total_tokens = total_tokens + excluded.total_tokens,
@@ -404,6 +444,7 @@ async function recordAiUsage(env, usage) {
 
 async function runTrackedAi(env, messages) {
   await assertAiBudget(env);
+  await reserveAiRequest(env);
 
   const result = await env.AI.run(AI_MODEL, {
     messages,
@@ -633,7 +674,7 @@ async function handleSummary(request, env, origin) {
     const code = error?.name === "AbortError" ? "ARTICLE_TIMEOUT" : String(error?.message || "SUMMARY_FAILED");
     console.error("KITZER summary failed", code);
     const status =
-      code === "AI_DAILY_SOFT_LIMIT" ? 429 :
+      (code === "AI_DAILY_SOFT_LIMIT" || code === "AI_DAILY_REQUEST_LIMIT" || code === "AI_RATE_LIMITED") ? 429 :
       code === "AI_BINDING_MISSING" ? 503 :
       502;
     return json({ error: code }, status, origin);
