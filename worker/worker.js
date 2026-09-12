@@ -482,21 +482,39 @@ const MEDIA_FOREST_CHARTS = {
 
 function chartNumber(value) {
   if (value === null || value === undefined || value === "") return null;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) ? parsed : null;
+  const match = String(value).match(/\d+/);
+  if (!match) return null;
+  const parsed = Number.parseInt(match[0], 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function firstChartNumber(entry, keys) {
+  for (const key of keys) {
+    const number = chartNumber(entry?.[key]);
+    if (number !== null) return number;
+  }
+  return null;
 }
 
 function normalizeMediaForestChart(payload, type) {
   const entries = Array.isArray(payload?.entries) ? payload.entries : [];
   return entries
-    .map((entry, index) => ({
-      position: chartNumber(entry.thisweek) ?? index + 1,
-      title: type === "songs" ? String(entry.title || "").trim() : null,
-      artist: String(entry.artist || entry.title || "").replace(/^>+/, "").trim(),
-      lastWeek: chartNumber(entry.lastweek),
-      peak: chartNumber(entry.peak)
-    }))
-    .sort((a, b) => a.position - b.position);
+    .map((entry, index) => {
+      const position = firstChartNumber(entry, [
+        "thisweek", "thisWeek", "this_week", "currentPosition", "current_position", "position", "rank"
+      ]);
+      return {
+        // Keep an unranked entry after all ranked entries; never invent its rank from its source-array index.
+        position,
+        sourceIndex: index,
+        title: type === "songs" ? String(entry.title || entry.song || "").trim() : null,
+        artist: String(entry.artist || entry.performer || entry.title || "").replace(/^>+/, "").trim(),
+        lastWeek: firstChartNumber(entry, ["lastweek", "lastWeek", "last_week", "previousPosition", "previous_position"]),
+        peak: firstChartNumber(entry, ["peak", "peakPosition", "peak_position"])
+      };
+    })
+    .sort((a, b) => (a.position ?? Infinity) - (b.position ?? Infinity) || a.sourceIndex - b.sourceIndex)
+    .map(({ sourceIndex, ...entry }, index) => ({ ...entry, position: entry.position ?? index + 1 }));
 }
 
 async function fetchJson(url, timeoutMs = 10000) {
@@ -863,7 +881,7 @@ export default {
       }
       if (p === "/api/music-charts/weekly") {
         const cache = caches.default;
-        const cacheKey = new Request(`${url.origin}/api/music-charts/weekly?v=2`, { method: "GET" });
+        const cacheKey = new Request(`${url.origin}/api/music-charts/weekly?v=3`, { method: "GET" });
         const cached = await cache.match(cacheKey);
         if (cached && !url.searchParams.has("nocache")) {
           const response = new Response(cached.body, cached);
