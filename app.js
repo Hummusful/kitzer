@@ -236,7 +236,11 @@ function chartMovement(item) {
 function renderChart() {
   const content = document.getElementById('chartContent');
   if (!content || !chartsData) return;
-  const items = chartsData.charts?.[activeChart] || [];
+  const items = [...(chartsData.charts?.[activeChart] || [])].sort((a, b) => {
+    const aPosition = Number.parseInt(a.position, 10);
+    const bPosition = Number.parseInt(b.position, 10);
+    return (Number.isFinite(aPosition) ? aPosition : Infinity) - (Number.isFinite(bPosition) ? bPosition : Infinity);
+  });
   content.replaceChildren();
 
   if (!items.length) {
