@@ -1,7 +1,7 @@
 /**
  * Kitzer Revolution — RADIO/SIGNAL frontend + Album Strip
  */
-const WORKER_ORIGIN = 'https://kitzer-api.dustrial.workers.dev';
+const WORKER_ORIGIN = 'https://api.kitzer.net';
 const FEED_ENDPOINT = window.CONFIG?.API_ENDPOINT || `${WORKER_ORIGIN}/api/music`;
 const CHARTS_ENDPOINT = window.CONFIG?.CHARTS_ENDPOINT || `${WORKER_ORIGIN}/api/music-charts/weekly`;
 const FETCH_TIMEOUT = window.CONFIG?.FETCH_TIMEOUT || 10000;
