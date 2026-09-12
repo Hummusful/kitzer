@@ -35,7 +35,11 @@ function finalizeResponse(resp, ttlSecs) {
 
 function getAllowedOrigin(req) {
   const origin = req.headers.get("Origin");
-  if (origin === "https://kitzer.net" || origin === "https://www.kitzer.net") {
+  if (
+    origin === "https://kitzer.net" ||
+    origin === "https://www.kitzer.net" ||
+    origin === "https://hummusful.github.io"
+  ) {
     return origin;
   }
   return null;

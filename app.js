@@ -1,8 +1,9 @@
 /**
  * Kitzer Revolution — RADIO/SIGNAL frontend + Album Strip
  */
-const FEED_ENDPOINT = window.CONFIG?.API_ENDPOINT || '/api/music';
-const CHARTS_ENDPOINT = window.CONFIG?.CHARTS_ENDPOINT || '/api/music-charts/weekly';
+const WORKER_ORIGIN = 'https://kitzer-api.dustrial.workers.dev';
+const FEED_ENDPOINT = window.CONFIG?.API_ENDPOINT || `${WORKER_ORIGIN}/api/music`;
+const CHARTS_ENDPOINT = window.CONFIG?.CHARTS_ENDPOINT || `${WORKER_ORIGIN}/api/music-charts/weekly`;
 const FETCH_TIMEOUT = window.CONFIG?.FETCH_TIMEOUT || 10000;
 const feedEl = document.getElementById('newsFeed');
 const refreshBtn = document.getElementById('refreshBtn');
