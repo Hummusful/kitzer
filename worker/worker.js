@@ -488,13 +488,15 @@ function chartNumber(value) {
 
 function normalizeMediaForestChart(payload, type) {
   const entries = Array.isArray(payload?.entries) ? payload.entries : [];
-  return entries.map((entry, index) => ({
-    position: chartNumber(entry.thisweek) ?? index + 1,
-    title: type === "songs" ? String(entry.title || "").trim() : null,
-    artist: String(entry.artist || entry.title || "").replace(/^>+/, "").trim(),
-    lastWeek: chartNumber(entry.lastweek),
-    peak: chartNumber(entry.peak)
-  }));
+  return entries
+    .map((entry, index) => ({
+      position: chartNumber(entry.thisweek) ?? index + 1,
+      title: type === "songs" ? String(entry.title || "").trim() : null,
+      artist: String(entry.artist || entry.title || "").replace(/^>+/, "").trim(),
+      lastWeek: chartNumber(entry.lastweek),
+      peak: chartNumber(entry.peak)
+    }))
+    .sort((a, b) => a.position - b.position);
 }
 
 async function fetchJson(url, timeoutMs = 10000) {
@@ -861,7 +863,7 @@ export default {
       }
       if (p === "/api/music-charts/weekly") {
         const cache = caches.default;
-        const cacheKey = new Request(`${url.origin}/api/music-charts/weekly?v=1`, { method: "GET" });
+        const cacheKey = new Request(`${url.origin}/api/music-charts/weekly?v=2`, { method: "GET" });
         const cached = await cache.match(cacheKey);
         if (cached && !url.searchParams.has("nocache")) {
           const response = new Response(cached.body, cached);
