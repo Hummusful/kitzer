@@ -879,13 +879,7 @@ body::after {
 .charts-source { color:var(--signal); font-size:.72rem; text-decoration:none; white-space:nowrap; }
 .charts-source:hover,.charts-source:focus-visible { text-decoration:underline; }
 
-.chart-tabs {
-  display:flex;
-  flex-wrap:wrap;
-  gap:6px;
-  padding:12px 0;
-  border-bottom:1px solid var(--line);
-}
+
 
 .chart-content { min-height:280px; }
 .chart-list { margin:0; padding:0; list-style:none; }
@@ -914,8 +908,6 @@ body::after {
 @media (max-width:600px) {
   .toolbar-divider { display:none; }
   .charts-header { align-items:flex-start; flex-direction:column; gap:8px; }
-  .chart-tabs { display:grid; grid-template-columns:1fr 1fr; }
-  .chart-tab { padding-inline:6px; font-size:.72rem; }
   .chart-row { grid-template-columns:34px minmax(0,1fr) 46px 52px; gap:6px; }
   .chart-row .chart-stat:last-child { display:none; }
   .chart-stat { font-size:.6rem; }
@@ -1447,12 +1439,12 @@ body::after {
   }
 }
 
-.btn[data-genre] {
+.btn:is([data-genre], [data-chart]) {
   position:relative;
   overflow:hidden;
 }
 
-.btn[data-genre]::after {
+.btn:is([data-genre], [data-chart])::after {
   content:"";
   position:absolute;
   inset-inline:10px;
@@ -1464,7 +1456,7 @@ body::after {
   transition:opacity .18s ease,transform .28s cubic-bezier(.2,.8,.2,1);
 }
 
-.btn[data-genre].active::after {
+.btn:is([data-genre], [data-chart]).active::after {
   opacity:1;
   transform:scaleX(1);
 }
