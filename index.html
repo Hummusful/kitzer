@@ -28,7 +28,7 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   
   <link rel="preload" href="./styles.css" as="style">
-  <link rel="stylesheet" href="./styles.css?v=media-forest-4">
+  <link rel="stylesheet" href="./styles.css?v=chart-menu-5">
   <link rel="stylesheet" href="./summary.css?v=ai-summary-1">
   <link rel="stylesheet" href="./ai-usage.css?v=ai-usage-1">
 </head>
@@ -58,7 +58,7 @@
               <button class="btn view-btn" data-view="charts" aria-pressed="false">מצעדים</button>
             </div>
           </div>
-          <div class="category-controls" aria-label="קטגוריית חדשות">
+          <div class="category-controls news-controls" aria-label="קטגוריית חדשות">
             <span class="toolbar-label">קטגוריה</span>
             <div class="btn-group" role="group" aria-label="סינון לפי ז'אנר">
               <button class="btn active" data-genre="all" aria-pressed="true" aria-label="הצג את כל המבזקים">הכול</button>
@@ -66,6 +66,15 @@
               <button class="btn" data-genre="international" aria-pressed="false" aria-label="הצג מבזקי מוזיקה בינלאומית">בינלאומי</button>
               <button class="btn" data-genre="electronic" aria-pressed="false" aria-label="הצג מבזקי מוזיקה אלקטרונית" lang="en">Electronic</button>
             </div>
+          </div>
+          <div class="category-controls chart-controls" aria-label="קטגוריית מצעדים" hidden>
+            <span class="toolbar-label">קטגוריה</span>
+      <div class="btn-group" role="tablist" aria-label="סוג המצעד">
+        <button class="btn chart-tab active" role="tab" data-chart="israeliSongs" aria-selected="true">שירים ישראליים</button>
+        <button class="btn chart-tab" role="tab" data-chart="internationalSongs" aria-selected="false">שירים בינלאומיים</button>
+        <button class="btn chart-tab" role="tab" data-chart="israeliArtists" aria-selected="false">אמנים ישראליים</button>
+        <button class="btn chart-tab" role="tab" data-chart="internationalArtists" aria-selected="false">אמנים בינלאומיים</button>
+      </div>
           </div>
         </div>
         <div class="btn-group-secondary">
@@ -83,12 +92,6 @@
         </div>
         <a class="charts-source" href="https://mediaforest-group.com/weekly_charts.html" target="_blank" rel="noopener noreferrer">מקור: Media Forest</a>
       </header>
-      <div class="chart-tabs" role="tablist" aria-label="סוג המצעד">
-        <button class="btn chart-tab active" role="tab" data-chart="israeliSongs" aria-selected="true">שירים ישראליים</button>
-        <button class="btn chart-tab" role="tab" data-chart="internationalSongs" aria-selected="false">שירים בינלאומיים</button>
-        <button class="btn chart-tab" role="tab" data-chart="israeliArtists" aria-selected="false">אמנים ישראליים</button>
-        <button class="btn chart-tab" role="tab" data-chart="internationalArtists" aria-selected="false">אמנים בינלאומיים</button>
-      </div>
       <div id="chartContent" class="chart-content" aria-live="polite"></div>
     </section>
     <main id="newsFeed" class="news-feed" role="feed" aria-live="polite" aria-busy="true">
@@ -97,7 +100,7 @@
     </main>
     <footer class="footer" role="contentinfo"><p>קיצר — Dusty’s Feed</p></footer>
   </div>
-  <script src="./app.js?v=media-forest-4" defer></script>
+  <script src="./app.js?v=chart-menu-5" defer></script>
   <script src="./summary.js?v=private-access-7" defer></script>
   <script src="./ai-usage.js?v=ai-usage-1" defer></script>
 </body>
