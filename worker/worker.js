@@ -496,25 +496,42 @@ function firstChartNumber(entry, keys) {
   return null;
 }
 
+function findCurrentChartRank(entry) {
+  const explicit = firstChartNumber(entry, [
+    "thisweek", "thisWeek", "this_week", "thisWeekPosition", "this_week_position",
+    "current", "currentPosition", "current_position", "currentRank", "current_rank",
+    "currentPlace", "current_place", "position", "rank", "place"
+  ]);
+  if (explicit !== null) return explicit;
+
+  // Media Forest has used different column names across chart families. Match only
+  // fields that explicitly identify a current-week/current-rank value.
+  for (const [key, value] of Object.entries(entry || {})) {
+    const name = key.toLowerCase().replace(/[^a-z]/g, "");
+    const isCurrent = /(?:this|current|now)/.test(name);
+    const isRank = /(?:week|position|rank|place)/.test(name);
+    const isHistorical = /(?:last|previous|peak|weeks)/.test(name);
+    if (isCurrent && isRank && !isHistorical) {
+      const rank = chartNumber(value);
+      if (rank !== null) return rank;
+    }
+  }
+  return null;
+}
+
 function normalizeMediaForestChart(payload, type) {
   const entries = Array.isArray(payload?.entries) ? payload.entries : [];
   return entries
-    .map((entry, index) => {
-      const position = firstChartNumber(entry, [
-        "thisweek", "thisWeek", "this_week", "currentPosition", "current_position", "position", "rank"
-      ]);
-      return {
-        // Keep an unranked entry after all ranked entries; never invent its rank from its source-array index.
-        position,
-        sourceIndex: index,
-        title: type === "songs" ? String(entry.title || entry.song || "").trim() : null,
-        artist: String(entry.artist || entry.performer || entry.title || "").replace(/^>+/, "").trim(),
-        lastWeek: firstChartNumber(entry, ["lastweek", "lastWeek", "last_week", "previousPosition", "previous_position"]),
-        peak: firstChartNumber(entry, ["peak", "peakPosition", "peak_position"])
-      };
-    })
+    .map((entry, index) => ({
+      position: findCurrentChartRank(entry),
+      sourceIndex: index,
+      title: type === "songs" ? String(entry.title || entry.song || "").trim() : null,
+      artist: String(entry.artist || entry.performer || entry.title || "").replace(/^>+/, "").trim(),
+      lastWeek: firstChartNumber(entry, ["lastweek", "lastWeek", "last_week", "previousPosition", "previous_position"]),
+      peak: firstChartNumber(entry, ["peak", "peakPosition", "peak_position"])
+    }))
     .sort((a, b) => (a.position ?? Infinity) - (b.position ?? Infinity) || a.sourceIndex - b.sourceIndex)
-    .map(({ sourceIndex, ...entry }, index) => ({ ...entry, position: entry.position ?? index + 1 }));
+    .map(({ sourceIndex, ...entry }) => entry);
 }
 
 async function fetchJson(url, timeoutMs = 10000) {
@@ -881,7 +898,7 @@ const worker = {
       }
       if (p === "/api/music-charts/weekly") {
         const cache = caches.default;
-        const cacheKey = new Request(`${url.origin}/api/music-charts/weekly?v=3`, { method: "GET" });
+        const cacheKey = new Request(`${url.origin}/api/music-charts/weekly?v=4`, { method: "GET" });
         const cached = await cache.match(cacheKey);
         if (cached && !url.searchParams.has("nocache")) {
           const response = new Response(cached.body, cached);
