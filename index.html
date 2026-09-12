@@ -49,6 +49,9 @@
     <section class="control-panel" aria-label="בקרת פיד">
       <nav class="toolbar" role="toolbar" aria-label="מסנני תוכן">
         <div class="btn-group" role="group" aria-label="סינון לפי ז'אנר">
+          <button class="btn view-btn active" data-view="news" aria-pressed="true">חדשות</button>
+          <button class="btn view-btn" data-view="charts" aria-pressed="false">מצעדים</button>
+          <span class="toolbar-divider" aria-hidden="true"></span>
           <button class="btn active" data-genre="all" aria-pressed="true" aria-label="הצג את כל המבזקים">הכול</button>
           <button class="btn" data-genre="hebrew" aria-pressed="false" aria-label="הצג חדשות מוזיקה בעברית">עברית</button>
           <button class="btn" data-genre="international" aria-pressed="false" aria-label="הצג מבזקי מוזיקה בינלאומית">בינלאומי</button>
@@ -59,6 +62,23 @@
           <button id="refreshBtn" class="btn ghost" type="button" title="רענן את הפיד" aria-label="רענן את פיד המוזיקה">רענון</button>
         </div>
       </nav>
+    </section>
+    <section id="chartsPanel" class="charts-panel" aria-labelledby="chartsTitle" hidden>
+      <header class="charts-header">
+        <div>
+          <p class="charts-eyebrow">MEDIA FOREST</p>
+          <h2 id="chartsTitle">המצעד השבועי</h2>
+          <p id="chartsDateRange" class="charts-date-range"></p>
+        </div>
+        <a class="charts-source" href="https://mediaforest-group.com/weekly_charts.html" target="_blank" rel="noopener noreferrer">מקור: Media Forest</a>
+      </header>
+      <div class="chart-tabs" role="tablist" aria-label="סוג המצעד">
+        <button class="btn chart-tab active" role="tab" data-chart="israeliSongs" aria-selected="true">שירים ישראליים</button>
+        <button class="btn chart-tab" role="tab" data-chart="internationalSongs" aria-selected="false">שירים בינלאומיים</button>
+        <button class="btn chart-tab" role="tab" data-chart="israeliArtists" aria-selected="false">אמנים ישראליים</button>
+        <button class="btn chart-tab" role="tab" data-chart="internationalArtists" aria-selected="false">אמנים בינלאומיים</button>
+      </div>
+      <div id="chartContent" class="chart-content" aria-live="polite"></div>
     </section>
     <main id="newsFeed" class="news-feed" role="feed" aria-live="polite" aria-busy="true">
       <div class="loading-label" role="status"><span class="loader-equalizer" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span><span>מכוונים תדר...</span></div>

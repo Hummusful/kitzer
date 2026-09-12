@@ -465,6 +465,88 @@ function getNormalizedCacheKey(reqUrl) {
   return new Request(u.toString(), { method: "GET" });
 }
 
+// ----------------------------------------------------
+// 4B. Media Forest weekly charts
+// ----------------------------------------------------
+const MEDIA_FOREST_BASE = "https://mediaforest-group.com";
+const MEDIA_FOREST_CHARTS = {
+  israeliSongs: { file: "RadioHe.json", type: "songs" },
+  internationalSongs: { file: "RadioEn.json", type: "songs" },
+  israeliArtists: { file: "RadioArtistsHe.json", type: "artists" },
+  internationalArtists: { file: "RadioArtistsEn.json", type: "artists" }
+};
+
+function chartNumber(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeMediaForestChart(payload, type) {
+  const entries = Array.isArray(payload?.entries) ? payload.entries : [];
+  return entries.map((entry, index) => ({
+    position: chartNumber(entry.thisweek) ?? index + 1,
+    title: type === "songs" ? String(entry.title || "").trim() : null,
+    artist: String(entry.artist || entry.title || "").replace(/^>+/, "").trim(),
+    lastWeek: chartNumber(entry.lastweek),
+    peak: chartNumber(entry.peak)
+  }));
+}
+
+async function fetchJson(url, timeoutMs = 10000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      headers: { "Accept": "application/json" },
+      signal: controller.signal
+    });
+    if (!response.ok) throw new Error(`Media Forest HTTP ${response.status}`);
+    return await response.json();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function getLatestMediaForestWeek() {
+  const currentYear = new Date().getUTCFullYear();
+  for (const year of [currentYear, currentYear - 1]) {
+    const weeks = await fetchJson(`${MEDIA_FOREST_BASE}/api/weekly_charts/weeks?year=${year}`);
+    if (Array.isArray(weeks) && weeks.length) {
+      return { year, weekPath: weeks.slice().sort().at(-1) };
+    }
+  }
+  throw new Error("No Media Forest chart week is available");
+}
+
+async function buildWeeklyChartsResponse() {
+  const { year, weekPath } = await getLatestMediaForestWeek();
+  const base = `${MEDIA_FOREST_BASE}/weekly_charts/ISR/${year}/${encodeURIComponent(weekPath)}`;
+  const chartPairs = await Promise.all(
+    Object.entries(MEDIA_FOREST_CHARTS).map(async ([key, config]) => {
+      const payload = await fetchJson(`${base}/${config.file}`);
+      return [key, { payload, entries: normalizeMediaForestChart(payload, config.type) }];
+    })
+  );
+
+  const chartMap = Object.fromEntries(chartPairs);
+  const first = chartMap.israeliSongs.payload;
+  return {
+    source: "Media Forest",
+    sourceUrl: `${MEDIA_FOREST_BASE}/weekly_charts.html`,
+    year: chartNumber(first?.year) ?? year,
+    week: chartNumber(first?.week),
+    dateRange: {
+      from: String(first?.from || "").slice(0, 10),
+      to: String(first?.to || "").slice(0, 10)
+    },
+    charts: Object.fromEntries(
+      Object.entries(chartMap).map(([key, value]) => [key, value.entries])
+    ),
+    generatedAt: new Date().toISOString()
+  };
+}
+
 async function fetchWithConcurrencyLimit(tasks, limit = 6) {
   const results = [];
   const executing = [];
@@ -772,6 +854,29 @@ export default {
           }),
           0
         );
+      }
+      if (p === "/api/music-charts/weekly") {
+        const cache = caches.default;
+        const cacheKey = new Request(`${url.origin}/api/music-charts/weekly?v=1`, { method: "GET" });
+        const cached = await cache.match(cacheKey);
+        if (cached && !url.searchParams.has("nocache")) {
+          const response = new Response(cached.body, cached);
+          response.headers.set("X-Worker-Cache", "HIT");
+          if (allowedOrigin) response.headers.set("X-Allow-Origin", allowedOrigin);
+          return finalizeResponse(response);
+        }
+
+        const body = await buildWeeklyChartsResponse();
+        const response = new Response(JSON.stringify(body), {
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            "Cache-Control": "public, max-age=21600, stale-while-revalidate=604800",
+            ...(allowedOrigin ? { "X-Allow-Origin": allowedOrigin } : {})
+          }
+        });
+        const finalRes = finalizeResponse(response);
+        ctx.waitUntil(cache.put(cacheKey, finalRes.clone()));
+        return finalRes;
       }
       if (!["", "/api", "/api/music"].includes(p)) {
         return finalizeResponse(new Response("Not Found", {

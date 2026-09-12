@@ -2,6 +2,7 @@
  * Kitzer Revolution — RADIO/SIGNAL frontend + Album Strip
  */
 const FEED_ENDPOINT = window.CONFIG?.API_ENDPOINT || '/api/music';
+const CHARTS_ENDPOINT = window.CONFIG?.CHARTS_ENDPOINT || '/api/music-charts/weekly';
 const FETCH_TIMEOUT = window.CONFIG?.FETCH_TIMEOUT || 10000;
 const feedEl = document.getElementById('newsFeed');
 const refreshBtn = document.getElementById('refreshBtn');
@@ -9,6 +10,8 @@ const themeToggle = document.getElementById('themeToggle');
 
 let state = { genre: 'all' };
 let currentController = null;
+let chartsData = null;
+let activeChart = 'israeliSongs';
 
 // ============================================================
 // Theme Management
@@ -214,6 +217,88 @@ function renderLoading() {
   }
 }
 
+function formatChartDate(value) {
+  if (!value) return '';
+  const date = new Date(`${value}T12:00:00Z`);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('he-IL', {
+    day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC'
+  });
+}
+
+function chartMovement(item) {
+  if (!item.lastWeek) return { text: 'חדש', className: 'new' };
+  if (item.lastWeek > item.position) return { text: `▲ ${item.lastWeek - item.position}`, className: 'up' };
+  if (item.lastWeek < item.position) return { text: `▼ ${item.position - item.lastWeek}`, className: 'down' };
+  return { text: '—', className: 'same' };
+}
+
+function renderChart() {
+  const content = document.getElementById('chartContent');
+  if (!content || !chartsData) return;
+  const items = chartsData.charts?.[activeChart] || [];
+  content.replaceChildren();
+
+  if (!items.length) {
+    appendText(content, 'p', 'feed-status muted', 'אין נתונים למצעד הזה כרגע.');
+    return;
+  }
+
+  const list = document.createElement('ol');
+  list.className = 'chart-list';
+  for (const item of items) {
+    const row = document.createElement('li');
+    row.className = 'chart-row signal-entry';
+    const position = appendText(row, 'span', 'chart-position', String(item.position));
+    position.setAttribute('aria-label', `מקום ${item.position}`);
+
+    const identity = document.createElement('div');
+    identity.className = 'chart-identity';
+    if (item.title) appendText(identity, 'strong', 'chart-song', cleanText(item.title));
+    appendText(identity, item.title ? 'span' : 'strong', 'chart-artist', cleanText(item.artist));
+    row.appendChild(identity);
+
+    const movement = chartMovement(item);
+    appendText(row, 'span', `chart-movement ${movement.className}`, movement.text);
+    appendText(row, 'span', 'chart-stat', item.lastWeek ? `קודם ${item.lastWeek}` : 'קודם —');
+    appendText(row, 'span', 'chart-stat', item.peak ? `שיא ${item.peak}` : 'שיא —');
+    list.appendChild(row);
+  }
+  content.appendChild(list);
+}
+
+async function loadCharts(forceRefresh = false) {
+  const content = document.getElementById('chartContent');
+  if (!content) return;
+  content.innerHTML = '<div class="loading-label"><span class="loader-equalizer" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span><span>טוענים את המצעד...</span></div>';
+  try {
+    const url = new URL(CHARTS_ENDPOINT, window.location.origin);
+    if (forceRefresh) url.searchParams.set('nocache', String(Date.now()));
+    const response = await fetch(url, { credentials: 'include' });
+    if (!response.ok) throw new Error(`Charts API response: ${response.status}`);
+    chartsData = await response.json();
+    const range = document.getElementById('chartsDateRange');
+    if (range) range.textContent = `${formatChartDate(chartsData.dateRange?.from)}–${formatChartDate(chartsData.dateRange?.to)} · שבוע ${chartsData.week || ''}`;
+    renderChart();
+  } catch (error) {
+    console.error('LoadCharts Failure:', error);
+    content.replaceChildren();
+    appendText(content, 'p', 'feed-status error', 'לא הצלחנו לטעון את המצעד כרגע.');
+  }
+}
+
+function setView(view) {
+  const showingCharts = view === 'charts';
+  document.getElementById('chartsPanel')?.toggleAttribute('hidden', !showingCharts);
+  feedEl?.toggleAttribute('hidden', showingCharts);
+  qsa('[data-genre]').forEach(button => button.toggleAttribute('hidden', showingCharts));
+  qsa('[data-view]').forEach(button => {
+    const active = button.dataset.view === view;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+  if (showingCharts && !chartsData) loadCharts();
+}
+
 function renderNews(items) {
   if (!feedEl) return;
   feedEl.replaceChildren();
@@ -393,6 +478,16 @@ async function loadNews(forceRefresh = false) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  qsa('[data-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
+  qsa('[data-chart]').forEach(btn => btn.addEventListener('click', () => {
+    activeChart = btn.dataset.chart;
+    qsa('[data-chart]').forEach(tab => {
+      const active = tab === btn;
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-selected', String(active));
+    });
+    renderChart();
+  }));
   qsa('[data-genre]').forEach(btn => {
     btn.addEventListener('click', () => {
       state.genre = btn.getAttribute('data-genre') || 'all';
