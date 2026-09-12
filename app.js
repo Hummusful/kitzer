@@ -371,7 +371,7 @@ function renderNews(items) {
       h2.appendChild(titleLink);
       details.appendChild(h2);
 
-      const summary = it.description ? cleanText(it.description, 190) : '';
+      const summary = it.description ? cleanText(it.description, 600) : '';
       if (summary) appendText(details, 'p', 'news-summary', summary);
 
       const footer = document.createElement('div');
@@ -392,6 +392,48 @@ function renderNews(items) {
 
       details.appendChild(footer);
       el.appendChild(details);
+
+      // Reuse existing article data and links; never fetch or generate on hover.
+      const preview = document.createElement('div');
+      preview.className = 'news-preview';
+      preview.setAttribute('aria-label', 'פרטי הכתבה');
+      if (summary) appendText(preview, 'p', 'news-summary', summary);
+      const previewMeta = document.createElement('div');
+      previewMeta.className = 'news-kicker';
+      const source = kicker.querySelector('.news-source').cloneNode(true);
+      source.dir = 'auto';
+      previewMeta.appendChild(source);
+      if (parseTime(it.date)) {
+        const published = document.createElement('time');
+        published.className = 'news-date';
+        published.dateTime = new Date(parseTime(it.date)).toISOString();
+        published.textContent = new Date(parseTime(it.date)).toLocaleString('he-IL', {
+          dateStyle: 'short', timeStyle: 'short', timeZone: TIMEZONE
+        });
+        published.dir = 'auto';
+        previewMeta.appendChild(published);
+      }
+      preview.appendChild(previewMeta);
+      preview.appendChild(readLink.cloneNode(true));
+      el.appendChild(preview);
+
+      // Flip above near the viewport bottom; no gap between card and preview.
+      const positionPreview = () => {
+        const rect = el.getBoundingClientRect();
+        const height = preview.offsetHeight;
+        el.classList.toggle('preview-above',
+          window.innerHeight - rect.bottom < height + 12 && rect.top > height + 12);
+      };
+      el.addEventListener('pointerenter', () => {
+        el.classList.remove('preview-dismissed');
+        positionPreview();
+      });
+      el.addEventListener('focusin', event => {
+        if (!el.contains(event.relatedTarget)) {
+          el.classList.remove('preview-dismissed');
+          positionPreview();
+        }
+      });
       frag.appendChild(el);
     }
 
@@ -482,6 +524,18 @@ async function loadNews(forceRefresh = false) {
     if (timeoutId) clearTimeout(timeoutId);
   }
 }
+
+// Dismiss hover content without moving the pointer or losing keyboard focus.
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Escape') return;
+  feedEl?.querySelectorAll('.news-card').forEach(card => {
+    if (!card.matches(':hover, :focus-within')) return;
+    if (card.querySelector('.news-preview')?.contains(document.activeElement)) {
+      card.querySelector('.news-title a')?.focus({ preventScroll: true });
+    }
+    card.classList.add('preview-dismissed');
+  });
+});
 
 document.addEventListener('DOMContentLoaded', () => {
   qsa('[data-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
