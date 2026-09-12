@@ -829,7 +829,7 @@ function mergeRelatedStories(items) {
 // ----------------------------------------------------
 // 5. WORKER MAIN FETCH HANDLER
 // ----------------------------------------------------
-export default {
+const worker = {
   async fetch(req, env, ctx) {
     let allowedOrigin = null;
 
@@ -1103,5 +1103,16 @@ export default {
         0
       );
     }
+  },
+
+  async scheduled(controller, env, ctx) {
+    // Refresh the same normalized cache key that the public news feed uses.
+    await worker.fetch(
+      new Request("https://api.kitzer.net/api/music?days=3&limit=40&nocache=scheduled"),
+      env,
+      ctx
+    );
   }
 };
+
+export default worker;
