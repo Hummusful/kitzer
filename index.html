@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self' https://api.kitzer.net https://ai.kitzer.net https://api.kitzer.net; object-src 'none'; base-uri 'none';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self' https://api.kitzer.net https://ai.kitzer.net https://kitzer-api.dustrial.workers.dev; object-src 'none'; base-uri 'none';">
   <title>קיצר — Dusty’s Feed</title>
   <meta name="description" content="Kitzer Music Feed" />
   <meta name="robots" content="index,follow,max-image-preview:large" />
@@ -19,8 +19,8 @@
   <link rel="icon" href="/favicon.ico">
   <link rel="preconnect" href="https://music-aggregator.dustrial.workers.dev">
   <link rel="dns-prefetch" href="https://music-aggregator.dustrial.workers.dev">
-  <link rel="preconnect" href="https://api.kitzer.net">
-  <link rel="dns-prefetch" href="https://api.kitzer.net">
+  <link rel="preconnect" href="https://kitzer-api.dustrial.workers.dev">
+  <link rel="dns-prefetch" href="https://kitzer-api.dustrial.workers.dev">
   <link rel="preconnect" href="https://kitzer-summary.dustrial.workers.dev">
   <link rel="dns-prefetch" href="https://kitzer-summary.dustrial.workers.dev">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,7 +28,7 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   
   <link rel="preload" href="./styles.css" as="style">
-  <link rel="stylesheet" href="./styles.css?v=media-forest-3">
+  <link rel="stylesheet" href="./styles.css?v=media-forest-2">
   <link rel="stylesheet" href="./summary.css?v=ai-summary-1">
   <link rel="stylesheet" href="./ai-usage.css?v=ai-usage-1">
 </head>
@@ -88,7 +88,7 @@
     </main>
     <footer class="footer" role="contentinfo"><p>קיצר — Dusty’s Feed</p></footer>
   </div>
-  <script src="./app.js?v=media-forest-3" defer></script>
+  <script src="./app.js?v=media-forest-2" defer></script>
   <script src="./summary.js?v=private-access-7" defer></script>
   <script src="./ai-usage.js?v=ai-usage-1" defer></script>
 </body>
