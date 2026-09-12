@@ -49,15 +49,24 @@
       <span class="label">LIVE Music Feed</span>
           </div>
     <section class="control-panel" aria-label="בקרת פיד">
-      <nav class="toolbar" role="toolbar" aria-label="מסנני תוכן">
-        <div class="btn-group" role="group" aria-label="סינון לפי ז'אנר">
-          <button class="btn view-btn active" data-view="news" aria-pressed="true">חדשות</button>
-          <button class="btn view-btn" data-view="charts" aria-pressed="false">מצעדים</button>
-          <span class="toolbar-divider" aria-hidden="true"></span>
-          <button class="btn active" data-genre="all" aria-pressed="true" aria-label="הצג את כל המבזקים">הכול</button>
-          <button class="btn" data-genre="hebrew" aria-pressed="false" aria-label="הצג חדשות מוזיקה בעברית">עברית</button>
-          <button class="btn" data-genre="international" aria-pressed="false" aria-label="הצג מבזקי מוזיקה בינלאומית">בינלאומי</button>
-          <button class="btn" data-genre="electronic" aria-pressed="false" aria-label="הצג מבזקי מוזיקה אלקטרונית" lang="en">Electronic</button>
+      <nav class="toolbar" aria-label="בקרת תוכן">
+        <div class="toolbar-primary">
+          <div class="view-switch" role="group" aria-label="תצוגה">
+            <span class="toolbar-label">תצוגה</span>
+            <div class="btn-group">
+              <button class="btn view-btn active" data-view="news" aria-pressed="true">חדשות</button>
+              <button class="btn view-btn" data-view="charts" aria-pressed="false">מצעדים</button>
+            </div>
+          </div>
+          <div class="category-controls" aria-label="קטגוריית חדשות">
+            <span class="toolbar-label">קטגוריה</span>
+            <div class="btn-group" role="group" aria-label="סינון לפי ז'אנר">
+              <button class="btn active" data-genre="all" aria-pressed="true" aria-label="הצג את כל המבזקים">הכול</button>
+              <button class="btn" data-genre="hebrew" aria-pressed="false" aria-label="הצג חדשות מוזיקה בעברית">עברית</button>
+              <button class="btn" data-genre="international" aria-pressed="false" aria-label="הצג מבזקי מוזיקה בינלאומית">בינלאומי</button>
+              <button class="btn" data-genre="electronic" aria-pressed="false" aria-label="הצג מבזקי מוזיקה אלקטרונית" lang="en">Electronic</button>
+            </div>
+          </div>
         </div>
         <div class="btn-group-secondary">
           <button id="themeToggle" class="btn ghost" type="button" title="החלף בין עיצוב בהיר לכהה" aria-label="החלף עיצוב תיאטרלי">🌙</button>
