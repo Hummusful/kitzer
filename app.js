@@ -295,7 +295,8 @@ function setView(view) {
   const showingCharts = view === 'charts';
   document.getElementById('chartsPanel')?.toggleAttribute('hidden', !showingCharts);
   feedEl?.toggleAttribute('hidden', showingCharts);
-  document.querySelector('.category-controls')?.toggleAttribute('hidden', showingCharts);
+  document.querySelector('.news-controls')?.toggleAttribute('hidden', showingCharts);
+  document.querySelector('.chart-controls')?.toggleAttribute('hidden', !showingCharts);
   qsa('[data-view]').forEach(button => {
     const active = button.dataset.view === view;
     button.classList.toggle('active', active);
