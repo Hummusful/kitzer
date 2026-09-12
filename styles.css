@@ -250,14 +250,55 @@ body::after {
   display:flex;
   align-items:center;
   justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap
+}
+
+.toolbar-primary,
+.view-switch,
+.category-controls {
+  display:flex;
+  align-items:center;
   gap:8px;
   flex-wrap:wrap
+}
+
+.toolbar-primary {
+  gap:14px
+}
+
+.category-controls {
+  padding-inline-start:14px;
+  border-inline-start:1px solid var(--line-strong)
+}
+
+.toolbar-label {
+  color:var(--muted);
+  font-family:"Space Mono",monospace;
+  font-size:.64rem;
+  letter-spacing:.08em;
+  text-transform:uppercase
 }
 
 .btn-group {
   display:flex;
   flex-wrap:wrap;
   gap:6px
+}
+
+@media (max-width:640px) {
+  .toolbar-primary {
+    width:100%;
+    gap:10px
+  }
+
+  .category-controls {
+    width:100%;
+    padding-inline-start:0;
+    padding-block-start:8px;
+    border-inline-start:0;
+    border-top:1px solid var(--line)
+  }
 }
 
 .btn-group-secondary {
