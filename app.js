@@ -227,6 +227,15 @@ function formatChartDate(value) {
   });
 }
 
+function chartDataAgeSuffix(dateRange) {
+  const end = dateRange?.to;
+  if (!end) return '';
+  const endTime = new Date(`${end}T23:59:59Z`).getTime();
+  if (Number.isNaN(endTime)) return '';
+  const days = Math.floor((Date.now() - endTime) / 86400000);
+  return days >= 8 ? ` · נתוני המקור בני ${days} ימים` : '';
+}
+
 function chartMovement(item) {
   if (!item.lastWeek) return { text: 'חדש', className: 'new' };
   if (item.lastWeek > item.position) return { text: `▲ ${item.lastWeek - item.position}`, className: 'up' };
@@ -283,7 +292,7 @@ async function loadCharts(forceRefresh = false) {
     if (!response.ok) throw new Error(`Charts API response: ${response.status}`);
     chartsData = await response.json();
     const range = document.getElementById('chartsDateRange');
-    if (range) range.textContent = `${formatChartDate(chartsData.dateRange?.from)}–${formatChartDate(chartsData.dateRange?.to)} · שבוע ${chartsData.week || ''}`;
+    if (range) range.textContent = `${formatChartDate(chartsData.dateRange?.from)}–${formatChartDate(chartsData.dateRange?.to)} · שבוע ${chartsData.week || ''}${chartDataAgeSuffix(chartsData.dateRange)}`;
     renderChart();
   } catch (error) {
     console.error('LoadCharts Failure:', error);
@@ -504,7 +513,18 @@ document.addEventListener('DOMContentLoaded', () => {
       tab.classList.toggle('active', active);
       tab.setAttribute('aria-selected', String(active));
     });
+    document.getElementById('chartContent')?.setAttribute('aria-labelledby', `chart-${activeChart}`);
     renderChart();
+  }));
+  qsa('[data-chart]').forEach(btn => btn.addEventListener('keydown', event => {
+    const keys = ['ArrowRight', 'ArrowLeft', 'Home', 'End'];
+    if (!keys.includes(event.key)) return;
+    event.preventDefault();
+    const tabs = qsa('[data-chart]');
+    const index = tabs.indexOf(btn);
+    const nextIndex = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+    tabs[nextIndex]?.focus();
+    tabs[nextIndex]?.click();
   }));
   qsa('[data-genre]').forEach(btn => {
     btn.addEventListener('click', () => {

@@ -70,10 +70,10 @@
           <div class="category-controls chart-controls" aria-label="קטגוריית מצעדים" hidden>
             <span class="toolbar-label">קטגוריה</span>
       <div class="btn-group" role="tablist" aria-label="סוג המצעד">
-        <button class="btn chart-tab active" role="tab" data-chart="israeliSongs" aria-selected="true">שירים ישראליים</button>
-        <button class="btn chart-tab" role="tab" data-chart="internationalSongs" aria-selected="false">שירים בינלאומיים</button>
-        <button class="btn chart-tab" role="tab" data-chart="israeliArtists" aria-selected="false">אמנים ישראליים</button>
-        <button class="btn chart-tab" role="tab" data-chart="internationalArtists" aria-selected="false">אמנים בינלאומיים</button>
+        <button class="btn chart-tab active" id="chart-israeliSongs" role="tab" data-chart="israeliSongs" aria-controls="chartContent" aria-selected="true">שירים ישראליים</button>
+        <button class="btn chart-tab" id="chart-internationalSongs" role="tab" data-chart="internationalSongs" aria-controls="chartContent" aria-selected="false">שירים בינלאומיים</button>
+        <button class="btn chart-tab" id="chart-israeliArtists" role="tab" data-chart="israeliArtists" aria-controls="chartContent" aria-selected="false">אמנים ישראליים</button>
+        <button class="btn chart-tab" id="chart-internationalArtists" role="tab" data-chart="internationalArtists" aria-controls="chartContent" aria-selected="false">אמנים בינלאומיים</button>
       </div>
           </div>
         </div>
@@ -92,7 +92,7 @@
         </div>
         <a class="charts-source" href="https://mediaforest-group.com/weekly_charts.html" target="_blank" rel="noopener noreferrer">מקור: Media Forest</a>
       </header>
-      <div id="chartContent" class="chart-content" aria-live="polite"></div>
+      <div id="chartContent" class="chart-content" role="tabpanel" aria-labelledby="chart-israeliSongs" aria-live="polite" tabindex="0"></div>
     </section>
     <main id="newsFeed" class="news-feed" role="feed" aria-live="polite" aria-busy="true">
       <div class="loading-label" role="status"><span class="loader-equalizer" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span><span>מכוונים תדר...</span></div>
@@ -100,7 +100,7 @@
     </main>
     <footer class="footer" role="contentinfo"><p>קיצר — Dusty’s Feed</p></footer>
   </div>
-  <script src="./app.js?v=public-stability-1" defer></script>
+  <script src="./app.js?v=public-stability-2" defer></script>
   <script src="./summary.js?v=private-access-7" defer></script>
 </body>
 </html>
