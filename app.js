@@ -11,6 +11,7 @@ const themeToggle = document.getElementById('themeToggle');
 
 let state = { genre: 'all' };
 let currentController = null;
+let currentTimeoutId = null;
 let chartsData = null;
 let activeChart = 'israeliSongs';
 
@@ -430,7 +431,11 @@ async function loadNews(forceRefresh = false) {
   if (!feedEl) return;
 
   if (currentController) currentController.abort();
-  currentController = new AbortController();
+  if (currentTimeoutId) clearTimeout(currentTimeoutId);
+
+  const controller = new AbortController();
+  currentController = controller;
+  currentTimeoutId = null;
   feedEl.setAttribute('aria-busy', 'true');
 
   if (!forceRefresh) {
@@ -445,7 +450,8 @@ async function loadNews(forceRefresh = false) {
 
   let timeoutId = null;
   try {
-    timeoutId = setTimeout(() => currentController.abort(), FETCH_TIMEOUT);
+    timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+    currentTimeoutId = timeoutId;
 
     const url = new URL(FEED_ENDPOINT, window.location.origin);
     url.searchParams.set('days', '3');
@@ -454,16 +460,20 @@ async function loadNews(forceRefresh = false) {
     if (forceRefresh) url.searchParams.set('nocache', String(Date.now()));
 
     const res = await fetch(url, {
-      signal: currentController.signal,
+      signal: controller.signal,
       credentials: 'include'
     });
     if (!res.ok) throw new Error(`API Response Error: ${res.status}`);
 
     const data = await res.json();
+    // A newer filter/refresh request has taken ownership of the feed.
+    if (controller !== currentController) return;
     const items = Array.isArray(data.items) ? data.items : [];
     writeCache(items);
     renderNews(items);
   } catch (e) {
+    // Cancelling an older request is expected; do not overwrite newer content.
+    if (controller !== currentController) return;
     if (e.name === 'AbortError') {
       const message = !navigator.onLine 
         ? 'אין חיבור אינטרנט. בדוק את ההגדרות שלך.'
@@ -480,6 +490,8 @@ async function loadNews(forceRefresh = false) {
     renderStatus(message, 'error', true);
   } finally {
     if (timeoutId) clearTimeout(timeoutId);
+    if (currentTimeoutId === timeoutId) currentTimeoutId = null;
+    if (currentController === controller) currentController = null;
   }
 }
 
