@@ -728,7 +728,12 @@ async function loadEnabledRssFeeds(env) {
     ORDER BY trust_score DESC, name ASC
   `).all();
 
-  return (result.results || []).map(row => ({
+  const unavailableFeedUrls = new Set([
+    "https://www.thefader.com/feed/rss",
+    "https://www.complex.com/music/rss"
+  ]);
+
+  return (result.results || []).filter(row => !unavailableFeedUrls.has(row.feed_url)).map(row => ({
     sourceId: row.id,
     slug: row.slug,
     url: row.feed_url,
@@ -963,9 +968,7 @@ const worker = {
         { url: "https://news.google.com/rss/search?q=site%3Amagneticmag.com&hl=en-US&gl=US&ceid=US%3Aen", source: "Magnetic Mag", lang: "EN", genre: "electronic" },
 
         // INTERNATIONAL 🌎
-        { url: "https://www.thefader.com/feed/rss", source: "The FADER", lang: "EN", genre: "international" },
         { url: "https://thesource.com/feed/", source: "The Source", lang: "EN", genre: "international" },
-        { url: "https://www.complex.com/music/rss", source: "Complex Music", lang: "EN", genre: "international" },
         { url: "https://www.musicbusinessworldwide.com/feed/", source: "MBW", lang: "EN", genre: "international" },
         { url: "https://www.hollywoodreporter.com/c/music/music-news/feed/", source: "THR (Music)", lang: "EN", genre: "international" },
         { url: "https://news.google.com/rss/search?q=site%3Ahypebot.com&hl=en-US&gl=US&ceid=US%3Aen", source: "Hypebot", lang: "EN", genre: "international" },
