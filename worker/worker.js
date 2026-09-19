@@ -490,6 +490,157 @@ async function sha256Hex(value) {
   return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("");
 }
 
+const HERO_LOOKBACK_MS = 72 * 60 * 60 * 1000;
+const HERO_HOLD_MS = 2 * 60 * 60 * 1000;
+const HERO_REPLACEMENT_MARGIN = 15;
+
+export function isEligibleStoryHero(cluster, now = new Date()) {
+  const updatedAt = new Date(cluster.last_updated).getTime();
+  return cluster.status === "hero_candidate" &&
+    Number(cluster.source_count) >= 3 &&
+    Number.isFinite(updatedAt) &&
+    updatedAt >= now.getTime() - HERO_LOOKBACK_MS;
+}
+
+export function chooseStoryHero(candidates, state, now = new Date()) {
+  const eligible = candidates.filter(cluster => isEligibleStoryHero(cluster, now))
+    .sort((left, right) => Number(right.story_score) - Number(left.story_score) ||
+      new Date(right.last_updated).getTime() - new Date(left.last_updated).getTime());
+  if (!eligible.length) return null;
+
+  const current = eligible.find(cluster => cluster.id === state?.cluster_id);
+  if (!current) return eligible[0];
+
+  const selectedAt = new Date(state.selected_at).getTime();
+  if (!Number.isFinite(selectedAt) || now.getTime() - selectedAt < HERO_HOLD_MS) return current;
+
+  const challenger = eligible[0];
+  if (challenger.id !== current.id && Number(challenger.story_score) >= Number(current.story_score) + HERO_REPLACEMENT_MARGIN) {
+    return challenger;
+  }
+  return current;
+}
+
+async function handleStoryHero(request, env, allowedOrigin) {
+  if (request.method !== "GET") {
+    return finalizeResponse(new Response(JSON.stringify({ error: "METHOD_NOT_ALLOWED" }), {
+      status: 405,
+      headers: { "Content-Type": "application/json; charset=utf-8", ...(allowedOrigin ? { "X-Allow-Origin": allowedOrigin } : {}) }
+    }), 0);
+  }
+  if (!env.KITZER_NEWS_DB) {
+    return finalizeResponse(new Response(JSON.stringify({ error: "D1_BINDING_MISSING" }), {
+      status: 503,
+      headers: { "Content-Type": "application/json; charset=utf-8", ...(allowedOrigin ? { "X-Allow-Origin": allowedOrigin } : {}) }
+    }), 0);
+  }
+
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - HERO_LOOKBACK_MS).toISOString();
+  try {
+    const [candidatesResult, state] = await Promise.all([
+      env.KITZER_NEWS_DB.prepare(`
+        SELECT
+          cluster.id, cluster.title, cluster.story_score, cluster.source_count,
+          cluster.article_count, cluster.status, cluster.last_updated,
+          (
+            SELECT article.title
+            FROM story_cluster_articles AS link
+            JOIN story_articles AS article ON article.url_hash = link.article_url_hash
+            WHERE link.story_cluster_id = cluster.id
+            ORDER BY article.published_at DESC
+            LIMIT 1
+          ) AS article_title,
+          (
+            SELECT article.article_url
+            FROM story_cluster_articles AS link
+            JOIN story_articles AS article ON article.url_hash = link.article_url_hash
+            WHERE link.story_cluster_id = cluster.id
+            ORDER BY article.published_at DESC
+            LIMIT 1
+          ) AS url,
+          (
+            SELECT article.cover
+            FROM story_cluster_articles AS link
+            JOIN story_articles AS article ON article.url_hash = link.article_url_hash
+            WHERE link.story_cluster_id = cluster.id
+            ORDER BY article.published_at DESC
+            LIMIT 1
+          ) AS cover,
+          (
+            SELECT article.source
+            FROM story_cluster_articles AS link
+            JOIN story_articles AS article ON article.url_hash = link.article_url_hash
+            WHERE link.story_cluster_id = cluster.id
+            ORDER BY article.published_at DESC
+            LIMIT 1
+          ) AS source,
+          (
+            SELECT article.published_at
+            FROM story_cluster_articles AS link
+            JOIN story_articles AS article ON article.url_hash = link.article_url_hash
+            WHERE link.story_cluster_id = cluster.id
+            ORDER BY article.published_at DESC
+            LIMIT 1
+          ) AS published_at
+        FROM story_clusters AS cluster
+        WHERE cluster.status = 'hero_candidate'
+          AND cluster.source_count >= 3
+          AND cluster.last_updated >= ?
+        ORDER BY cluster.story_score DESC, cluster.last_updated DESC
+      `).bind(cutoff).all(),
+      env.KITZER_NEWS_DB.prepare(`
+        SELECT cluster_id, selected_at
+        FROM story_hero_state
+        WHERE singleton = 1
+      `).first()
+    ]);
+
+    const hero = chooseStoryHero(candidatesResult.results || [], state, now);
+    if (!hero) {
+      if (state) await env.KITZER_NEWS_DB.prepare("DELETE FROM story_hero_state WHERE singleton = 1").run();
+      return finalizeResponse(new Response(JSON.stringify({ hero: null }), {
+        headers: { "Content-Type": "application/json; charset=utf-8", ...(allowedOrigin ? { "X-Allow-Origin": allowedOrigin } : {}) }
+      }), 0);
+    }
+
+    if (hero.id !== state?.cluster_id) {
+      await env.KITZER_NEWS_DB.prepare(`
+        INSERT INTO story_hero_state (singleton, cluster_id, selected_at)
+        VALUES (1, ?, ?)
+        ON CONFLICT(singleton) DO UPDATE SET cluster_id = excluded.cluster_id, selected_at = excluded.selected_at
+      `).bind(hero.id, now.toISOString()).run();
+    }
+
+    return finalizeResponse(new Response(JSON.stringify({
+      hero: {
+        cluster: {
+          id: hero.id,
+          title: hero.title,
+          score: hero.story_score,
+          source_count: hero.source_count,
+          article_count: hero.article_count
+        },
+        article: {
+          title: hero.article_title,
+          url: hero.url,
+          cover: hero.cover,
+          source: hero.source,
+          published_at: hero.published_at
+        }
+      }
+    }), {
+      headers: { "Content-Type": "application/json; charset=utf-8", ...(allowedOrigin ? { "X-Allow-Origin": allowedOrigin } : {}) }
+    }), 0);
+  } catch (error) {
+    console.error("Story Hero unavailable", String(error?.message || error));
+    return finalizeResponse(new Response(JSON.stringify({ error: "STORY_HERO_UNAVAILABLE" }), {
+      status: 503,
+      headers: { "Content-Type": "application/json; charset=utf-8", ...(allowedOrigin ? { "X-Allow-Origin": allowedOrigin } : {}) }
+    }), 0);
+  }
+}
+
 export async function ingestRssStoryArticles(db, items, {
   assign = assignArticleToStoryCluster,
   now = () => new Date()
@@ -517,18 +668,28 @@ export async function ingestRssStoryArticles(db, items, {
       const createdAt = now().toISOString();
       const result = await db.prepare(`
         INSERT OR IGNORE INTO story_articles (
-          url_hash, article_url, title, source, published_at, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?)
+          url_hash, article_url, title, source, published_at, created_at, cover
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
       `).bind(
         urlHash,
         articleUrl,
         String(item.title || "").slice(0, 500) || null,
         String(item.source || "").slice(0, 200) || null,
         publishedAt.toISOString(),
-        createdAt
+        createdAt,
+        typeof item.cover === "string" && item.cover.startsWith("http") ? item.cover : null
       ).run();
 
-      if (Number(result.meta?.changes) !== 1) continue;
+      if (Number(result.meta?.changes) !== 1) {
+        if (typeof item.cover === "string" && item.cover.startsWith("http")) {
+          await db.prepare(`
+            UPDATE story_articles
+            SET cover = ?
+            WHERE url_hash = ? AND (cover IS NULL OR trim(cover) = '')
+          `).bind(item.cover, urlHash).run();
+        }
+        continue;
+      }
       newArticles += 1;
       await assign(db, {
         urlHash,
@@ -997,6 +1158,9 @@ const worker = {
         const finalRes = finalizeResponse(response);
         ctx.waitUntil(cache.put(cacheKey, finalRes.clone()));
         return finalRes;
+      }
+      if (p === "/api/story-hero") {
+        return handleStoryHero(req, env, allowedOrigin);
       }
       if (!["", "/api", "/api/music"].includes(p)) {
         return finalizeResponse(new Response("Not Found", {

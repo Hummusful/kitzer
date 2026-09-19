@@ -4,8 +4,10 @@
 const WORKER_ORIGIN = 'https://api.kitzer.net';
 const FEED_ENDPOINT = window.CONFIG?.API_ENDPOINT || `${WORKER_ORIGIN}/api/music`;
 const CHARTS_ENDPOINT = window.CONFIG?.CHARTS_ENDPOINT || `${WORKER_ORIGIN}/api/music-charts/weekly`;
+const STORY_HERO_ENDPOINT = window.CONFIG?.STORY_HERO_ENDPOINT || `${WORKER_ORIGIN}/api/story-hero`;
 const FETCH_TIMEOUT = window.CONFIG?.FETCH_TIMEOUT || 10000;
 const feedEl = document.getElementById('newsFeed');
+const storyHeroEl = document.getElementById('storyHero');
 const refreshBtn = document.getElementById('refreshBtn');
 const themeToggle = document.getElementById('themeToggle');
 
@@ -161,6 +163,70 @@ function buildCoverNode(cover) {
   }
 
   return createTextSignal();
+}
+
+function hideStoryHero() {
+  if (!storyHeroEl) return;
+  storyHeroEl.replaceChildren();
+  storyHeroEl.hidden = true;
+}
+
+function renderStoryHero(hero) {
+  if (!storyHeroEl || !hero?.cluster || !hero?.article) return hideStoryHero();
+  const url = safeUrl(hero.article.url);
+  if (url === '#') return hideStoryHero();
+
+  storyHeroEl.replaceChildren();
+  const card = document.createElement('article');
+  card.className = 'story-hero-card';
+  const image = safeUrl(hero.article.cover);
+  if (image !== '#') {
+    const img = document.createElement('img');
+    img.className = 'story-hero-image';
+    img.src = image;
+    img.alt = '';
+    img.loading = 'eager';
+    img.decoding = 'async';
+    img.addEventListener('error', () => img.remove(), { once: true });
+    card.appendChild(img);
+  }
+  const content = document.createElement('div');
+  content.className = 'story-hero-content';
+  appendText(content, 'p', 'story-hero-kicker', 'STORY RADAR · HERO');
+  const title = document.createElement('h2');
+  title.id = 'storyHeroTitle';
+  const link = document.createElement('a');
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.textContent = cleanText(hero.cluster.title, 300);
+  title.appendChild(link);
+  content.appendChild(title);
+  const meta = document.createElement('p');
+  meta.className = 'story-hero-meta';
+  meta.textContent = `${cleanText(hero.article.source, 120) || 'מקור מוזיקה'} · ${Number(hero.cluster.source_count) || 0} מקורות · ${Number(hero.cluster.article_count) || 0} כתבות`;
+  content.appendChild(meta);
+  const action = document.createElement('a');
+  action.className = 'story-hero-link';
+  action.href = url;
+  action.target = '_blank';
+  action.rel = 'noopener noreferrer';
+  action.textContent = 'לסיפור המלא';
+  content.appendChild(action);
+  card.appendChild(content);
+  storyHeroEl.appendChild(card);
+  storyHeroEl.hidden = false;
+}
+
+async function loadStoryHero() {
+  try {
+    const response = await fetch(STORY_HERO_ENDPOINT, { credentials: 'include' });
+    if (!response.ok) throw new Error(`Hero response ${response.status}`);
+    const body = await response.json();
+    renderStoryHero(body?.hero || null);
+  } catch {
+    hideStoryHero();
+  }
 }
 
 function appendText(parent, tagName, className, text) {
@@ -438,6 +504,8 @@ function writeCache(items) {
 
 async function loadNews(forceRefresh = false) {
   if (!feedEl) return;
+
+  void loadStoryHero();
 
   if (currentController) currentController.abort();
   if (currentTimeoutId) clearTimeout(currentTimeoutId);
