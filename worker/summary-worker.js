@@ -10,6 +10,9 @@
  * GET /api/ai-usage
  */
 
+import { assignArticleToStoryCluster } from "./story-radar.mjs";
+import { authorizeAdminRequest } from "./admin-auth.mjs";
+
 const AI_MODEL = "@cf/zai-org/glm-4.7-flash";
 const AI_DAILY_FREE_NEURONS = 10_000;
 const AI_SOFT_LIMIT_NEURONS = 8_500;
@@ -54,6 +57,128 @@ function json(data, status, origin) {
   return new Response(JSON.stringify(data), {
     status,
     headers: responseHeaders(origin)
+  });
+}
+
+const STORY_RADAR_STATUSES = new Set(["watching", "trending", "hero_candidate"]);
+
+export async function handleAdminStoryRadar(request, env, { authorize = authorizeAdminRequest } = {}) {
+  if (request.method !== "GET") return json({ error: "METHOD_NOT_ALLOWED" }, 405, null);
+
+  const authorization = await authorize(request, env);
+  if (!authorization.ok) return authorization.response;
+  if (!env.KITZER_NEWS_DB) return json({ error: "D1_BINDING_MISSING" }, 503, null);
+
+  const url = new URL(request.url);
+  const requestedStatus = url.searchParams.get("status");
+  if (requestedStatus !== null && !STORY_RADAR_STATUSES.has(requestedStatus)) {
+    return json({ error: "INVALID_STATUS" }, 400, null);
+  }
+
+  const requestedLimit = Number.parseInt(url.searchParams.get("limit") || "20", 10);
+  const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 50) : 20;
+  const statuses = requestedStatus ? [requestedStatus] : [...STORY_RADAR_STATUSES];
+  const placeholders = statuses.map(() => "?").join(", ");
+  const clustersResult = await env.KITZER_NEWS_DB.prepare(`
+    SELECT
+      id, title, main_entity, summary, status,
+      story_score, article_count, source_count,
+      first_seen, last_updated
+    FROM story_clusters
+    WHERE status IN (${placeholders})
+    ORDER BY story_score DESC, last_updated DESC
+    LIMIT ?
+  `).bind(...statuses, limit).all();
+
+  const clusters = await Promise.all((clustersResult.results || []).map(async cluster => {
+    const articlesResult = await env.KITZER_NEWS_DB.prepare(`
+      SELECT
+        summary.title,
+        summary.source,
+        summary.article_url AS url,
+        summary.created_at AS saved_at
+      FROM story_cluster_articles AS link
+      JOIN article_summaries AS summary ON summary.url_hash = link.article_url_hash
+      WHERE link.story_cluster_id = ?
+      ORDER BY summary.created_at DESC
+      LIMIT ?
+    `).bind(cluster.id, 10).all();
+    return { ...cluster, articles: articlesResult.results || [] };
+  }));
+
+  return json({ clusters }, 200, null);
+}
+
+function storyRadarAdminPageHtml() {
+  return `<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KITZER — Story Radar</title>
+  <style>
+    :root { color-scheme: dark; font-family: Arial, sans-serif; background: #050505; color: #f5f2ea; }
+    * { box-sizing: border-box; } body { margin: 0; min-height: 100vh; background: radial-gradient(circle at top right, #25200b 0, #050505 42rem); }
+    main { width: min(1100px, calc(100% - 32px)); margin: 0 auto; padding: 32px 0 64px; }
+    header { border-bottom: 1px solid #3c3519; padding-bottom: 20px; margin-bottom: 20px; }
+    .eyebrow { color: #ffd400; font: 700 12px/1.2 monospace; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 8px 0 4px; font-size: clamp(28px, 5vw, 46px); } .sub { color: #b9b4a8; margin: 0; }
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
+    button { appearance: none; border: 1px solid #5a4c14; color: #f5f2ea; background: #15130d; border-radius: 999px; padding: 9px 14px; cursor: pointer; font: inherit; }
+    button:hover, button:focus-visible, button[aria-pressed="true"] { background: #ffd400; color: #111; outline: none; }
+    #state { color: #c7c0af; padding: 18px 0; } #state.error { color: #ff8f8f; }
+    #clusters { display: grid; gap: 14px; } .cluster { border: 1px solid #39351f; background: rgba(18, 17, 12, .94); border-radius: 12px; padding: 18px; }
+    .topline, .stats { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; } .topline { justify-content: space-between; }
+    h2 { margin: 10px 0 6px; font-size: clamp(20px, 3vw, 27px); } .entity, .updated { color: #b9b4a8; margin: 0; }
+    .badge { border: 1px solid #ffd400; color: #ffd400; border-radius: 999px; padding: 4px 8px; font: 700 11px/1.2 monospace; }
+    .stats { margin: 14px 0; color: #ddd7c8; } .stats strong { color: #ffd400; } .articles { border-top: 1px solid #39351f; margin-top: 14px; padding-top: 12px; }
+    .articles h3 { font-size: 14px; margin: 0 0 8px; } ul { margin: 0; padding: 0 18px 0 0; } li { margin: 7px 0; } a { color: #ffd400; } .source { color: #b9b4a8; font-size: 13px; }
+    @media (max-width: 540px) { main { width: min(100% - 24px, 1100px); padding-top: 22px; } .cluster { padding: 14px; } .topline { align-items: flex-start; flex-direction: column; gap: 6px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header><div class="eyebrow">KITZER / ADMIN</div><h1>Story Radar</h1><p class="sub">מעקב קריאה בלבד אחר סיפורי מוזיקה מתפתחים.</p></header>
+    <nav class="filters" aria-label="סינון סטטוס">
+      <button type="button" data-status="" aria-pressed="true">הכל</button><button type="button" data-status="watching">Watching</button><button type="button" data-status="trending">Trending</button><button type="button" data-status="hero_candidate">Hero Candidate</button>
+    </nav>
+    <p id="state" role="status">טוען סיפורים…</p><section id="clusters" aria-live="polite"></section>
+  </main>
+  <script>
+    const state = document.getElementById('state'); const clusters = document.getElementById('clusters');
+    const buttons = [...document.querySelectorAll('[data-status]')];
+    function setState(text, error) { state.textContent = text; state.className = error ? 'error' : ''; }
+    function allowedUrl(value) { try { const url = new URL(value); return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null; } catch { return null; } }
+    function formatTime(value) { const date = new Date(value); return Number.isNaN(date.getTime()) ? 'לא זמין' : date.toLocaleString('he-IL'); }
+    function element(name, text, className) { const node = document.createElement(name); if (text !== undefined) node.textContent = text; if (className) node.className = className; return node; }
+    function renderCluster(cluster) {
+      const card = element('article', undefined, 'cluster'); const top = element('div', undefined, 'topline');
+      top.append(element('span', cluster.status || 'unknown', 'badge')); top.append(element('span', 'עודכן: ' + formatTime(cluster.last_updated), 'updated')); card.append(top);
+      card.append(element('h2', cluster.title || 'ללא כותרת')); if (cluster.main_entity) card.append(element('p', 'ישות: ' + cluster.main_entity, 'entity'));
+      const stats = element('div', undefined, 'stats'); [['ציון', cluster.story_score], ['כתבות', cluster.article_count], ['מקורות', cluster.source_count]].forEach(([label, value]) => { const item = element('span'); item.append(document.createTextNode(label + ': ')); item.append(element('strong', String(value ?? 0))); stats.append(item); }); card.append(stats);
+      const articleSection = element('section', undefined, 'articles'); articleSection.append(element('h3', 'כתבות מקושרות'));
+      const list = element('ul'); const articles = Array.isArray(cluster.articles) ? cluster.articles : [];
+      if (!articles.length) list.append(element('li', 'אין כתבות מקושרות להצגה.'));
+      articles.forEach(article => { const item = element('li'); const href = allowedUrl(article.url); if (href) { const link = element('a', article.title || 'כתבה ללא כותרת'); link.href = href; link.target = '_blank'; link.rel = 'noopener noreferrer'; item.append(link); } else { item.append(document.createTextNode(article.title || 'כתבה ללא כותרת')); } item.append(element('span', ' — ' + (article.source || 'מקור לא ידוע') + ' · ' + formatTime(article.saved_at), 'source')); list.append(item); });
+      articleSection.append(list); card.append(articleSection); return card;
+    }
+    async function load(status) { clusters.replaceChildren(); setState('טוען סיפורים…'); const url = new URL('/api/admin/story-radar', window.location.origin); if (status) url.searchParams.set('status', status); try { const response = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' }); if (!response.ok) throw new Error('HTTP ' + response.status); const body = await response.json(); const data = Array.isArray(body.clusters) ? body.clusters : []; if (!data.length) { setState('אין סיפורים בסטטוס שנבחר.'); return; } setState(''); clusters.append(...data.map(renderCluster)); } catch { setState('טעינת Story Radar נכשלה. יש לבדוק את הרשאת Cloudflare Access.', true); } }
+    buttons.forEach(button => button.addEventListener('click', () => { buttons.forEach(other => other.setAttribute('aria-pressed', String(other === button))); load(button.dataset.status); })); load('');
+  </script>
+</body></html>`;
+}
+
+export async function handleAdminStoryRadarPage(request, env, { authorize = authorizeAdminRequest } = {}) {
+  if (request.method !== "GET") return new Response("Method Not Allowed", { status: 405 });
+  const authorization = await authorize(request, env);
+  if (!authorization.ok) return authorization.response;
+  return new Response(storyRadarAdminPageHtml(), {
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff",
+      "referrer-policy": "strict-origin-when-cross-origin"
+    }
   });
 }
 
@@ -662,6 +787,13 @@ async function handleSummary(request, env, origin) {
       why_it_matters: ai.why_it_matters
     });
 
+    await assignArticleToStoryCluster(env.KITZER_NEWS_DB, {
+      urlHash: key,
+      title,
+      source,
+      publishedAt: new Date().toISOString()
+    });
+
     return json({
       ok: true,
       cached: false,
@@ -703,6 +835,14 @@ export default {
 
     if (path === "/api/ai-usage") {
       return handleAiUsage(request, env, origin);
+    }
+
+    if (path === "/api/admin/story-radar") {
+      return handleAdminStoryRadar(request, env);
+    }
+
+    if (path === "/admin/story-radar") {
+      return handleAdminStoryRadarPage(request, env);
     }
 
     if (path === "/api/summarize") {
