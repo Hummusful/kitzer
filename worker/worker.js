@@ -521,6 +521,41 @@ export function chooseStoryHero(candidates, state, now = new Date()) {
   return current;
 }
 
+// A confirmed Hero needs corroboration from several sources. Until then, a
+// developing multi-source story can occupy the slot as a fallback.
+export function isEligibleStoryHeroFallback(cluster, now = new Date()) {
+  const updatedAt = new Date(cluster.last_updated).getTime();
+  return Number(cluster.source_count) >= 2 &&
+    (cluster.status === "watching" || cluster.status === "trending") &&
+    Number.isFinite(updatedAt) &&
+    updatedAt >= now.getTime() - HERO_LOOKBACK_MS &&
+    typeof cluster.title === "string" && cluster.title.trim().length > 0 &&
+    typeof cluster.url === "string" && isHttpUrl(cluster.url);
+}
+
+export function chooseStoryHeroFallback(candidates, state, now = new Date()) {
+  const eligible = candidates.filter(cluster => isEligibleStoryHeroFallback(cluster, now))
+    .sort((left, right) => Number(right.story_score) - Number(left.story_score) ||
+      new Date(right.last_updated).getTime() - new Date(left.last_updated).getTime());
+  if (!eligible.length) return null;
+
+  const current = eligible.find(cluster => cluster.id === state?.cluster_id);
+  if (!current) return eligible[0];
+
+  const selectedAt = new Date(state.selected_at).getTime();
+  if (!Number.isFinite(selectedAt) || now.getTime() - selectedAt < HERO_HOLD_MS) return current;
+
+  const challenger = eligible[0];
+  if (challenger.id !== current.id && Number(challenger.story_score) >= Number(current.story_score) + HERO_REPLACEMENT_MARGIN) {
+    return challenger;
+  }
+  return current;
+}
+
+export function getStoryHeroSelectionType(confirmedHero) {
+  return confirmedHero ? "hero" : "fallback";
+}
+
 async function handleStoryHero(request, env, allowedOrigin) {
   if (request.method !== "GET") {
     return finalizeResponse(new Response(JSON.stringify({ error: "METHOD_NOT_ALLOWED" }), {
@@ -584,9 +619,7 @@ async function handleStoryHero(request, env, allowedOrigin) {
             LIMIT 1
           ) AS published_at
         FROM story_clusters AS cluster
-        WHERE cluster.status = 'hero_candidate'
-          AND cluster.source_count >= 3
-          AND cluster.last_updated >= ?
+        WHERE cluster.last_updated >= ?
         ORDER BY cluster.story_score DESC, cluster.last_updated DESC
       `).bind(cutoff).all(),
       env.KITZER_NEWS_DB.prepare(`
@@ -596,7 +629,9 @@ async function handleStoryHero(request, env, allowedOrigin) {
       `).first()
     ]);
 
-    const hero = chooseStoryHero(candidatesResult.results || [], state, now);
+    const candidates = candidatesResult.results || [];
+    const confirmedHero = chooseStoryHero(candidates, state, now);
+    const hero = confirmedHero || chooseStoryHeroFallback(candidates, state, now);
     if (!hero) {
       if (state) await env.KITZER_NEWS_DB.prepare("DELETE FROM story_hero_state WHERE singleton = 1").run();
       return finalizeResponse(new Response(JSON.stringify({ hero: null }), {
@@ -614,6 +649,7 @@ async function handleStoryHero(request, env, allowedOrigin) {
 
     return finalizeResponse(new Response(JSON.stringify({
       hero: {
+        selection_type: getStoryHeroSelectionType(confirmedHero),
         cluster: {
           id: hero.id,
           title: hero.title,

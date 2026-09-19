@@ -192,7 +192,7 @@ function renderStoryHero(hero) {
   }
   const content = document.createElement('div');
   content.className = 'story-hero-content';
-  appendText(content, 'p', 'story-hero-kicker', 'STORY RADAR · HERO');
+  appendText(content, 'p', 'story-hero-kicker', hero.selection_type === 'fallback' ? 'במוקד' : 'STORY RADAR · HERO');
   const title = document.createElement('h2');
   title.id = 'storyHeroTitle';
   const link = document.createElement('a');
