@@ -502,6 +502,19 @@ export function isEligibleStoryHero(cluster, now = new Date()) {
     updatedAt >= now.getTime() - HERO_LOOKBACK_MS;
 }
 
+export function hasUsableStoryHeroCover(cover) {
+  return isHttpUrl(cover);
+}
+
+export function chooseStoryHeroArticle(articles) {
+  return [...articles].sort((left, right) => {
+    const coverOrder = Number(hasUsableStoryHeroCover(right.cover)) - Number(hasUsableStoryHeroCover(left.cover));
+    return coverOrder || new Date(right.published_at).getTime() - new Date(left.published_at).getTime();
+  })[0] || null;
+}
+
+const STORY_HERO_ARTICLE_ORDER = "CASE WHEN article.cover LIKE 'https://%' OR article.cover LIKE 'http://%' THEN 0 ELSE 1 END, article.published_at DESC";
+
 export function chooseStoryHero(candidates, state, now = new Date()) {
   const eligible = candidates.filter(cluster => isEligibleStoryHero(cluster, now))
     .sort((left, right) => Number(right.story_score) - Number(left.story_score) ||
@@ -583,7 +596,7 @@ async function handleStoryHero(request, env, allowedOrigin) {
             FROM story_cluster_articles AS link
             JOIN story_articles AS article ON article.url_hash = link.article_url_hash
             WHERE link.story_cluster_id = cluster.id
-            ORDER BY article.published_at DESC
+            ORDER BY ${STORY_HERO_ARTICLE_ORDER}
             LIMIT 1
           ) AS article_title,
           (
@@ -591,7 +604,7 @@ async function handleStoryHero(request, env, allowedOrigin) {
             FROM story_cluster_articles AS link
             JOIN story_articles AS article ON article.url_hash = link.article_url_hash
             WHERE link.story_cluster_id = cluster.id
-            ORDER BY article.published_at DESC
+            ORDER BY ${STORY_HERO_ARTICLE_ORDER}
             LIMIT 1
           ) AS url,
           (
@@ -599,7 +612,7 @@ async function handleStoryHero(request, env, allowedOrigin) {
             FROM story_cluster_articles AS link
             JOIN story_articles AS article ON article.url_hash = link.article_url_hash
             WHERE link.story_cluster_id = cluster.id
-            ORDER BY article.published_at DESC
+            ORDER BY ${STORY_HERO_ARTICLE_ORDER}
             LIMIT 1
           ) AS cover,
           (
@@ -607,7 +620,7 @@ async function handleStoryHero(request, env, allowedOrigin) {
             FROM story_cluster_articles AS link
             JOIN story_articles AS article ON article.url_hash = link.article_url_hash
             WHERE link.story_cluster_id = cluster.id
-            ORDER BY article.published_at DESC
+            ORDER BY ${STORY_HERO_ARTICLE_ORDER}
             LIMIT 1
           ) AS source,
           (
@@ -615,7 +628,7 @@ async function handleStoryHero(request, env, allowedOrigin) {
             FROM story_cluster_articles AS link
             JOIN story_articles AS article ON article.url_hash = link.article_url_hash
             WHERE link.story_cluster_id = cluster.id
-            ORDER BY article.published_at DESC
+            ORDER BY ${STORY_HERO_ARTICLE_ORDER}
             LIMIT 1
           ) AS published_at
         FROM story_clusters AS cluster

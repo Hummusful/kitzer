@@ -227,7 +227,24 @@ async function loadStoryHero() {
     const response = await fetch(STORY_HERO_ENDPOINT, { credentials: 'include' });
     if (!response.ok) throw new Error(`Hero response ${response.status}`);
     const body = await response.json();
-    renderStoryHero(body?.hero || null);
+    const hero = body?.hero || null;
+    if (hero?.article && safeUrl(hero.article.cover) === '#') {
+      try {
+        const feedUrl = new URL(FEED_ENDPOINT, window.location.origin);
+        feedUrl.searchParams.set('days', '3');
+        feedUrl.searchParams.set('limit', '80');
+        const feedResponse = await fetch(feedUrl, { credentials: 'include' });
+        if (feedResponse.ok) {
+          const { findHeroFeedCover } = await import('./hero-cover.mjs');
+          const feed = await feedResponse.json();
+          const cover = findHeroFeedCover(hero, feed?.items);
+          if (cover) hero.article.cover = cover;
+        }
+      } catch {
+        // The Hero remains usable without a cover when the feed lookup fails.
+      }
+    }
+    renderStoryHero(hero);
   } catch {
     hideStoryHero();
   }

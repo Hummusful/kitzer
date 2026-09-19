@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { chooseStoryHero, chooseStoryHeroFallback, getStoryHeroSelectionType, isEligibleStoryHero, isEligibleStoryHeroFallback } from "./worker.js";
+import { chooseStoryHero, chooseStoryHeroArticle, chooseStoryHeroFallback, getStoryHeroSelectionType, isEligibleStoryHero, isEligibleStoryHeroFallback } from "./worker.js";
 
 const now = new Date("2026-09-20T12:00:00.000Z");
 const candidate = (id, score, { sources = 3, updatedAt = "2026-09-20T11:00:00.000Z", status = "hero_candidate" } = {}) => ({ id, story_score: score, source_count: sources, last_updated: updatedAt, status });
@@ -10,6 +10,13 @@ test("Hero eligibility requires hero_candidate, three sources, and a fresh updat
   assert.equal(isEligibleStoryHero(candidate("a", 100, { sources: 2 }), now), false);
   assert.equal(isEligibleStoryHero(candidate("a", 100, { status: "trending" }), now), false);
   assert.equal(isEligibleStoryHero(candidate("a", 100, { updatedAt: "2026-09-17T11:59:59.000Z" }), now), false);
+});
+
+test("Hero article selection prefers a valid cover over a newer coverless article", () => {
+  const covered = { id: "covered", cover: "https://images.example.com/cover.jpg", published_at: "2026-09-20T09:00:00.000Z" };
+  const newerWithoutCover = { id: "newer", cover: null, published_at: "2026-09-20T11:00:00.000Z" };
+  assert.equal(chooseStoryHeroArticle([newerWithoutCover, covered]).id, "covered");
+  assert.equal(chooseStoryHeroArticle([covered, { ...newerWithoutCover, cover: "javascript:alert(1)" }]).id, "covered");
 });
 
 test("Hero is held for two hours, then replaced only with a 15 point lead", () => {
