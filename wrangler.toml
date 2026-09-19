@@ -2,6 +2,7 @@ name = "kitzer-summary"
 main = "worker/summary-worker.js"
 compatibility_date = "2026-09-05"
 keep_vars = true
+workers_dev = true
 preview_urls = false
 
 routes = [
