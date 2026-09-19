@@ -179,6 +179,7 @@ function renderStoryHero(hero) {
   storyHeroEl.replaceChildren();
   const card = document.createElement('article');
   card.className = 'story-hero-card';
+  card.dataset.summarySource = cleanText(hero.article.source, 120) || 'מקור מוזיקה';
   const image = safeUrl(hero.article.cover);
   const hasCover = image !== '#';
   if (hasCover) {

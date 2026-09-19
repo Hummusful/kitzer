@@ -65,11 +65,11 @@ function setSummaryError(box, errorCode) {
 }
 
 async function summarizeCard(card, button, box) {
-  const titleLink = card.querySelector('.news-title a');
+  const titleLink = card.querySelector('.news-title a, h2 a');
   if (!titleLink?.href) return;
 
   const title = titleLink.textContent?.trim() || '';
-  const source = card.querySelector('.news-source')?.textContent?.trim() || '';
+  const source = card.dataset.summarySource || card.querySelector('.news-source')?.textContent?.trim() || '';
 
   button.disabled = true;
   button.classList.add('loading');
@@ -107,6 +107,40 @@ async function summarizeCard(card, button, box) {
     button.disabled = false;
     button.classList.remove('loading');
   }
+}
+
+function enhanceStoryHero(card) {
+  if (card.dataset.aiSummaryReady === '1') return;
+  const content = card.querySelector('.story-hero-content');
+  const titleLink = card.querySelector('h2 a');
+  if (!content || !titleLink?.href) return;
+
+  card.dataset.aiSummaryReady = '1';
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'summary-button story-hero-summary-button';
+  button.textContent = '✨ קיצר';
+  button.setAttribute('aria-label', `סכם את הכתבה: ${titleLink.textContent?.trim() || ''}`);
+
+  const box = createSummaryBox();
+  box.classList.add('story-hero-summary');
+  content.appendChild(button);
+  content.appendChild(box);
+
+  button.addEventListener('click', () => {
+    const state = summaryState.get(card);
+    if (state?.loaded && !box.hidden) {
+      box.hidden = true;
+      button.textContent = '✨ קיצר';
+      return;
+    }
+    if (state?.loaded && box.hidden) {
+      box.hidden = false;
+      button.textContent = '✨ קיצר ✓';
+      return;
+    }
+    summarizeCard(card, button, box);
+  });
 }
 
 function enhanceCard(card) {
@@ -154,21 +188,34 @@ function enhanceNewsCards(root = document) {
   root.querySelectorAll('.news-card').forEach(enhanceCard);
 }
 
+function enhanceStoryHeroes(root = document) {
+  root.querySelectorAll('.story-hero-card').forEach(enhanceStoryHero);
+}
+
 const observer = new MutationObserver(mutations => {
   for (const mutation of mutations) {
     for (const node of mutation.addedNodes) {
       if (!(node instanceof Element)) continue;
       if (node.matches?.('.news-card')) enhanceCard(node);
+      if (node.matches?.('.story-hero-card')) enhanceStoryHero(node);
       enhanceNewsCards(node);
+      enhanceStoryHeroes(node);
     }
   }
 });
 
 function initSummaryUi() {
   const feed = document.getElementById('newsFeed');
-  if (!feed) return;
-  enhanceNewsCards(feed);
-  observer.observe(feed, { childList: true, subtree: true });
+  const hero = document.getElementById('storyHero');
+  if (!feed && !hero) return;
+  if (feed) {
+    enhanceNewsCards(feed);
+    observer.observe(feed, { childList: true, subtree: true });
+  }
+  if (hero) {
+    enhanceStoryHeroes(hero);
+    observer.observe(hero, { childList: true, subtree: true });
+  }
 }
 
 if (document.readyState === 'loading') {

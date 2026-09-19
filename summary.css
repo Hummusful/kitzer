@@ -60,6 +60,10 @@
   line-height:1.45;
 }
 
+.story-hero-summary-button { border-color:rgba(245,197,66,.72); background:rgba(245,197,66,.12); color:#ffe186; }
+.story-hero-summary-button:hover,.story-hero-summary-button:focus-visible { border-color:#ffe186; background:rgba(245,197,66,.22); }
+.story-hero-summary { width:100%; max-width:720px; box-sizing:border-box; border-color:rgba(245,197,66,.35); background:rgba(0,0,0,.24); color:#fffdf5; }
+
 .ai-summary-heading {
   margin-bottom:4px;
   color:var(--signal);
