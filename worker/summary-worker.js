@@ -93,14 +93,14 @@ export async function handleAdminStoryRadar(request, env, { authorize = authoriz
   const clusters = await Promise.all((clustersResult.results || []).map(async cluster => {
     const articlesResult = await env.KITZER_NEWS_DB.prepare(`
       SELECT
-        summary.title,
-        summary.source,
-        summary.article_url AS url,
-        summary.created_at AS saved_at
+        article.title,
+        article.source,
+        article.article_url AS url,
+        article.published_at AS saved_at
       FROM story_cluster_articles AS link
-      JOIN article_summaries AS summary ON summary.url_hash = link.article_url_hash
+      JOIN story_articles AS article ON article.url_hash = link.article_url_hash
       WHERE link.story_cluster_id = ?
-      ORDER BY summary.created_at DESC
+      ORDER BY article.published_at DESC
       LIMIT ?
     `).bind(cluster.id, 10).all();
     return { ...cluster, articles: articlesResult.results || [] };
@@ -134,18 +134,18 @@ export async function handleAdminStoryRadarBackfill(
   const cutoff = new Date(runAt.getTime() - STORY_RADAR_BACKFILL_LOOKBACK_MS).toISOString();
   const result = await env.KITZER_NEWS_DB.prepare(`
     SELECT
-      summary.url_hash,
-      summary.title,
-      summary.source,
-      summary.created_at,
+      article.url_hash,
+      article.title,
+      article.source,
+      article.published_at,
       EXISTS (
         SELECT 1
         FROM story_cluster_articles AS link
-        WHERE link.article_url_hash = summary.url_hash
+        WHERE link.article_url_hash = article.url_hash
       ) AS already_clustered
-    FROM article_summaries AS summary
-    WHERE summary.created_at >= ?
-    ORDER BY summary.created_at DESC
+    FROM story_articles AS article
+    WHERE article.published_at >= ?
+    ORDER BY article.published_at DESC
     LIMIT ?
   `).bind(cutoff, STORY_RADAR_BACKFILL_LIMIT).all();
 
@@ -169,7 +169,7 @@ export async function handleAdminStoryRadarBackfill(
         urlHash: article.url_hash,
         title: article.title || "",
         source: article.source || "",
-        publishedAt: article.created_at
+        publishedAt: article.published_at
       }, runAt);
       stats.processed += 1;
       if (cluster.created) stats.clusters_created += 1;
@@ -736,6 +736,17 @@ async function saveSummary(env, row) {
   ).run();
 }
 
+async function saveStoryArticle(env, row) {
+  await env.KITZER_NEWS_DB.prepare(`
+    INSERT OR IGNORE INTO story_articles (
+      url_hash, article_url, title, source, published_at, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?)
+  `).bind(
+    row.url_hash, row.article_url, row.title || null, row.source || null,
+    row.published_at, row.created_at
+  ).run();
+}
+
 async function handleAiUsage(request, env, origin) {
   if (request.method !== "GET") return json({ error: "METHOD_NOT_ALLOWED" }, 405, origin);
   if (!origin) return json({ error: "ORIGIN_NOT_ALLOWED" }, 403, null);
@@ -860,11 +871,21 @@ async function handleSummary(request, env, origin) {
       why_it_matters: ai.why_it_matters
     });
 
+    const clusteredAt = new Date().toISOString();
+    await saveStoryArticle(env, {
+      url_hash: key,
+      article_url: normalized,
+      title,
+      source,
+      published_at: clusteredAt,
+      created_at: clusteredAt
+    });
+
     await assignArticleToStoryCluster(env.KITZER_NEWS_DB, {
       urlHash: key,
       title,
       source,
-      publishedAt: new Date().toISOString()
+      publishedAt: clusteredAt
     });
 
     return json({

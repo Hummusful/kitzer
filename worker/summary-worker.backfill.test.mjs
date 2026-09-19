@@ -36,7 +36,7 @@ test("backfill requires Admin authorization before querying D1", async () => {
 });
 
 test("backfill skips summaries already linked to a story cluster", async () => {
-  const db = fakeDb([{ url_hash: "linked", title: "Existing", source: "Source", created_at: runAt.toISOString(), already_clustered: 1 }]);
+  const db = fakeDb([{ url_hash: "linked", title: "Existing", source: "Source", published_at: runAt.toISOString(), already_clustered: 1 }]);
   let assignments = 0;
   const response = await handleAdminStoryRadarBackfill(request(), { KITZER_NEWS_DB: db }, {
     authorize: authorized,
@@ -49,7 +49,7 @@ test("backfill skips summaries already linked to a story cluster", async () => {
 });
 
 test("backfill is idempotent when a repeat read reports the new link", async () => {
-  const rows = [{ url_hash: "new", title: "New story", source: "Source", created_at: runAt.toISOString(), already_clustered: 0 }];
+  const rows = [{ url_hash: "new", title: "New story", source: "Source", published_at: runAt.toISOString(), already_clustered: 0 }];
   const db = fakeDb(rows);
   let assignments = 0;
   const assign = async () => {
@@ -67,10 +67,10 @@ test("backfill is idempotent when a repeat read reports the new link", async () 
   assert.equal(assignments, 1);
 });
 
-test("backfill queries no more than 250 recent summaries", async () => {
+test("backfill queries no more than 250 recent story articles", async () => {
   const db = fakeDb([]);
   await handleAdminStoryRadarBackfill(request(), { KITZER_NEWS_DB: db }, { authorize: authorized, now: () => runAt });
-  assert.match(db.calls[0].sql, /FROM article_summaries AS summary/);
+  assert.match(db.calls[0].sql, /FROM story_articles AS article/);
   assert.match(db.calls[0].sql, /story_cluster_articles AS link/);
   assert.deepEqual(db.calls[0].params, ["2026-09-16T12:00:00.000Z", 250]);
 });

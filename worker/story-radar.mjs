@@ -137,9 +137,9 @@ export async function assignArticleToStoryCluster(db, article, now = new Date())
   `).bind(clusterId, article.urlHash).run();
 
   const rows = await db.prepare(`
-    SELECT summary.source, summary.title, summary.created_at
+    SELECT article.source, article.title, article.published_at AS created_at
     FROM story_cluster_articles AS link
-    JOIN article_summaries AS summary ON summary.url_hash = link.article_url_hash
+    JOIN story_articles AS article ON article.url_hash = link.article_url_hash
     WHERE link.story_cluster_id = ?
   `).bind(clusterId).all();
   const metrics = clusterMetrics(rows.results || [], now);

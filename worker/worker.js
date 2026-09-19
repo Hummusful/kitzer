@@ -3,6 +3,8 @@
  * גרסה מאובטחת וסופית - כולל תיקון חסימות, Parsing ושיפור thumbnails
  */
 
+import { assignArticleToStoryCluster } from "./story-radar.mjs";
+
 // ----------------------------------------------------
 // 1. הגדרות אבטחה וכותרות (Security Headers)
 // ----------------------------------------------------
@@ -467,6 +469,78 @@ function getNormalizedCacheKey(reqUrl) {
   u.search = cleanParams.toString();
   u.searchParams.set("_filterv", "healthdedup2");
   return new Request(u.toString(), { method: "GET" });
+}
+
+function normalizeStoryArticleUrl(value) {
+  try {
+    const url = new URL(String(value || "").trim());
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+    url.hash = "";
+    for (const key of ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "fbclid", "gclid"]) {
+      url.searchParams.delete(key);
+    }
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+async function sha256Hex(value) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export async function ingestRssStoryArticles(db, items, {
+  assign = assignArticleToStoryCluster,
+  now = () => new Date()
+} = {}) {
+  const seen = new Set();
+  const candidates = items
+    .map(item => {
+      const articleUrl = normalizeStoryArticleUrl(item.link);
+      const publishedAt = new Date(item.date);
+      return articleUrl && Number.isFinite(publishedAt.getTime()) ? { item, articleUrl, publishedAt } : null;
+    })
+    .filter(Boolean)
+    .sort((left, right) => right.publishedAt - left.publishedAt)
+    .filter(({ articleUrl }) => {
+      if (seen.has(articleUrl)) return false;
+      seen.add(articleUrl);
+      return true;
+    });
+
+  let newArticles = 0;
+  for (const { item, articleUrl, publishedAt } of candidates) {
+    if (newArticles >= 250) break;
+    try {
+      const urlHash = await sha256Hex(articleUrl);
+      const createdAt = now().toISOString();
+      const result = await db.prepare(`
+        INSERT OR IGNORE INTO story_articles (
+          url_hash, article_url, title, source, published_at, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `).bind(
+        urlHash,
+        articleUrl,
+        String(item.title || "").slice(0, 500) || null,
+        String(item.source || "").slice(0, 200) || null,
+        publishedAt.toISOString(),
+        createdAt
+      ).run();
+
+      if (Number(result.meta?.changes) !== 1) continue;
+      newArticles += 1;
+      await assign(db, {
+        urlHash,
+        title: String(item.title || "").slice(0, 500),
+        source: String(item.source || "").slice(0, 200),
+        publishedAt: publishedAt.toISOString()
+      }, new Date(createdAt));
+    } catch (error) {
+      // Background RSS ingestion must never delay or fail the public response.
+      console.error("Story Radar RSS ingest failed", String(error?.message || error));
+    }
+  }
 }
 
 // ----------------------------------------------------
@@ -1038,7 +1112,17 @@ const worker = {
 
       const resultsArray = await fetchWithConcurrencyLimit(tasks, 10);
 
-      let allItems = resultsArray.flat();
+      const cutoff = Date.now() - daysBack * 24 * 60 * 60 * 1000;
+      const rssItems = resultsArray.flat().filter(item => {
+        const publishedAt = new Date(item.date).getTime();
+        return Number.isFinite(publishedAt) && publishedAt >= cutoff;
+      });
+
+      // Keep the feed response independent of D1 writes and AI. Articles are
+      // clustered before UI-only merging so each RSS source article is retained.
+      ctx.waitUntil(ingestRssStoryArticles(env.KITZER_NEWS_DB, rssItems));
+
+      let allItems = rssItems;
 
       // Add trending data from APIs
       if (!filterGenre || filterGenre === 'hebrew') {
@@ -1050,8 +1134,6 @@ const worker = {
         const lastfmItems = await fetchLastFmTrending(env);
         allItems.push(...lastfmItems);
       }
-
-      const cutoff = Date.now() - daysBack * 24 * 60 * 60 * 1000;
 
       allItems = allItems.filter(i => {
         const d = new Date(i.date).getTime();

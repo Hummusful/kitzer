@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - "worker/worker.js"
+      - "worker/story-radar.mjs"
       - ".github/workflows/deploy-worker.yml"
 
 permissions:
@@ -53,6 +54,7 @@ jobs:
             keep_bindings: [...new Set(current.bindings.map(binding => binding.type))]
           }));
           form.append('worker.js', new Blob([readFileSync('worker/worker.js')], { type: 'application/javascript+module' }), 'worker.js');
+          form.append('story-radar.mjs', new Blob([readFileSync('worker/story-radar.mjs')], { type: 'application/javascript+module' }), 'story-radar.mjs');
           const response = await fetch(base, { method: 'PUT', headers, body: form });
           const result = await response.json();
           if (!response.ok || !result.success) throw new Error(JSON.stringify(result.errors));
