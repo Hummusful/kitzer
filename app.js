@@ -386,6 +386,8 @@ async function loadCharts(forceRefresh = false) {
     console.error('LoadCharts Failure:', error);
     content.replaceChildren();
     appendText(content, 'p', 'feed-status error', 'לא הצלחנו לטעון את המצעד כרגע.');
+  } finally {
+    refreshBtn?.classList.remove('loading');
   }
 }
 
@@ -395,6 +397,8 @@ function setView(view) {
   feedEl?.toggleAttribute('hidden', showingCharts);
   document.querySelector('.news-controls')?.toggleAttribute('hidden', showingCharts);
   document.querySelector('.chart-controls')?.toggleAttribute('hidden', !showingCharts);
+  refreshBtn?.setAttribute('title', showingCharts ? 'רענן את המצעד' : 'רענן את הפיד');
+  refreshBtn?.setAttribute('aria-label', showingCharts ? 'רענן את המצעד השבועי' : 'רענן את פיד המוזיקה');
   qsa('[data-view]').forEach(button => {
     const active = button.dataset.view === view;
     button.classList.toggle('active', active);
@@ -630,7 +634,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   refreshBtn?.addEventListener('click', () => {
     refreshBtn.classList.add('loading');
-    loadNews(true);
+    if (!document.getElementById('chartsPanel')?.hidden) loadCharts(true);
+    else loadNews(true);
   });
 
   loadNews(false);
