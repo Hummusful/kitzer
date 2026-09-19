@@ -109,6 +109,79 @@ export async function handleAdminStoryRadar(request, env, { authorize = authoriz
   return json({ clusters }, 200, null);
 }
 
+const STORY_RADAR_BACKFILL_LIMIT = 250;
+const STORY_RADAR_BACKFILL_LOOKBACK_MS = 72 * 60 * 60 * 1000;
+
+// This intentionally reuses assignArticleToStoryCluster, the exact same
+// clustering and scoring path used when a new summary is saved. It never
+// invokes the AI binding: it only reads existing summaries from D1.
+export async function handleAdminStoryRadarBackfill(
+  request,
+  env,
+  {
+    authorize = authorizeAdminRequest,
+    assign = assignArticleToStoryCluster,
+    now = () => new Date()
+  } = {}
+) {
+  if (request.method !== "POST") return json({ error: "METHOD_NOT_ALLOWED" }, 405, null);
+
+  const authorization = await authorize(request, env);
+  if (!authorization.ok) return authorization.response;
+  if (!env.KITZER_NEWS_DB) return json({ error: "D1_BINDING_MISSING" }, 503, null);
+
+  const runAt = now();
+  const cutoff = new Date(runAt.getTime() - STORY_RADAR_BACKFILL_LOOKBACK_MS).toISOString();
+  const result = await env.KITZER_NEWS_DB.prepare(`
+    SELECT
+      summary.url_hash,
+      summary.title,
+      summary.source,
+      summary.created_at,
+      EXISTS (
+        SELECT 1
+        FROM story_cluster_articles AS link
+        WHERE link.article_url_hash = summary.url_hash
+      ) AS already_clustered
+    FROM article_summaries AS summary
+    WHERE summary.created_at >= ?
+    ORDER BY summary.created_at DESC
+    LIMIT ?
+  `).bind(cutoff, STORY_RADAR_BACKFILL_LIMIT).all();
+
+  const stats = {
+    scanned: 0,
+    processed: 0,
+    skipped: 0,
+    clusters_created: 0,
+    errors: 0
+  };
+
+  for (const article of result.results || []) {
+    stats.scanned += 1;
+    if (Number(article.already_clustered)) {
+      stats.skipped += 1;
+      continue;
+    }
+
+    try {
+      const cluster = await assign(env.KITZER_NEWS_DB, {
+        urlHash: article.url_hash,
+        title: article.title || "",
+        source: article.source || "",
+        publishedAt: article.created_at
+      }, runAt);
+      stats.processed += 1;
+      if (cluster.created) stats.clusters_created += 1;
+    } catch (error) {
+      stats.errors += 1;
+      console.error("Story Radar backfill failed", article.url_hash, String(error?.message || error));
+    }
+  }
+
+  return json(stats, 200, null);
+}
+
 function storyRadarAdminPageHtml() {
   return `<!doctype html>
 <html lang="he" dir="rtl">
@@ -839,6 +912,10 @@ export default {
 
     if (path === "/api/admin/story-radar") {
       return handleAdminStoryRadar(request, env);
+    }
+
+    if (path === "/api/admin/story-radar/backfill") {
+      return handleAdminStoryRadarBackfill(request, env);
     }
 
     if (path === "/admin/story-radar") {
