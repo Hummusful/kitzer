@@ -180,7 +180,8 @@ function renderStoryHero(hero) {
   const card = document.createElement('article');
   card.className = 'story-hero-card';
   const image = safeUrl(hero.article.cover);
-  if (image !== '#') {
+  const hasCover = image !== '#';
+  if (hasCover) {
     const img = document.createElement('img');
     img.className = 'story-hero-image';
     img.src = image;
@@ -189,12 +190,15 @@ function renderStoryHero(hero) {
     img.decoding = 'async';
     img.addEventListener('error', () => img.remove(), { once: true });
     card.appendChild(img);
+  } else {
+    card.classList.add('no-cover');
   }
   const content = document.createElement('div');
   content.className = 'story-hero-content';
   appendText(content, 'p', 'story-hero-kicker', hero.selection_type === 'fallback' ? 'במוקד' : 'STORY RADAR · HERO');
   const title = document.createElement('h2');
   title.id = 'storyHeroTitle';
+  title.dir = 'auto';
   const link = document.createElement('a');
   link.href = url;
   link.target = '_blank';
