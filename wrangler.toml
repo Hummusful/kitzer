@@ -1,7 +1,15 @@
 name = "kitzer-summary"
 main = "worker/summary-worker.js"
-compatibility_date = "2026-09-19"
+compatibility_date = "2026-09-05"
 keep_vars = true
+preview_urls = false
+
+routes = [
+  { pattern = "ai.kitzer.net/*", zone_name = "kitzer.net" },
+  { pattern = "www.kitzer.net/api/summarize*", zone_name = "kitzer.net" },
+  { pattern = "kitzer.net/api/summarize*", zone_name = "kitzer.net" },
+  { pattern = "admin.kitzer.net", custom_domain = true }
+]
 
 [[d1_databases]]
 binding = "KITZER_NEWS_DB"
