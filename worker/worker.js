@@ -1057,6 +1057,23 @@ const STORY_STOP_WORDS = new Set([
   "אחרי","לקראת","מתוך","הוא","היא","וגם","אבל"
 ]);
 
+// International artists are often written in Hebrew in local coverage and in
+// Latin characters elsewhere.  Keep a small, explicit alias list for the
+// names most likely to appear across both feeds; matching by ordinary title
+// tokens cannot bridge two scripts.
+const BILINGUAL_ARTIST_ALIASES = [
+  ["ed sheeran", "אד שירן"],
+  ["taylor swift", "טיילור סוויפט"],
+  ["billie eilish", "בילי אייליש"],
+  ["the weeknd", "דה וויקנד"],
+  ["dua lipa", "דואה ליפה"],
+  ["justin bieber", "ג׳סטין ביבר", "ג'סטין ביבר"],
+  ["ariana grande", "אריאנה גרנדה"],
+  ["lady gaga", "ליידי גאגא"],
+  ["bruno mars", "ברונו מארס"],
+  ["coldplay", "קולדפליי"]
+].map((aliases, index) => ({ key: `artist-${index}`, aliases: aliases.map(normalizeStoryTitle) }));
+
 function normalizeStoryTitle(title) {
   return decodeXmlEntities(title || "")
     .toLowerCase()
@@ -1073,6 +1090,42 @@ function getStoryTokens(title) {
       .split(" ")
       .filter(token => token.length >= 3 && !STORY_STOP_WORDS.has(token))
   );
+}
+
+function storyEntityKeys(item) {
+  const title = normalizeStoryTitle(item?.title || "");
+  if (!title) return [];
+  return BILINGUAL_ARTIST_ALIASES
+    .filter(({ aliases }) => aliases.some(alias => title.includes(alias)))
+    .map(({ key }) => key);
+}
+
+export function bilingualStoryBoost(item, allItems) {
+  const itemLanguage = String(item?.lang || "").toUpperCase();
+  const keys = storyEntityKeys(item);
+  if (!itemLanguage || !keys.length) return 0;
+
+  const itemTime = new Date(item.date).getTime();
+  return allItems.some(candidate => {
+    const candidateLanguage = String(candidate?.lang || "").toUpperCase();
+    if (!candidateLanguage || candidateLanguage === itemLanguage) return false;
+    const candidateTime = new Date(candidate.date).getTime();
+    if (Number.isFinite(itemTime) && Number.isFinite(candidateTime) && Math.abs(itemTime - candidateTime) > 72 * 60 * 60 * 1000) return false;
+    return storyEntityKeys(candidate).some(key => keys.includes(key));
+  }) ? 1 : 0;
+}
+
+export function sortMusicItems(items) {
+  return [...items].sort((a, b) => {
+    // A story independently covered in Hebrew and English is a stronger signal
+    // than a one-source item, even when it arrived a few minutes later.
+    const bilingualOrder = bilingualStoryBoost(b, items) - bilingualStoryBoost(a, items);
+    if (bilingualOrder) return bilingualOrder;
+    const aTier = (a.music_score || 0) >= 7 ? 1 : 0;
+    const bTier = (b.music_score || 0) >= 7 ? 1 : 0;
+    if (aTier !== bTier) return bTier - aTier;
+    return new Date(b.date) - new Date(a.date);
+  });
 }
 
 function areRelatedStories(a, b) {
@@ -1369,13 +1422,7 @@ const worker = {
       allItems = mergeRelatedStories(allItems);
       const duplicatesMerged = storiesBeforeMerge - allItems.length;
 
-      allItems.sort((a, b) => {
-        // Keep the feed fresh, but prevent weakly-related stories from becoming the top story.
-        const aTier = (a.music_score || 0) >= 7 ? 1 : 0;
-        const bTier = (b.music_score || 0) >= 7 ? 1 : 0;
-        if (aTier !== bTier) return bTier - aTier;
-        return new Date(b.date) - new Date(a.date);
-      });
+      allItems = sortMusicItems(allItems);
       const finalItems = allItems.slice(0, limit);
 
       const responseBody = JSON.stringify({
