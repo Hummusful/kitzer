@@ -493,6 +493,28 @@ async function sha256Hex(value) {
 const HERO_LOOKBACK_MS = 72 * 60 * 60 * 1000;
 const HERO_HOLD_MS = 2 * 60 * 60 * 1000;
 const HERO_REPLACEMENT_MARGIN = 15;
+const CROSS_LANGUAGE_STORY_IDENTITIES = [
+  ["ed sheeran", "אד שירן"],
+  ["macklemore", "מקלמור"]
+].map((aliases, index) => ({ key: `identity-${index}`, aliases: aliases.map(normalizeStoryTitle) }));
+
+function crossLanguageIdentityKeys(title) {
+  const normalized = normalizeStoryTitle(title);
+  return CROSS_LANGUAGE_STORY_IDENTITIES
+    .filter(({ aliases }) => aliases.some(alias => normalized.includes(alias)))
+    .map(({ key }) => key);
+}
+
+export function areCrossLanguageStoryMatches(left, right) {
+  const leftTime = new Date(left?.published_at || left?.date).getTime();
+  const rightTime = new Date(right?.published_at || right?.date).getTime();
+  if (Number.isFinite(leftTime) && Number.isFinite(rightTime) && Math.abs(leftTime - rightTime) > HERO_LOOKBACK_MS) return false;
+  const leftKeys = crossLanguageIdentityKeys(left?.title || "");
+  const rightKeys = new Set(crossLanguageIdentityKeys(right?.title || ""));
+  // Require two named identities. This prevents every unrelated item about the
+  // same artist from being folded into one story.
+  return leftKeys.filter(key => rightKeys.has(key)).length >= 2;
+}
 
 export function isEligibleStoryHero(cluster, now = new Date()) {
   const updatedAt = new Date(cluster.last_updated).getTime();
@@ -672,15 +694,25 @@ async function handleStoryHero(request, env, allowedOrigin) {
       `).bind(hero.id, now.toISOString()).run();
     }
 
-    const sourceRows = await env.KITZER_NEWS_DB.prepare(`
+    const [sourceRows, recentArticles] = await Promise.all([
+      env.KITZER_NEWS_DB.prepare(`
       SELECT article.source, article.title, article.article_url, article.published_at
       FROM story_cluster_articles AS link
       JOIN story_articles AS article ON article.url_hash = link.article_url_hash
       WHERE link.story_cluster_id = ?
       ORDER BY article.published_at DESC
       LIMIT 12
-    `).bind(hero.id).all();
-    const sources = collectHeroSources(sourceRows.results || []);
+      `).bind(hero.id).all(),
+      env.KITZER_NEWS_DB.prepare(`
+        SELECT source, title, article_url, published_at
+        FROM story_articles
+        WHERE published_at >= ?
+        ORDER BY published_at DESC
+        LIMIT 120
+      `).bind(cutoff).all()
+    ]);
+    const siblingSources = (recentArticles.results || []).filter(article => areCrossLanguageStoryMatches(hero.article_title ? { title: hero.article_title, published_at: hero.published_at } : hero, article));
+    const sources = collectHeroSources([...(sourceRows.results || []), ...siblingSources]);
 
     return finalizeResponse(new Response(JSON.stringify({
       hero: {

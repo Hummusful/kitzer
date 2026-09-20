@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { chooseStoryHero, chooseStoryHeroArticle, chooseStoryHeroFallback, collectHeroSources, getStoryHeroSelectionType, isEligibleStoryHero, isEligibleStoryHeroFallback } from "./worker.js";
+import { areCrossLanguageStoryMatches, chooseStoryHero, chooseStoryHeroArticle, chooseStoryHeroFallback, collectHeroSources, getStoryHeroSelectionType, isEligibleStoryHero, isEligibleStoryHeroFallback } from "./worker.js";
 
 const now = new Date("2026-09-20T12:00:00.000Z");
 const candidate = (id, score, { sources = 3, updatedAt = "2026-09-20T11:00:00.000Z", status = "hero_candidate" } = {}) => ({ id, story_score: score, source_count: sources, last_updated: updatedAt, status });
@@ -83,4 +83,12 @@ test("hero sources include only unique, safe article links", () => {
     { name: "Source A", title: "Article one", url: "https://example.com/one" },
     { name: "Source B", title: "Article two", url: "https://example.com/two" }
   ]);
+});
+
+test("cross-language sources require the shared story identities", () => {
+  const english = { title: "Ed Sheeran addresses Macklemore removal", published_at: "2026-09-20T10:00:00Z" };
+  const hebrewSameStory = { title: "אד שירן מתייחס להדחת מקלמור", published_at: "2026-09-20T09:00:00Z" };
+  const hebrewDifferentStory = { title: "אד שירן הכריז על אלבום חדש", published_at: "2026-09-20T09:00:00Z" };
+  assert.equal(areCrossLanguageStoryMatches(english, hebrewSameStory), true);
+  assert.equal(areCrossLanguageStoryMatches(english, hebrewDifferentStory), false);
 });
