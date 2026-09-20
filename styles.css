@@ -436,7 +436,9 @@ body::after {
 .story-hero-sources summary { color:#ffd65c; cursor:pointer; font-weight:700; }
 .story-hero-sources summary:hover,.story-hero-sources summary:focus-visible { color:#ffe186; }
 .story-hero-sources ul { margin:9px 0 0; padding:0 18px 0 0; display:grid; gap:5px; }
-.story-hero-sources a { color:#fffdf5; text-decoration:underline; text-underline-offset:3px; }
+.story-hero-sources a { color:#fffdf5; text-decoration:none; display:grid; gap:2px; }
+.story-hero-sources a strong { color:#ffd65c; font-size:.78rem; }
+.story-hero-sources a span { text-decoration:underline; text-underline-offset:3px; }
 .story-hero-sources a:hover,.story-hero-sources a:focus-visible { color:#ffd65c; }
 .story-hero-card.no-cover { grid-template-columns:minmax(0, 1fr); min-height:185px; background:linear-gradient(120deg,#090909,#171108 58%,#0b0a08); }
 .story-hero-card.no-cover .story-hero-content { width:min(100%, 900px); min-height:185px; box-sizing:border-box; }

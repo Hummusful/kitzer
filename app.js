@@ -232,8 +232,15 @@ function renderStoryHero(hero) {
       sourceLink.href = safeUrl(source.url);
       sourceLink.target = '_blank';
       sourceLink.rel = 'noopener noreferrer';
-      sourceLink.textContent = cleanText(source.name, 120) || 'מקור מוזיקה';
-      sourceLink.title = cleanText(source.title, 300);
+      const sourceName = document.createElement('strong');
+      sourceName.textContent = cleanText(source.name, 120) || 'מקור מוזיקה';
+      sourceLink.appendChild(sourceName);
+      const sourceTitle = cleanText(source.title, 300);
+      if (sourceTitle) {
+        const sourceHeadline = document.createElement('span');
+        sourceHeadline.textContent = sourceTitle;
+        sourceLink.appendChild(sourceHeadline);
+      }
       item.appendChild(sourceLink);
       sourceList.appendChild(item);
     }
