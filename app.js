@@ -211,13 +211,15 @@ function renderStoryHero(hero) {
   meta.className = 'story-hero-meta';
   meta.textContent = `${cleanText(hero.article.source, 120) || 'מקור מוזיקה'} · ${Number(hero.cluster.source_count) || 0} מקורות · ${Number(hero.cluster.article_count) || 0} כתבות`;
   content.appendChild(meta);
+  const actions = document.createElement('div');
+  actions.className = 'story-hero-actions';
   const action = document.createElement('a');
   action.className = 'story-hero-link';
   action.href = url;
   action.target = '_blank';
   action.rel = 'noopener noreferrer';
-  action.textContent = 'לסיפור המלא';
-  content.appendChild(action);
+  action.textContent = 'לכתבה הראשית';
+  actions.appendChild(action);
   const sources = Array.isArray(hero.sources) ? hero.sources.filter(source => safeUrl(source?.url) !== '#') : [];
   if (sources.length) {
     const sourceDetails = document.createElement('details');
@@ -245,8 +247,9 @@ function renderStoryHero(hero) {
       sourceList.appendChild(item);
     }
     sourceDetails.appendChild(sourceList);
-    content.appendChild(sourceDetails);
+    actions.appendChild(sourceDetails);
   }
+  content.appendChild(actions);
   card.appendChild(content);
   storyHeroEl.appendChild(card);
   storyHeroEl.hidden = false;
