@@ -218,6 +218,28 @@ function renderStoryHero(hero) {
   action.rel = 'noopener noreferrer';
   action.textContent = 'לסיפור המלא';
   content.appendChild(action);
+  const sources = Array.isArray(hero.sources) ? hero.sources.filter(source => safeUrl(source?.url) !== '#') : [];
+  if (sources.length) {
+    const sourceDetails = document.createElement('details');
+    sourceDetails.className = 'story-hero-sources';
+    const summary = document.createElement('summary');
+    summary.textContent = `מקורות לסיפור (${sources.length})`;
+    sourceDetails.appendChild(summary);
+    const sourceList = document.createElement('ul');
+    for (const source of sources) {
+      const item = document.createElement('li');
+      const sourceLink = document.createElement('a');
+      sourceLink.href = safeUrl(source.url);
+      sourceLink.target = '_blank';
+      sourceLink.rel = 'noopener noreferrer';
+      sourceLink.textContent = cleanText(source.name, 120) || 'מקור מוזיקה';
+      sourceLink.title = cleanText(source.title, 300);
+      item.appendChild(sourceLink);
+      sourceList.appendChild(item);
+    }
+    sourceDetails.appendChild(sourceList);
+    content.appendChild(sourceDetails);
+  }
   card.appendChild(content);
   storyHeroEl.appendChild(card);
   storyHeroEl.hidden = false;

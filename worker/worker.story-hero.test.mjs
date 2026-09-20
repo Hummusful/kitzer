@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { chooseStoryHero, chooseStoryHeroArticle, chooseStoryHeroFallback, getStoryHeroSelectionType, isEligibleStoryHero, isEligibleStoryHeroFallback } from "./worker.js";
+import { chooseStoryHero, chooseStoryHeroArticle, chooseStoryHeroFallback, collectHeroSources, getStoryHeroSelectionType, isEligibleStoryHero, isEligibleStoryHeroFallback } from "./worker.js";
 
 const now = new Date("2026-09-20T12:00:00.000Z");
 const candidate = (id, score, { sources = 3, updatedAt = "2026-09-20T11:00:00.000Z", status = "hero_candidate" } = {}) => ({ id, story_score: score, source_count: sources, last_updated: updatedAt, status });
@@ -70,4 +70,17 @@ test("a confirmed Hero replaces a fallback immediately and selection types are e
   assert.equal(chooseStoryHero([fallback("fallback", 120), realHero], fallbackState, now).id, "confirmed");
   assert.equal(getStoryHeroSelectionType(realHero), "hero");
   assert.equal(getStoryHeroSelectionType(null), "fallback");
+});
+
+test("hero sources include only unique, safe article links", () => {
+  const sources = collectHeroSources([
+    { source: "Source A", title: "Article one", article_url: "https://example.com/one" },
+    { source: "Source A", title: "Duplicate", article_url: "https://example.com/one" },
+    { source: "Unsafe", title: "No", article_url: "javascript:alert(1)" },
+    { source: "Source B", title: "Article two", article_url: "https://example.com/two" }
+  ]);
+  assert.deepEqual(sources, [
+    { name: "Source A", title: "Article one", url: "https://example.com/one" },
+    { name: "Source B", title: "Article two", url: "https://example.com/two" }
+  ]);
 });

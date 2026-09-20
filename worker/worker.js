@@ -569,6 +569,18 @@ export function getStoryHeroSelectionType(confirmedHero) {
   return confirmedHero ? "hero" : "fallback";
 }
 
+export function collectHeroSources(rows) {
+  const seen = new Set();
+  return rows
+    .map(row => ({
+      name: String(row?.source || "מקור מוזיקה").trim().slice(0, 120),
+      title: String(row?.title || "").trim().slice(0, 300),
+      url: String(row?.article_url || "").trim()
+    }))
+    .filter(source => isHttpUrl(source.url) && !seen.has(source.url) && seen.add(source.url))
+    .slice(0, 12);
+}
+
 async function handleStoryHero(request, env, allowedOrigin) {
   if (request.method !== "GET") {
     return finalizeResponse(new Response(JSON.stringify({ error: "METHOD_NOT_ALLOWED" }), {
@@ -660,6 +672,16 @@ async function handleStoryHero(request, env, allowedOrigin) {
       `).bind(hero.id, now.toISOString()).run();
     }
 
+    const sourceRows = await env.KITZER_NEWS_DB.prepare(`
+      SELECT article.source, article.title, article.article_url, article.published_at
+      FROM story_cluster_articles AS link
+      JOIN story_articles AS article ON article.url_hash = link.article_url_hash
+      WHERE link.story_cluster_id = ?
+      ORDER BY article.published_at DESC
+      LIMIT 12
+    `).bind(hero.id).all();
+    const sources = collectHeroSources(sourceRows.results || []);
+
     return finalizeResponse(new Response(JSON.stringify({
       hero: {
         selection_type: getStoryHeroSelectionType(confirmedHero),
@@ -676,7 +698,8 @@ async function handleStoryHero(request, env, allowedOrigin) {
           cover: hero.cover,
           source: hero.source,
           published_at: hero.published_at
-        }
+        },
+        sources
       }
     }), {
       headers: { "Content-Type": "application/json; charset=utf-8", ...(allowedOrigin ? { "X-Allow-Origin": allowedOrigin } : {}) }
