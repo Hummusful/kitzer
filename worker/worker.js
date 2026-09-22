@@ -467,7 +467,7 @@ function getNormalizedCacheKey(reqUrl) {
   });
   cleanParams.sort();
   u.search = cleanParams.toString();
-  u.searchParams.set("_filterv", "freshness3");
+  u.searchParams.set("_filterv", "balancedfresh4");
   return new Request(u.toString(), { method: "GET" });
 }
 
@@ -1174,25 +1174,44 @@ export function bilingualStoryBoost(item, allItems) {
   }) ? 1 : 0;
 }
 
-export function sortMusicItems(items, now = Date.now()) {
+export function sortMusicItems(items) {
   return [...items].sort((a, b) => {
-    // Keep recent reporting ahead of older stories, even when the older story
-    // has stronger cross-language coverage or a higher music score.
-    const recencyBucket = item => {
-      const time = new Date(item.date).getTime();
-      return Number.isFinite(time) ? Math.floor(Math.max(0, now - time) / (6 * 60 * 60 * 1000)) : Infinity;
-    };
-    const freshnessOrder = recencyBucket(a) - recencyBucket(b);
-    if (freshnessOrder) return freshnessOrder;
-    // A story independently covered in Hebrew and English is a stronger signal
-    // than a one-source item, even when it arrived a few minutes later.
+    // Every category shows the newest publication first. Coverage strength is
+    // only a tie-breaker, never a reason to bury newer reporting.
+    const aTime = new Date(a.date).getTime();
+    const bTime = new Date(b.date).getTime();
+    if (Number.isFinite(aTime) && Number.isFinite(bTime) && aTime !== bTime) return bTime - aTime;
+    if (Number.isFinite(aTime) !== Number.isFinite(bTime)) return Number.isFinite(bTime) ? 1 : -1;
     const bilingualOrder = bilingualStoryBoost(b, items) - bilingualStoryBoost(a, items);
     if (bilingualOrder) return bilingualOrder;
     const aTier = (a.music_score || 0) >= 7 ? 1 : 0;
     const bTier = (b.music_score || 0) >= 7 ? 1 : 0;
     if (aTier !== bTier) return bTier - aTier;
-    return new Date(b.date) - new Date(a.date);
+    return 0;
   });
+}
+
+export function selectBalancedMusicItems(sortedItems, limit) {
+  const reserved = [
+    ['hebrew', Math.ceil(limit * 0.25)],
+    ['electronic', Math.ceil(limit * 0.15)]
+  ];
+  const selected = new Set();
+  for (const [genre, count] of reserved) {
+    let added = 0;
+    for (const item of sortedItems) {
+      if (added >= count) break;
+      if (item.genre === genre && !selected.has(item)) {
+        selected.add(item);
+        added++;
+      }
+    }
+  }
+  for (const item of sortedItems) {
+    if (selected.size >= limit) break;
+    selected.add(item);
+  }
+  return sortedItems.filter(item => selected.has(item)).slice(0, limit);
 }
 
 function areRelatedStories(a, b) {
@@ -1490,7 +1509,9 @@ const worker = {
       const duplicatesMerged = storiesBeforeMerge - allItems.length;
 
       allItems = sortMusicItems(allItems);
-      const finalItems = allItems.slice(0, limit);
+      const finalItems = !filterGenre || filterGenre === 'all'
+        ? selectBalancedMusicItems(allItems, limit)
+        : allItems.slice(0, limit);
 
       const responseBody = JSON.stringify({
         meta: {

@@ -70,7 +70,7 @@ function toggleTheme() {
 const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 const HEB_RTF = new Intl.RelativeTimeFormat('he-IL', { numeric: 'auto' });
 const TIMEZONE = 'Asia/Jerusalem';
-const CACHE_VERSION = 'kitzer-news-freshness-v3';
+const CACHE_VERSION = 'kitzer-balanced-news-v4';
 const TTL_MS = 5 * 60 * 1000;
 
 function cleanText(input, limit = 0) {
