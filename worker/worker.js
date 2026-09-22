@@ -597,10 +597,10 @@ export function collectHeroSources(rows) {
     .map(row => ({
       name: String(row?.source || "מקור מוזיקה").trim().slice(0, 120),
       title: String(row?.title || "").trim().slice(0, 300),
-      url: String(row?.article_url || "").trim()
+      url: String(row?.article_url || "").trim(),
+      cover: hasUsableStoryHeroCover(row?.cover) ? String(row.cover).trim() : null
     }))
-    .filter(source => isHttpUrl(source.url) && !seen.has(source.url) && seen.add(source.url))
-    .slice(0, 12);
+    .filter(source => isHttpUrl(source.url) && !seen.has(source.url) && seen.add(source.url));
 }
 
 async function handleStoryHero(request, env, allowedOrigin) {
@@ -696,15 +696,14 @@ async function handleStoryHero(request, env, allowedOrigin) {
 
     const [sourceRows, recentArticles] = await Promise.all([
       env.KITZER_NEWS_DB.prepare(`
-      SELECT article.source, article.title, article.article_url, article.published_at
+      SELECT article.source, article.title, article.article_url, article.cover, article.published_at
       FROM story_cluster_articles AS link
       JOIN story_articles AS article ON article.url_hash = link.article_url_hash
       WHERE link.story_cluster_id = ?
       ORDER BY article.published_at DESC
-      LIMIT 12
       `).bind(hero.id).all(),
       env.KITZER_NEWS_DB.prepare(`
-        SELECT source, title, article_url, published_at
+        SELECT source, title, article_url, cover, published_at
         FROM story_articles
         WHERE published_at >= ?
         ORDER BY published_at DESC

@@ -74,14 +74,14 @@ test("a confirmed Hero replaces a fallback immediately and selection types are e
 
 test("hero sources include only unique, safe article links", () => {
   const sources = collectHeroSources([
-    { source: "Source A", title: "Article one", article_url: "https://example.com/one" },
+    { source: "Source A", title: "Article one", article_url: "https://example.com/one", cover: "https://example.com/one.jpg" },
     { source: "Source A", title: "Duplicate", article_url: "https://example.com/one" },
     { source: "Unsafe", title: "No", article_url: "javascript:alert(1)" },
-    { source: "Source B", title: "Article two", article_url: "https://example.com/two" }
+    { source: "Source B", title: "Article two", article_url: "https://example.com/two", cover: "javascript:alert(1)" }
   ]);
   assert.deepEqual(sources, [
-    { name: "Source A", title: "Article one", url: "https://example.com/one" },
-    { name: "Source B", title: "Article two", url: "https://example.com/two" }
+    { name: "Source A", title: "Article one", url: "https://example.com/one", cover: "https://example.com/one.jpg" },
+    { name: "Source B", title: "Article two", url: "https://example.com/two", cover: null }
   ]);
 });
 

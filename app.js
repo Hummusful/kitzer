@@ -10,6 +10,7 @@ const feedEl = document.getElementById('newsFeed');
 const storyHeroEl = document.getElementById('storyHero');
 const refreshBtn = document.getElementById('refreshBtn');
 const themeToggle = document.getElementById('themeToggle');
+let stopStoryHeroSlides = () => {};
 
 let state = { genre: 'all' };
 let currentController = null;
@@ -167,8 +168,125 @@ function buildCoverNode(cover) {
 
 function hideStoryHero() {
   if (!storyHeroEl) return;
+  stopStoryHeroSlides();
   storyHeroEl.replaceChildren();
   storyHeroEl.hidden = true;
+}
+
+function storyHeroCovers(hero) {
+  const seen = new Set();
+  return [hero.article, ...(Array.isArray(hero.sources) ? hero.sources : [])]
+    .map(source => ({
+      cover: safeUrl(source?.cover),
+      url: safeUrl(source?.url),
+      name: cleanText(source?.name || source?.source, 120) || 'מקור מוזיקה'
+    }))
+    .filter(source => source.cover !== '#' && source.url !== '#' && !seen.has(source.cover) && seen.add(source.cover));
+}
+
+function startStoryHeroSlides(stage, card, covers) {
+  if (!covers.length) return;
+  let active = 0;
+  let busy = false;
+  let stopped = false;
+  const link = document.createElement('a');
+  link.className = 'story-hero-cover-link';
+  link.href = covers[0].url;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.setAttribute('aria-label', `לכתבה של ${covers[0].name}`);
+  const image = document.createElement('img');
+  image.className = 'story-hero-image';
+  image.src = covers[0].cover;
+  image.alt = `תמונה מתוך ${covers[0].name}`;
+  image.loading = 'eager';
+  image.decoding = 'async';
+  link.appendChild(image);
+  stage.appendChild(link);
+
+  const footer = document.createElement('div');
+  footer.className = 'story-hero-cover-footer';
+  const attribution = document.createElement('span');
+  footer.appendChild(attribution);
+  const controls = document.createElement('div');
+  controls.className = 'story-hero-slide-controls';
+  const previous = document.createElement('button');
+  previous.type = 'button';
+  previous.setAttribute('aria-label', 'תמונה קודמת');
+  previous.textContent = '‹';
+  const count = document.createElement('span');
+  count.setAttribute('aria-live', 'off');
+  const next = document.createElement('button');
+  next.type = 'button';
+  next.setAttribute('aria-label', 'תמונה הבאה');
+  next.textContent = '›';
+  controls.append(previous, count, next);
+  footer.appendChild(controls);
+  stage.appendChild(footer);
+
+  const update = () => {
+    const slide = covers[active];
+    link.href = slide.url;
+    link.setAttribute('aria-label', `לכתבה של ${slide.name}`);
+    image.alt = `תמונה מתוך ${slide.name}`;
+    attribution.textContent = `תמונה: ${slide.name}`;
+    count.textContent = `${active + 1} / ${covers.length}`;
+    controls.hidden = covers.length < 2;
+  };
+  const noCovers = () => {
+    stage.remove();
+    card.classList.add('no-cover');
+  };
+  const go = async direction => {
+    if (busy || stopped || covers.length < 2) return;
+    busy = true;
+    for (let tries = 0; tries < covers.length && !stopped; tries += 1) {
+      const target = (active + direction + covers.length) % covers.length;
+      const candidate = covers[target];
+      const preload = new Image();
+      const loaded = await new Promise(resolve => {
+        preload.onload = () => resolve(true);
+        preload.onerror = () => resolve(false);
+        preload.src = candidate.cover;
+      });
+      if (stopped) break;
+      if (loaded) {
+        active = target;
+        image.src = candidate.cover;
+        update();
+        image.classList.remove('story-hero-image-enter');
+        void image.offsetWidth;
+        image.classList.add('story-hero-image-enter');
+        break;
+      }
+      covers.splice(target, 1);
+      if (target < active) active -= 1;
+      if (covers.length < 2) {
+        update();
+        break;
+      }
+    }
+    busy = false;
+  };
+  image.addEventListener('error', () => {
+    if (stopped) return;
+    covers.splice(active, 1);
+    if (!covers.length) return noCovers();
+    active = active % covers.length;
+    image.src = covers[active].cover;
+    update();
+  });
+  previous.addEventListener('click', () => { void go(-1); });
+  next.addEventListener('click', () => { void go(1); });
+  update();
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const timer = covers.length > 1 && !reduceMotion ? window.setInterval(() => {
+    if (!document.hidden && !stage.matches(':hover') && !stage.contains(document.activeElement)) void go(1);
+  }, 5000) : null;
+  stopStoryHeroSlides = () => {
+    stopped = true;
+    if (timer !== null) window.clearInterval(timer);
+  };
 }
 
 function renderStoryHero(hero) {
@@ -176,21 +294,17 @@ function renderStoryHero(hero) {
   const url = safeUrl(hero.article.url);
   if (url === '#') return hideStoryHero();
 
+  stopStoryHeroSlides();
   storyHeroEl.replaceChildren();
   const card = document.createElement('article');
   card.className = 'story-hero-card';
   card.dataset.summarySource = cleanText(hero.article.source, 120) || 'מקור מוזיקה';
-  const image = safeUrl(hero.article.cover);
-  const hasCover = image !== '#';
-  if (hasCover) {
-    const img = document.createElement('img');
-    img.className = 'story-hero-image';
-    img.src = image;
-    img.alt = '';
-    img.loading = 'eager';
-    img.decoding = 'async';
-    img.addEventListener('error', () => img.remove(), { once: true });
-    card.appendChild(img);
+  const covers = storyHeroCovers(hero);
+  if (covers.length) {
+    const stage = document.createElement('div');
+    stage.className = 'story-hero-cover-stage';
+    card.appendChild(stage);
+    startStoryHeroSlides(stage, card, covers);
   } else {
     card.classList.add('no-cover');
   }
