@@ -862,7 +862,12 @@ function normalizeMediaForestChart(payload, type) {
   const entries = Array.isArray(payload?.entries) ? payload.entries : [];
   return entries
     .map((entry, index) => ({
-      position: findCurrentChartRank(entry),
+      // The weekly JSON is already ordered as the chart's top results.  Its
+      // `thisweek` property is not a row number in the international feeds
+      // (for example, the first result can report 12), so using it produces
+      // a visibly broken sequence. Number the displayed chart by its source
+      // order, consistently for every chart family.
+      position: index + 1,
       sourceIndex: index,
       title: type === "songs" ? String(entry.title || entry.song || "").trim() : null,
       artist: String(entry.artist || entry.performer || entry.title || "").replace(/^>+/, "").trim(),
@@ -1532,4 +1537,5 @@ const worker = {
   }
 };
 
+export { normalizeMediaForestChart };
 export default worker;
