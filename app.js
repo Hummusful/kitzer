@@ -235,7 +235,7 @@ function renderStoryHero(hero) {
       sourceLink.target = '_blank';
       sourceLink.rel = 'noopener noreferrer';
       const sourceName = document.createElement('strong');
-      sourceName.textContent = cleanText(source.name, 120) || 'מקור מוזיקה';
+      sourceName.textContent = cleanText(source.name || source.source, 120) || 'מקור מוזיקה';
       sourceLink.appendChild(sourceName);
       const sourceTitle = cleanText(source.title, 300);
       if (sourceTitle) {
