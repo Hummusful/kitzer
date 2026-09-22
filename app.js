@@ -70,8 +70,8 @@ function toggleTheme() {
 const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 const HEB_RTF = new Intl.RelativeTimeFormat('he-IL', { numeric: 'auto' });
 const TIMEZONE = 'Asia/Jerusalem';
-const CACHE_VERSION = 'kitzer-radio-revolution-images-v2';
-const TTL_MS = 30 * 60 * 1000;
+const CACHE_VERSION = 'kitzer-news-freshness-v3';
+const TTL_MS = 5 * 60 * 1000;
 
 function cleanText(input, limit = 0) {
   if (!input) return '';
@@ -675,7 +675,7 @@ function writeCache(items) {
   } catch {}
 }
 
-async function loadNews(forceRefresh = false) {
+async function loadNews(forceRefresh = false, quiet = false) {
   if (!feedEl) return;
 
   void loadStoryHero();
@@ -692,11 +692,12 @@ async function loadNews(forceRefresh = false) {
     const cached = readCache();
     if (cached) {
       renderNews(cached);
+      currentController = null;
       return;
     }
   }
 
-  renderLoading();
+  if (!quiet) renderLoading();
 
   let timeoutId = null;
   try {
@@ -724,6 +725,11 @@ async function loadNews(forceRefresh = false) {
   } catch (e) {
     // Cancelling an older request is expected; do not overwrite newer content.
     if (controller !== currentController) return;
+    if (quiet) {
+      console.error('Background LoadNews Failure:', e);
+      feedEl.setAttribute('aria-busy', 'false');
+      return;
+    }
     if (e.name === 'AbortError') {
       const message = !navigator.onLine 
         ? 'אין חיבור אינטרנט. בדוק את ההגדרות שלך.'
@@ -786,4 +792,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   loadNews(false);
+  const refreshNewsIfStale = () => {
+    if (document.hidden || !document.getElementById('chartsPanel')?.hidden || currentController || readCache()) return;
+    loadNews(false, true);
+  };
+  window.setInterval(refreshNewsIfStale, 60 * 1000);
+  document.addEventListener('visibilitychange', refreshNewsIfStale);
 });

@@ -467,7 +467,7 @@ function getNormalizedCacheKey(reqUrl) {
   });
   cleanParams.sort();
   u.search = cleanParams.toString();
-  u.searchParams.set("_filterv", "healthdedup2");
+  u.searchParams.set("_filterv", "freshness3");
   return new Request(u.toString(), { method: "GET" });
 }
 
@@ -1174,8 +1174,16 @@ export function bilingualStoryBoost(item, allItems) {
   }) ? 1 : 0;
 }
 
-export function sortMusicItems(items) {
+export function sortMusicItems(items, now = Date.now()) {
   return [...items].sort((a, b) => {
+    // Keep recent reporting ahead of older stories, even when the older story
+    // has stronger cross-language coverage or a higher music score.
+    const recencyBucket = item => {
+      const time = new Date(item.date).getTime();
+      return Number.isFinite(time) ? Math.floor(Math.max(0, now - time) / (6 * 60 * 60 * 1000)) : Infinity;
+    };
+    const freshnessOrder = recencyBucket(a) - recencyBucket(b);
+    if (freshnessOrder) return freshnessOrder;
     // A story independently covered in Hebrew and English is a stronger signal
     // than a one-source item, even when it arrived a few minutes later.
     const bilingualOrder = bilingualStoryBoost(b, items) - bilingualStoryBoost(a, items);
@@ -1501,7 +1509,7 @@ const worker = {
         }
       });
 
-      const ttl = filterQ ? 300 : 1800;
+      const ttl = 300;
       const finalRes = finalizeResponse(response, ttl);
 
       ctx.waitUntil(cache.put(cacheKey, finalRes.clone()));

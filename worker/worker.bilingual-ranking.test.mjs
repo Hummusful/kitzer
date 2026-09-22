@@ -14,8 +14,14 @@ test("coverage in Hebrew and English boosts a shared artist story", () => {
 
 test("a bilingual story outranks a newer one-language item", () => {
   const newerSingleLanguage = { title: "New electronic festival lineup", lang: "EN", date: "2026-09-20T11:15:00Z", music_score: 8 };
-  const sorted = sortMusicItems([...sameStoryInTwoLanguages, newerSingleLanguage]);
+  const sorted = sortMusicItems([...sameStoryInTwoLanguages, newerSingleLanguage], new Date("2026-09-20T12:00:00Z").getTime());
   assert.match(sorted[0].title, /Ed Sheeran|אד שירן/);
+});
+
+test("today's news outranks a bilingual story from two days ago", () => {
+  const today = { title: "New electronic festival lineup", lang: "EN", date: "2026-09-22T19:00:00Z", music_score: 7 };
+  const sorted = sortMusicItems([...sameStoryInTwoLanguages, today], new Date("2026-09-22T20:00:00Z").getTime());
+  assert.equal(sorted[0], today);
 });
 
 test("an unrelated Hebrew story does not create a bilingual boost", () => {
