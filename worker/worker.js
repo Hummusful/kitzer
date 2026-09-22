@@ -872,7 +872,7 @@ function normalizeMediaForestChart(payload, type) {
       title: type === "songs" ? String(entry.title || entry.song || "").trim() : null,
       artist: String(entry.artist || entry.performer || entry.title || "").replace(/^>+/, "").trim(),
       lastWeek: firstChartNumber(entry, ["lastweek", "lastWeek", "last_week", "previousPosition", "previous_position"]),
-      peak: firstChartNumber(entry, ["peak", "peakPosition", "peak_position"])
+      peak: Math.min(firstChartNumber(entry, ["peak", "peakPosition", "peak_position"]) ?? index + 1, index + 1)
     }))
     .sort((a, b) => (a.position ?? Infinity) - (b.position ?? Infinity) || a.sourceIndex - b.sourceIndex)
     .map(({ sourceIndex, ...entry }) => entry);
@@ -1300,7 +1300,7 @@ const worker = {
       }
       if (p === "/api/music-charts/weekly") {
         const cache = caches.default;
-        const cacheKey = new Request(`${url.origin}/api/music-charts/weekly?v=4`, { method: "GET" });
+        const cacheKey = new Request(`${url.origin}/api/music-charts/weekly?v=5`, { method: "GET" });
         const cached = await cache.match(cacheKey);
         if (cached && !url.searchParams.has("nocache")) {
           const response = new Response(cached.body, cached);

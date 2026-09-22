@@ -407,6 +407,7 @@ async function loadCharts(forceRefresh = false) {
   content.innerHTML = '<div class="loading-label"><span class="loader-equalizer" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span><span>טוענים את המצעד...</span></div>';
   try {
     const url = new URL(CHARTS_ENDPOINT, window.location.origin);
+    url.searchParams.set('v', '5');
     if (forceRefresh) url.searchParams.set('nocache', String(Date.now()));
     const response = await fetch(url, { credentials: 'include' });
     if (!response.ok) throw new Error(`Charts API response: ${response.status}`);

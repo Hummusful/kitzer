@@ -11,4 +11,14 @@ test("weekly chart rows are numbered consecutively from source order", () => {
   }, "songs");
 
   assert.deepEqual(entries.map(({ position }) => position), [1, 2]);
+  assert.deepEqual(entries.map(({ peak }) => peak), [1, 1]);
+});
+
+test("an artist's peak cannot be below their current chart rank", () => {
+  const entries = normalizeMediaForestChart({
+    entries: [{ artist: "Bob Dylan", thisweek: 129, peak: 129 }]
+  }, "artists");
+
+  assert.equal(entries[0].position, 1);
+  assert.equal(entries[0].peak, 1);
 });
