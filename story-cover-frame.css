@@ -1,0 +1,29 @@
+.story-hero-cover-stage {
+  position: relative;
+  min-width: 0;
+  min-height: 270px;
+  overflow: hidden;
+}
+
+.story-hero-cover-link {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.story-hero-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  object-fit: cover;
+}
+
+@media (max-width: 640px) {
+  .story-hero-cover-stage {
+    height: 220px;
+    min-height: 0;
+    max-height: none;
+  }
+}
