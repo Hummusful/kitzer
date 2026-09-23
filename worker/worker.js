@@ -1387,7 +1387,7 @@ const worker = {
         ctx.waitUntil(cache.put(cacheKey, finalRes.clone()));
         return finalRes;
       }
-      if (p === "/api/story-hero") {
+      if (p === "/api/story-hero" || (p === "/api/music" && url.searchParams.get("hero") === "1")) {
         return handleStoryHero(req, env, allowedOrigin);
       }
       if (!["", "/api", "/api/music"].includes(p)) {

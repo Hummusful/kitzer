@@ -4,7 +4,7 @@
 const WORKER_ORIGIN = 'https://api.kitzer.net';
 const FEED_ENDPOINT = window.CONFIG?.API_ENDPOINT || `${WORKER_ORIGIN}/api/music`;
 const CHARTS_ENDPOINT = window.CONFIG?.CHARTS_ENDPOINT || `${WORKER_ORIGIN}/api/music-charts/weekly`;
-const STORY_HERO_ENDPOINT = window.CONFIG?.STORY_HERO_ENDPOINT || `${WORKER_ORIGIN}/api/story-hero`;
+const STORY_HERO_ENDPOINT = window.CONFIG?.STORY_HERO_ENDPOINT || `${WORKER_ORIGIN}/api/music?hero=1`;
 const FETCH_TIMEOUT = window.CONFIG?.FETCH_TIMEOUT || 10000;
 const feedEl = document.getElementById('newsFeed');
 const storyHeroEl = document.getElementById('storyHero');
