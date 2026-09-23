@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { areCrossLanguageStoryMatches, chooseStoryHero, chooseStoryHeroArticle, chooseStoryHeroFallback, collectHeroSources, getStoryHeroSelectionType, isEligibleStoryHero, isEligibleStoryHeroFallback } from "./worker.js";
+import { areCrossLanguageStoryMatches, buildCoherentHeroCandidate, chooseStoryHero, chooseStoryHeroArticle, chooseStoryHeroFallback, collectHeroSources, getStoryHeroSelectionType, isEligibleStoryHero, isEligibleStoryHeroFallback } from "./worker.js";
 
 const now = new Date("2026-09-20T12:00:00.000Z");
 const candidate = (id, score, { sources = 3, updatedAt = "2026-09-20T11:00:00.000Z", status = "hero_candidate" } = {}) => ({ id, story_score: score, source_count: sources, last_updated: updatedAt, status });
@@ -91,4 +91,28 @@ test("cross-language sources require the shared story identities", () => {
   const hebrewDifferentStory = { title: "אד שירן הכריז על אלבום חדש", published_at: "2026-09-20T09:00:00Z" };
   assert.equal(areCrossLanguageStoryMatches(english, hebrewSameStory), true);
   assert.equal(areCrossLanguageStoryMatches(english, hebrewDifferentStory), false);
+});
+
+test("Hero rejects a polluted cluster of unrelated stories", () => {
+  const cluster = { id: "bad", title: "Taylor Swift Announces New Single", story_score: 188, article_count: 3 };
+  const rows = [
+    { title: "Empath’s Catherine Elicson Announces Debut Solo Album", source: "Stereogum", article_url: "https://example.com/empath", published_at: now.toISOString() },
+    { title: "VMAs Introduce New Award For Taylor Swift", source: "Pitchfork", article_url: "https://example.com/vmas", published_at: now.toISOString() },
+    { title: "Julian Jordan Releases Afrojack Remix", source: "EDM Sauce", article_url: "https://example.com/remix", published_at: now.toISOString() }
+  ];
+  assert.equal(buildCoherentHeroCandidate(cluster, rows), null);
+});
+
+test("Hero uses a real article title and only matching sources", () => {
+  const cluster = { id: "mixed", title: "Invented headline", story_score: 120, article_count: 3 };
+  const rows = [
+    { title: "Ed Sheeran addresses Macklemore removal", source: "Source A", article_url: "https://example.com/a", cover: "https://example.com/a.jpg", published_at: now.toISOString() },
+    { title: "Ed Sheeran discusses Macklemore removal", source: "Source B", article_url: "https://example.com/b", published_at: now.toISOString() },
+    { title: "Empath announces debut album", source: "Source C", article_url: "https://example.com/c", published_at: now.toISOString() }
+  ];
+  const hero = buildCoherentHeroCandidate(cluster, rows);
+  assert.equal(hero.title, rows[0].title);
+  assert.equal(hero.url, rows[0].article_url);
+  assert.equal(hero.source_count, 2);
+  assert.equal(hero.coherentRows.length, 2);
 });

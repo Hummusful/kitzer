@@ -3,7 +3,7 @@
  * גרסה מאובטחת וסופית - כולל תיקון חסימות, Parsing ושיפור thumbnails
  */
 
-import { assignArticleToStoryCluster } from "./story-radar.mjs";
+import { assignArticleToStoryCluster, extractMainEntity, isStrongStoryMatch } from "./story-radar.mjs";
 
 // ----------------------------------------------------
 // 1. הגדרות אבטחה וכותרות (Security Headers)
@@ -603,6 +603,38 @@ export function collectHeroSources(rows) {
     .filter(source => isHttpUrl(source.url) && !seen.has(source.url) && seen.add(source.url));
 }
 
+export function buildCoherentHeroCandidate(cluster, rows) {
+  const articles = rows.filter(row => isHttpUrl(row.article_url) && row.title && Number.isFinite(new Date(row.published_at).getTime()));
+  let best = [];
+  for (const anchor of articles) {
+    const related = articles.filter(article => article === anchor ||
+      isStrongStoryMatch(
+        { title: article.title, publishedAt: article.published_at },
+        { title: anchor.title, main_entity: extractMainEntity(anchor.title), last_updated: anchor.published_at }
+      ) || areCrossLanguageStoryMatches(anchor, article));
+    const sourceCount = new Set(related.map(article => article.source)).size;
+    const bestSourceCount = new Set(best.map(article => article.source)).size;
+    if (sourceCount > bestSourceCount || (sourceCount === bestSourceCount && related.length > best.length)) best = related;
+  }
+  const sourceCount = new Set(best.map(article => article.source)).size;
+  if (sourceCount < 2) return null;
+  const article = chooseStoryHeroArticle(best);
+  return {
+    ...cluster,
+    title: article.title,
+    article_title: article.title,
+    url: article.article_url,
+    cover: article.cover,
+    source: article.source,
+    published_at: article.published_at,
+    article_count: best.length,
+    source_count: sourceCount,
+    story_score: Math.round(Number(cluster.story_score || 0) * best.length / Math.max(Number(cluster.article_count || 0), best.length)),
+    status: sourceCount >= 3 ? "hero_candidate" : "trending",
+    coherentRows: best
+  };
+}
+
 async function handleStoryHero(request, env, allowedOrigin) {
   if (request.method !== "GET") {
     return finalizeResponse(new Response(JSON.stringify({ error: "METHOD_NOT_ALLOWED" }), {
@@ -668,6 +700,7 @@ async function handleStoryHero(request, env, allowedOrigin) {
         FROM story_clusters AS cluster
         WHERE cluster.last_updated >= ?
         ORDER BY cluster.story_score DESC, cluster.last_updated DESC
+        LIMIT 30
       `).bind(cutoff).all(),
       env.KITZER_NEWS_DB.prepare(`
         SELECT cluster_id, selected_at
@@ -676,7 +709,23 @@ async function handleStoryHero(request, env, allowedOrigin) {
       `).first()
     ]);
 
-    const candidates = candidatesResult.results || [];
+    const rawCandidates = candidatesResult.results || [];
+    const ids = rawCandidates.map(candidate => candidate.id);
+    const linkedArticles = ids.length ? await env.KITZER_NEWS_DB.prepare(`
+      SELECT link.story_cluster_id, article.source, article.title, article.article_url, article.cover, article.published_at
+      FROM story_cluster_articles AS link
+      JOIN story_articles AS article ON article.url_hash = link.article_url_hash
+      WHERE link.story_cluster_id IN (${ids.map(() => "?").join(",")})
+      ORDER BY article.published_at DESC
+    `).bind(...ids).all() : { results: [] };
+    const rowsByCluster = new Map();
+    for (const row of linkedArticles.results || []) {
+      if (!rowsByCluster.has(row.story_cluster_id)) rowsByCluster.set(row.story_cluster_id, []);
+      rowsByCluster.get(row.story_cluster_id).push(row);
+    }
+    const candidates = rawCandidates
+      .map(candidate => buildCoherentHeroCandidate(candidate, rowsByCluster.get(candidate.id) || []))
+      .filter(Boolean);
     const confirmedHero = chooseStoryHero(candidates, state, now);
     const hero = confirmedHero || chooseStoryHeroFallback(candidates, state, now);
     if (!hero) {
@@ -694,24 +743,15 @@ async function handleStoryHero(request, env, allowedOrigin) {
       `).bind(hero.id, now.toISOString()).run();
     }
 
-    const [sourceRows, recentArticles] = await Promise.all([
-      env.KITZER_NEWS_DB.prepare(`
-      SELECT article.source, article.title, article.article_url, article.cover, article.published_at
-      FROM story_cluster_articles AS link
-      JOIN story_articles AS article ON article.url_hash = link.article_url_hash
-      WHERE link.story_cluster_id = ?
-      ORDER BY article.published_at DESC
-      `).bind(hero.id).all(),
-      env.KITZER_NEWS_DB.prepare(`
+    const recentArticles = await env.KITZER_NEWS_DB.prepare(`
         SELECT source, title, article_url, cover, published_at
         FROM story_articles
         WHERE published_at >= ?
         ORDER BY published_at DESC
         LIMIT 120
-      `).bind(cutoff).all()
-    ]);
+      `).bind(cutoff).all();
     const siblingSources = (recentArticles.results || []).filter(article => areCrossLanguageStoryMatches(hero.article_title ? { title: hero.article_title, published_at: hero.published_at } : hero, article));
-    const sources = collectHeroSources([...(sourceRows.results || []), ...siblingSources]);
+    const sources = collectHeroSources([...hero.coherentRows, ...siblingSources]);
 
     return finalizeResponse(new Response(JSON.stringify({
       hero: {
