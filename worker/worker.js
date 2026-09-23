@@ -467,7 +467,7 @@ function getNormalizedCacheKey(reqUrl) {
   });
   cleanParams.sort();
   u.search = cleanParams.toString();
-  u.searchParams.set("_filterv", "balancedfresh4");
+  u.searchParams.set("_filterv", "feedintegrity7");
   return new Request(u.toString(), { method: "GET" });
 }
 
@@ -1152,6 +1152,7 @@ async function recordSourceHealthSafely(env, feed, errorMessage = null) {
 const STORY_STOP_WORDS = new Set([
   "the","a","an","and","or","of","to","in","on","for","with","from","at","by",
   "new","music","song","album","video","says","after","about","into","their","his","her",
+  "announces","announced","reveals","revealed","releases","released","unveils","unveiled",
   "של","את","על","עם","לא","זה","זו","חדש","חדשה","שיר","אלבום","מוזיקה","מוסיקה",
   "אחרי","לקראת","מתוך","הוא","היא","וגם","אבל"
 ]);
@@ -1188,6 +1189,7 @@ function getStoryTokens(title) {
     normalizeStoryTitle(title)
       .split(" ")
       .filter(token => token.length >= 3 && !STORY_STOP_WORDS.has(token))
+      .map(token => /^(sue|sues|suing|lawsuit|lawsuits)$/.test(token) ? "lawsuit" : token)
   );
 }
 
@@ -1254,7 +1256,12 @@ export function selectBalancedMusicItems(sortedItems, limit) {
   return sortedItems.filter(item => selected.has(item)).slice(0, limit);
 }
 
-function areRelatedStories(a, b) {
+export function isRecentPublication(date, cutoff, now = Date.now()) {
+  const publishedAt = new Date(date).getTime();
+  return Number.isFinite(publishedAt) && publishedAt >= cutoff && publishedAt <= now + 5 * 60 * 1000;
+}
+
+export function areRelatedStories(a, b) {
   const aTitle = normalizeStoryTitle(a.title);
   const bTitle = normalizeStoryTitle(b.title);
   if (!aTitle || !bTitle) return false;
@@ -1269,10 +1276,12 @@ function areRelatedStories(a, b) {
   const bTokens = getStoryTokens(b.title);
   const intersection = [...aTokens].filter(token => bTokens.has(token)).length;
   const union = new Set([...aTokens, ...bTokens]).size;
-  return intersection >= 3 && union > 0 && intersection / union >= 0.55;
+  const smallerTitle = Math.min(aTokens.size, bTokens.size);
+  return intersection >= 3 && smallerTitle > 0 &&
+    intersection / smallerTitle >= 0.4 && union > 0 && intersection / union >= 0.25;
 }
 
-function mergeRelatedStories(items) {
+export function mergeRelatedStories(items) {
   const merged = [];
 
   for (const item of items) {
@@ -1504,11 +1513,9 @@ const worker = {
 
       const resultsArray = await fetchWithConcurrencyLimit(tasks, 10);
 
-      const cutoff = Date.now() - daysBack * 24 * 60 * 60 * 1000;
-      const rssItems = resultsArray.flat().filter(item => {
-        const publishedAt = new Date(item.date).getTime();
-        return Number.isFinite(publishedAt) && publishedAt >= cutoff;
-      });
+      const feedNow = Date.now();
+      const cutoff = feedNow - daysBack * 24 * 60 * 60 * 1000;
+      const rssItems = resultsArray.flat().filter(item => isRecentPublication(item.date, cutoff, feedNow));
 
       // Keep the feed response independent of D1 writes and AI. Articles are
       // clustered before UI-only merging so each RSS source article is retained.
@@ -1527,10 +1534,7 @@ const worker = {
         allItems.push(...lastfmItems);
       }
 
-      allItems = allItems.filter(i => {
-        const d = new Date(i.date).getTime();
-        return !isNaN(d) && d >= cutoff;
-      });
+      allItems = allItems.filter(item => isRecentPublication(item.date, cutoff, feedNow));
 
       if (filterQ) {
         allItems = allItems.filter(i =>
