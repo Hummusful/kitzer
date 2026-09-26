@@ -1,0 +1,33 @@
+{
+  "description": "KITZER security headers for public site",
+  "expression": "(http.host eq \"www.kitzer.net\" or http.host eq \"kitzer.net\")",
+  "action": "rewrite",
+  "action_parameters": {
+    "headers": {
+      "Content-Security-Policy": {
+        "operation": "set",
+        "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self' https://api.kitzer.net https://ai.kitzer.net; object-src 'none'; base-uri 'none'; form-action 'self'; frame-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests"
+      },
+      "Permissions-Policy": {
+        "operation": "set",
+        "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+      },
+      "Referrer-Policy": {
+        "operation": "set",
+        "value": "strict-origin-when-cross-origin"
+      },
+      "Strict-Transport-Security": {
+        "operation": "set",
+        "value": "max-age=31536000; includeSubDomains"
+      },
+      "X-Content-Type-Options": {
+        "operation": "set",
+        "value": "nosniff"
+      },
+      "X-Frame-Options": {
+        "operation": "set",
+        "value": "DENY"
+      }
+    }
+  }
+}
