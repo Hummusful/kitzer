@@ -992,6 +992,16 @@ async function fetchWithConcurrencyLimit(tasks, limit = 6) {
   return Promise.all(results);
 }
 
+async function fetchExternal(input, init = {}, timeoutMs = 6000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 // Spotify Trending for Israel
 // Add SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET via wrangler:
 // wrangler secret put SPOTIFY_CLIENT_ID
@@ -1000,32 +1010,27 @@ async function fetchSpotifyTrending(env) {
   try {
     const clientId = env.SPOTIFY_CLIENT_ID;
     const clientSecret = env.SPOTIFY_CLIENT_SECRET;
-    console.log('Spotify - clientId exists:', !!clientId, 'clientSecret exists:', !!clientSecret);
     if (!clientId || !clientSecret) {
-      console.log('Spotify credentials missing');
       return [];
     }
 
     // Get access token
-    const authRes = await fetch('https://accounts.spotify.com/api/token', {
+    const authRes = await fetchExternal('https://accounts.spotify.com/api/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: `grant_type=client_credentials&client_id=${clientId}&client_secret=${clientSecret}`
     });
+    if (!authRes.ok) return [];
     const auth = await authRes.json();
-    console.log('Spotify auth response:', auth.access_token ? 'got token' : 'no token');
     if (!auth.access_token) {
-      console.log('Spotify auth failed:', auth);
       return [];
     }
 
     // Get trending tracks (Israeli top 50)
-    const res = await fetch('https://api.spotify.com/v1/playlists/37i9dQZEVXbJ6IpvItkve3', {
+    const res = await fetchExternal('https://api.spotify.com/v1/playlists/37i9dQZEVXbJ6IpvItkve3', {
       headers: { 'Authorization': `Bearer ${auth.access_token}` }
     });
-    console.log('Spotify playlist response:', res.status);
     if (!res.ok) {
-      console.log('Spotify playlist failed:', res.status);
       return [];
     }
 
@@ -1045,7 +1050,6 @@ async function fetchSpotifyTrending(env) {
         cover_text: 'Spotify'
       });
     }
-    console.log('Spotify returned:', items.length, 'items');
     return items;
   } catch (err) {
     console.error('Spotify error:', err);
@@ -1064,15 +1068,12 @@ async function fetchLastFmTrending(env) {
     url.searchParams.set('limit', '15');
     url.searchParams.set('format', 'json');
     url.searchParams.set('api_key', apiKey);
-    const res = await fetch(url);
-    console.log('Last.fm response:', res.status);
+    const res = await fetchExternal(url);
     if (!res.ok) {
-      console.log('Last.fm failed:', res.status);
       return [];
     }
 
     const data = await res.json();
-    console.log('Last.fm data received, tracks:', data.tracks?.track?.length);
     const items = [];
     for (const track of data.tracks.track.slice(0, 10)) {
       items.push({
@@ -1088,7 +1089,6 @@ async function fetchLastFmTrending(env) {
         cover_text: 'Last.fm'
       });
     }
-    console.log('Last.fm returned:', items.length, 'items');
     return items;
   } catch (err) {
     console.error('Last.fm error:', err);

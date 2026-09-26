@@ -17,7 +17,8 @@ const AI_MODEL = "@cf/zai-org/glm-4.7-flash";
 const AI_DAILY_FREE_NEURONS = 10_000;
 const AI_SOFT_LIMIT_NEURONS = 8_500;
 const AI_DAILY_REQUEST_LIMIT = 40;
-const AI_REQUESTS_PER_MINUTE = 5;
+const AI_GLOBAL_REQUESTS_PER_MINUTE = 20;
+const AI_REQUESTS_PER_CLIENT_PER_MINUTE = 3;
 const AI_WARN_NEURONS = 7_500;
 const AI_CRITICAL_NEURONS = 8_000;
 const AI_INPUT_NEURONS_PER_MILLION_TOKENS = 5_500;
@@ -577,12 +578,43 @@ async function getAiUsageForDay(env, day = utcDay()) {
   `).bind(day).first();
 }
 
-async function reserveAiRequest(env) {
+async function reserveAiRequest(env, request) {
   await ensureAiUsageTable(env);
   const now = new Date().toISOString();
   const day = utcDay();
   const minuteBucket = now.slice(0, 16);
 
+  // Cloudflare overwrites CF-Connecting-IP at the edge. Hash it before using
+  // it as a D1 key so the rate-limit table does not retain raw IP addresses.
+  const clientAddress = request.headers.get("CF-Connecting-IP") || "unknown";
+  const clientBucket = `client:${minuteBucket}:${await sha256Hex(clientAddress)}`;
+
+  const globalMinute = await env.KITZER_NEWS_DB.prepare(`
+    INSERT INTO ai_request_limits (bucket, requests, updated_at)
+    VALUES (?, 1, ?)
+    ON CONFLICT(bucket) DO UPDATE SET
+      requests = requests + 1,
+      updated_at = excluded.updated_at
+    WHERE requests < ?
+    RETURNING requests
+  `).bind(`global:${minuteBucket}`, now, AI_GLOBAL_REQUESTS_PER_MINUTE).first();
+
+  if (!globalMinute) throw new Error("AI_RATE_LIMITED");
+
+  const clientMinute = await env.KITZER_NEWS_DB.prepare(`
+    INSERT INTO ai_request_limits (bucket, requests, updated_at)
+    VALUES (?, 1, ?)
+    ON CONFLICT(bucket) DO UPDATE SET
+      requests = requests + 1,
+      updated_at = excluded.updated_at
+    WHERE requests < ?
+    RETURNING requests
+  `).bind(clientBucket, now, AI_REQUESTS_PER_CLIENT_PER_MINUTE).first();
+
+  if (!clientMinute) throw new Error("AI_RATE_LIMITED");
+
+  // Reserve the daily slot last: a rejected minute-rate request must never
+  // consume a daily AI request from every user.
   const daily = await env.KITZER_NEWS_DB.prepare(`
     INSERT INTO ai_usage_daily (
       day_utc, requests, prompt_tokens, completion_tokens, total_tokens, neurons, updated_at
@@ -595,18 +627,6 @@ async function reserveAiRequest(env) {
   `).bind(day, now, AI_DAILY_REQUEST_LIMIT).first();
 
   if (!daily) throw new Error("AI_DAILY_REQUEST_LIMIT");
-
-  const minute = await env.KITZER_NEWS_DB.prepare(`
-    INSERT INTO ai_request_limits (bucket, requests, updated_at)
-    VALUES (?, 1, ?)
-    ON CONFLICT(bucket) DO UPDATE SET
-      requests = requests + 1,
-      updated_at = excluded.updated_at
-    WHERE requests < ?
-    RETURNING requests
-  `).bind(minuteBucket, now, AI_REQUESTS_PER_MINUTE).first();
-
-  if (!minute) throw new Error("AI_RATE_LIMITED");
 }
 
 async function assertAiBudget(env) {
@@ -640,9 +660,9 @@ async function recordAiUsage(env, usage) {
   ).run();
 }
 
-async function runTrackedAi(env, messages) {
+async function runTrackedAi(env, messages, request) {
   await assertAiBudget(env);
-  await reserveAiRequest(env);
+  await reserveAiRequest(env, request);
 
   const result = await env.AI.run(AI_MODEL, {
     messages,
@@ -666,7 +686,7 @@ async function runTrackedAi(env, messages) {
   return result;
 }
 
-async function summarizeWithAi(env, { title, source, articleText, limited }) {
+async function summarizeWithAi(env, { title, source, articleText, limited, request }) {
   if (!env.AI) throw new Error("AI_BINDING_MISSING");
 
   const systemPrompt = [
@@ -689,7 +709,7 @@ async function summarizeWithAi(env, { title, source, articleText, limited }) {
         content: `כותרת: ${title || "לא סופקה"}\nמקור: ${source || "לא סופק"}\n${limited ? "הערה: הטקסט הזמין חלקי בלבד.\n" : ""}\n<article>\n${text}\n</article>`
       }
     ];
-    return runTrackedAi(env, messages);
+    return runTrackedAi(env, messages, request);
   }
 
   const firstText = articleText.slice(0, 8_000);
@@ -860,7 +880,7 @@ async function handleSummary(request, env, origin) {
 
     const title = String(body?.title || "").trim().slice(0, 500);
     const source = String(body?.source || "").trim().slice(0, 200);
-    const ai = await summarizeWithAi(env, { title, source, articleText, limited });
+    const ai = await summarizeWithAi(env, { title, source, articleText, limited, request });
 
     await saveSummary(env, {
       url_hash: key,
