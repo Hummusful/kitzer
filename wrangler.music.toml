@@ -1,0 +1,16 @@
+name = "music-aggregator"
+main = "src/index.js"
+compatibility_date = "2026-09-05"
+keep_vars = true
+workers_dev = true
+preview_urls = false
+
+routes = [
+  { pattern = "api.kitzer.net/*", zone_name = "kitzer.net" }
+]
+
+[[d1_databases]]
+binding = "KITZER_NEWS_DB"
+database_name = "kitzer-news"
+database_id = "2b151508-380e-4741-8be5-6afe883344e6"
+migrations_dir = "worker/migrations"

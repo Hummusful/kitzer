@@ -18,7 +18,7 @@ Both Workers use the KITZER_NEWS_DB D1 database.
 | Music API | `worker/worker.js` (also exported by `src/index.js`) | Existing `api.kitzer.net` Worker |
 | AI summary API | `worker/summary-worker.js` | `wrangler.toml` (`kitzer-summary`) |
 
-The music API is intentionally listed separately because its production Worker predates this repository configuration. Do not deploy `wrangler.toml` to `api.kitzer.net`: it deploys the AI summary Worker.
+Use `wrangler.music.toml` for `api.kitzer.net` and `wrangler.toml` for the AI summary Worker. They are separate Workers and must be deployed with their matching configuration.
 
 ## Development and tests
 
@@ -51,6 +51,13 @@ npm exec wrangler -- deploy
 
 ```powershell
 npm exec wrangler -- d1 migrations apply kitzer-news --remote
+```
+
+Deploy the music API separately:
+
+```powershell
+npm exec wrangler -- deploy --config wrangler.music.toml --dry-run
+npm exec wrangler -- deploy --config wrangler.music.toml
 ```
 
 ## Security controls
