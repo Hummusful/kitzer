@@ -9,6 +9,12 @@ routes = [
   { pattern = "api.kitzer.net/*", zone_name = "kitzer.net" }
 ]
 
+# Keep the default homepage feed warm. Without this trigger, the scheduled()
+# handler in worker.js is never invoked and the first visitor after expiry has
+# to wait for every live RSS source.
+[triggers]
+crons = ["*/5 * * * *"]
+
 [[d1_databases]]
 binding = "KITZER_NEWS_DB"
 database_name = "kitzer-news"

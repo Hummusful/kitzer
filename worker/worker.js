@@ -992,6 +992,41 @@ async function fetchWithConcurrencyLimit(tasks, limit = 6) {
   return Promise.all(results);
 }
 
+const HOMEPAGE_FEED_SNAPSHOT_KEY = "homepage-v1";
+
+function isHomepageFeedRequest({ filterQ, filterGenre, limit, daysBack }) {
+  return !filterQ && (!filterGenre || filterGenre === "all") && limit === 40 && daysBack === 3;
+}
+
+async function readFeedSnapshot(env, key = HOMEPAGE_FEED_SNAPSHOT_KEY) {
+  try {
+    const result = await env.KITZER_NEWS_DB.prepare(`
+      SELECT payload FROM feed_snapshots WHERE cache_key = ?
+    `).bind(key).first();
+    return typeof result?.payload === "string" ? result.payload : null;
+  } catch (error) {
+    // Keep serving live data during the deployment where the migration has not
+    // reached D1 yet.
+    console.error("Feed snapshot read failed", String(error?.message || error));
+    return null;
+  }
+}
+
+async function writeFeedSnapshot(env, payload, key = HOMEPAGE_FEED_SNAPSHOT_KEY) {
+  try {
+    await env.KITZER_NEWS_DB.prepare(`
+      INSERT INTO feed_snapshots (cache_key, payload, generated_at)
+      VALUES (?, ?, ?)
+      ON CONFLICT(cache_key) DO UPDATE SET
+        payload = excluded.payload,
+        generated_at = excluded.generated_at
+    `).bind(key, payload, new Date().toISOString()).run();
+  } catch (error) {
+    // A snapshot is a resilience layer, never a reason to fail a fresh feed.
+    console.error("Feed snapshot write failed", String(error?.message || error));
+  }
+}
+
 async function fetchExternal(input, init = {}, timeoutMs = 6000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -1409,6 +1444,11 @@ const worker = {
       const cacheKey = getNormalizedCacheKey(req.url);
       const cache = caches.default;
 
+      const filterQ = (url.searchParams.get("q") || "").slice(0, 50).toLowerCase();
+      const filterGenre = (url.searchParams.get("genre") || "").slice(0, 30).toLowerCase();
+      const limit = Math.min(parseInt(url.searchParams.get("limit")) || 40, 80);
+      const daysBack = Math.min(parseInt(url.searchParams.get("days")) || 3, 365);
+
       let cachedRes = await cache.match(cacheKey);
       if (cachedRes && !url.searchParams.has("nocache")) {
         const r = new Response(cachedRes.body, cachedRes);
@@ -1420,10 +1460,23 @@ const worker = {
         return finalizeResponse(r);
       }
 
-      const filterQ = (url.searchParams.get("q") || "").slice(0, 50).toLowerCase();
-      const filterGenre = (url.searchParams.get("genre") || "").slice(0, 30).toLowerCase();
-      const limit = Math.min(parseInt(url.searchParams.get("limit")) || 40, 80);
-      const daysBack = Math.min(parseInt(url.searchParams.get("days")) || 3, 365);
+      // Serve the last successful homepage feed rather than making a visitor
+      // wait for live RSS. The scheduled refresh uses `nocache` and bypasses
+      // this branch so it can continue rebuilding the snapshot in background.
+      if (!url.searchParams.has("nocache") && isHomepageFeedRequest({ filterQ, filterGenre, limit, daysBack })) {
+        const snapshot = await readFeedSnapshot(env);
+        if (snapshot) {
+          const response = finalizeResponse(new Response(snapshot, {
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+              "X-Worker-Cache": "SNAPSHOT",
+              ...(allowedOrigin ? { "X-Allow-Origin": allowedOrigin } : {})
+            }
+          }), 300);
+          ctx.waitUntil(cache.put(cacheKey, response.clone()));
+          return response;
+        }
+      }
 
       const FALLBACK_FEEDS = [
         // HEBREW 🇮🇱
@@ -1577,6 +1630,9 @@ const worker = {
       const ttl = 300;
       const finalRes = finalizeResponse(response, ttl);
 
+      if (isHomepageFeedRequest({ filterQ, filterGenre, limit, daysBack })) {
+        ctx.waitUntil(writeFeedSnapshot(env, responseBody));
+      }
       ctx.waitUntil(cache.put(cacheKey, finalRes.clone()));
       return finalRes;
     } catch (err) {

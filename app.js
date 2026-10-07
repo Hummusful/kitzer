@@ -675,7 +675,10 @@ function writeCache(items) {
   } catch {}
 }
 
-async function loadNews(forceRefresh = false, quiet = false) {
+// `bypassLocalCache` lets us show the last good feed immediately while asking
+// the API for a newer version in the background. It deliberately does not add
+// `nocache` to the URL, so normal visitors still benefit from the Worker cache.
+async function loadNews(forceRefresh = false, quiet = false, bypassLocalCache = false) {
   if (!feedEl) return;
 
   void loadStoryHero();
@@ -688,11 +691,14 @@ async function loadNews(forceRefresh = false, quiet = false) {
   currentTimeoutId = null;
   feedEl.setAttribute('aria-busy', 'true');
 
-  if (!forceRefresh) {
+  if (!forceRefresh && !bypassLocalCache) {
     const cached = readCache();
     if (cached) {
       renderNews(cached);
       currentController = null;
+      // A page reload should never be required just to discover new stories.
+      // Keep the cached feed visible if this request is slow or fails.
+      void loadNews(false, true, true);
       return;
     }
   }
