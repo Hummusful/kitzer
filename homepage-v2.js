@@ -162,6 +162,11 @@
     return article;
   }
 
+  function syncPromotedCards(cards) {
+    feed.querySelectorAll('.news-card.editorial-promoted').forEach(card => card.classList.remove('editorial-promoted'));
+    cards.forEach(card => card.classList.add('editorial-promoted'));
+  }
+
   function refreshEditorialNow() {
     const cards = selectEditorialCards();
     if (!cards.length) return;
@@ -172,6 +177,7 @@
     });
     if (!fragment.childNodes.length) return;
     nowGrid.replaceChildren(fragment);
+    syncPromotedCards(cards);
     nowSection.hidden = false;
   }
 
