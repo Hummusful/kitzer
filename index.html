@@ -33,7 +33,7 @@
   <link rel="stylesheet" href="./styles.css?v=story-cover-frame-2">
   <link rel="stylesheet" href="./story-cover-frame.css">
   <link rel="stylesheet" href="./summary.css?v=ai-summary-1">
-  <link rel="stylesheet" href="./homepage-v2.css?v=editorial-4">
+  <link rel="stylesheet" href="./homepage-v2.css?v=editorial-5">
 </head>
 <body>
   <a class="skip-link" href="#newsFeed">דלג לתוכן</a>
@@ -50,6 +50,15 @@
       <span class="dot"></span>
       <span class="label">LIVE Music Feed</span>
     </div>
+
+    <nav id="contentNav" class="content-nav" aria-label="מדורי מוזיקה">
+      <button type="button" class="active" data-section="home" aria-current="page">ראשי</button>
+      <button type="button" data-section="israel" aria-current="false">ישראל</button>
+      <button type="button" data-section="world" aria-current="false">עולם</button>
+      <button type="button" data-section="hiphop" aria-current="false">היפ־הופ</button>
+      <button type="button" data-section="electronic" aria-current="false">אלקטרוני</button>
+      <button type="button" data-section="charts" aria-current="false">מצעדים</button>
+    </nav>
 
     <div class="editorial-intro">
       <div>
@@ -95,7 +104,7 @@
             <div class="btn-group" role="tablist" aria-label="סוג המצעד">
               <button class="btn chart-tab active" id="chart-israeliSongs" role="tab" data-chart="israeliSongs" aria-controls="chartContent" aria-selected="true">שירים ישראליים</button>
               <button class="btn chart-tab" id="chart-internationalSongs" role="tab" data-chart="internationalSongs" aria-controls="chartContent" aria-selected="false">שירים בינלאומיים</button>
-              <button class="btn chart-tab" id="chart-israeliArtists" role="tab" data-chart="israeliArtists" aria-controls="chartContent" aria-selected="false">אמנים ישראליים</button>
+              <button class="btn chart-tab" id="chart-israeliArtists" role="tab" data-chart="internationalSongs" aria-controls="chartContent" aria-selected="false">אמנים ישראליים</button>
               <button class="btn chart-tab" id="chart-internationalArtists" role="tab" data-chart="internationalArtists" aria-controls="chartContent" aria-selected="false">אמנים בינלאומיים</button>
             </div>
           </div>
@@ -132,6 +141,6 @@
   <script src="./news-cache-refresh-v7.js?ready=1" defer></script>
   <script src="./app.js?v=feed-integrity-7" defer></script>
   <script src="./summary.js?v=private-access-7" defer></script>
-  <script src="./homepage-v2.js?v=editorial-4" defer></script>
+  <script src="./homepage-v2.js?v=editorial-5" defer></script>
 </body>
 </html>
