@@ -99,9 +99,9 @@ function denial(status, code) {
   };
 }
 
-// Reusable guard for future /api/admin/* routes. A caller returns `response` when
-// `ok` is false, and otherwise may use the verified Access claims in `claims`.
-export async function authorizeAdminRequest(request, env, { fetchImpl = fetch, now = new Date() } = {}) {
+// Reusable guard for routes that require a signed-in Cloudflare Access user.
+// Callers may apply additional authorization (such as an admin allow-list).
+export async function authorizeAccessRequest(request, env, { fetchImpl = fetch, now = new Date() } = {}) {
   const token = request.headers.get("Cf-Access-Jwt-Assertion");
   if (!token) return denial(401, "ACCESS_TOKEN_MISSING");
 
@@ -111,12 +111,20 @@ export async function authorizeAdminRequest(request, env, { fetchImpl = fetch, n
   } catch (error) {
     if (String(error?.message || "").startsWith("MISSING_ACCESS_") ||
         String(error?.message || "").startsWith("INVALID_ACCESS_")) {
-      return denial(500, "ADMIN_AUTH_MISCONFIGURED");
+      return denial(500, "ACCESS_AUTH_MISCONFIGURED");
     }
     return denial(401, "ACCESS_TOKEN_INVALID");
   }
 
-  const email = String(claims.email || "").trim().toLowerCase();
+  return { ok: true, claims };
+}
+
+// Reusable guard for /api/admin/* routes.
+export async function authorizeAdminRequest(request, env, options = {}) {
+  const access = await authorizeAccessRequest(request, env, options);
+  if (!access.ok) return access;
+
+  const email = String(access.claims.email || "").trim().toLowerCase();
   if (!adminEmails(env.ADMIN_EMAILS).has(email)) return denial(403, "ADMIN_FORBIDDEN");
-  return { ok: true, email, claims };
+  return { ok: true, email, claims: access.claims };
 }

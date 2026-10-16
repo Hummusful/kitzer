@@ -11,7 +11,7 @@
  */
 
 import { assignArticleToStoryCluster } from "./story-radar.mjs";
-import { authorizeAdminRequest } from "./admin-auth.mjs";
+import { authorizeAccessRequest, authorizeAdminRequest } from "./admin-auth.mjs";
 
 const AI_MODEL = "@cf/zai-org/glm-4.7-flash";
 const AI_DAILY_FREE_NEURONS = 10_000;
@@ -834,6 +834,14 @@ async function handleSummary(request, env, origin) {
   if (request.method !== "POST") return json({ error: "METHOD_NOT_ALLOWED" }, 405, origin);
   if (!origin) return json({ error: "ORIGIN_NOT_ALLOWED" }, 403, null);
   if (!env.KITZER_NEWS_DB) return json({ error: "D1_BINDING_MISSING" }, 503, origin);
+
+  // The public summary route has its own Access application and audience; the
+  // admin route uses a different audience and remains governed separately.
+  const access = await authorizeAccessRequest(request, {
+    ...env,
+    CF_ACCESS_AUD: env.CF_SUMMARY_ACCESS_AUD
+  });
+  if (!access.ok) return access.response;
 
   let body;
   try {
