@@ -34,57 +34,70 @@
       index,
       title,
       source,
+      sourceKey: normalize(source),
       tags,
-      fresh: Boolean(card.querySelector('.fresh-badge')),
+      fresh: card.classList.contains('fresh'),
       hasCover: Boolean(card.querySelector('.news-cover')),
       hasSummary: Boolean(text(card, '.news-summary'))
     };
   }
 
+  function chooseBest(pool, selected, sourceCounts, tagCounts) {
+    let best = null;
+    let bestScore = -Infinity;
+
+    for (const item of pool) {
+      if (selected.includes(item)) continue;
+
+      let score = 100 - item.index * 2;
+      if (item.fresh) score += 24;
+      if (item.hasCover) score += 10;
+      if (item.hasSummary) score += 5;
+
+      const sameSource = sourceCounts.get(item.sourceKey) || 0;
+      score -= sameSource * 55;
+
+      for (const tag of item.tags) score -= (tagCounts.get(tag) || 0) * 18;
+
+      for (const chosen of selected) {
+        const overlap = similarity(item.title, chosen.title);
+        if (overlap >= 0.68) score -= 140;
+        else if (overlap >= 0.45) score -= 55;
+        else if (overlap >= 0.3) score -= 20;
+      }
+
+      if (score > bestScore) {
+        best = item;
+        bestScore = score;
+      }
+    }
+
+    return best;
+  }
+
   function selectEditorialCards() {
-    const candidates = [...feed.querySelectorAll('.news-card')].slice(0, 16).map(cardData);
+    const candidates = [...feed.querySelectorAll('.news-card')].slice(0, 20).map(cardData);
     if (!candidates.length) return [];
 
     const heroTitle = text(hero || document, '.story-hero h2');
-    const filtered = candidates.filter(item => !heroTitle || similarity(item.title, heroTitle) < 0.5);
-    const pool = filtered.length >= 4 ? filtered : candidates;
+    const withoutHeroDuplicates = candidates.filter(item => !heroTitle || similarity(item.title, heroTitle) < 0.42);
+    const pool = withoutHeroDuplicates.length >= 4 ? withoutHeroDuplicates : candidates;
     const selected = [];
     const sourceCounts = new Map();
     const tagCounts = new Map();
 
     while (selected.length < 4 && selected.length < pool.length) {
-      let best = null;
-      let bestScore = -Infinity;
+      const unseenSources = pool.filter(item => !selected.includes(item) && !(sourceCounts.get(item.sourceKey) > 0));
+      const slotsLeft = 4 - selected.length;
+      const distinctSourcesLeft = new Set(unseenSources.map(item => item.sourceKey).filter(Boolean)).size;
+      const candidatePool = distinctSourcesLeft >= slotsLeft ? unseenSources : pool;
 
-      for (const item of pool) {
-        if (selected.includes(item)) continue;
-
-        let score = 100 - item.index * 4;
-        if (item.fresh) score += 16;
-        if (item.hasCover) score += 8;
-        if (item.hasSummary) score += 5;
-
-        const sameSource = sourceCounts.get(normalize(item.source)) || 0;
-        score -= sameSource * 30;
-
-        for (const tag of item.tags) score -= (tagCounts.get(tag) || 0) * 10;
-
-        for (const chosen of selected) {
-          const overlap = similarity(item.title, chosen.title);
-          if (overlap >= 0.65) score -= 80;
-          else if (overlap >= 0.4) score -= 35;
-        }
-
-        if (score > bestScore) {
-          best = item;
-          bestScore = score;
-        }
-      }
-
+      let best = chooseBest(candidatePool, selected, sourceCounts, tagCounts);
+      if (!best && candidatePool !== pool) best = chooseBest(pool, selected, sourceCounts, tagCounts);
       if (!best) break;
+
       selected.push(best);
-      const sourceKey = normalize(best.source);
-      sourceCounts.set(sourceKey, (sourceCounts.get(sourceKey) || 0) + 1);
+      sourceCounts.set(best.sourceKey, (sourceCounts.get(best.sourceKey) || 0) + 1);
       best.tags.forEach(tag => tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1));
     }
 
