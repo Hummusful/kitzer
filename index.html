@@ -29,11 +29,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Hebrew:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-  
   <link rel="preload" href="./styles.css?v=story-cover-frame-2" as="style">
   <link rel="stylesheet" href="./styles.css?v=story-cover-frame-2">
   <link rel="stylesheet" href="./story-cover-frame.css">
   <link rel="stylesheet" href="./summary.css?v=ai-summary-1">
+  <link rel="stylesheet" href="./homepage-v2.css?v=editorial-1">
 </head>
 <body>
   <a class="skip-link" href="#newsFeed">דלג לתוכן</a>
@@ -43,14 +43,34 @@
       <div class="brand-copy">
         <p class="eyebrow">Dusty’s</p>
         <h1 class="site-title"><a href="/" aria-label="קיצר — עמוד הבית">קיצר</a></h1>
-        
       </div>
     </header>
 
     <div class="live-strip" aria-label="פיד חי">
       <span class="dot"></span>
       <span class="label">LIVE Music Feed</span>
-          </div>
+    </div>
+
+    <div class="editorial-intro">
+      <div>
+        <p class="editorial-kicker">STORY RADAR</p>
+        <h2>הסיפור של עכשיו</h2>
+        <p>הסיפור שמוביל כרגע את שיחת המוזיקה, מאוחד ממספר מקורות.</p>
+      </div>
+    </div>
+    <section id="storyHero" class="story-hero" aria-labelledby="storyHeroTitle" hidden></section>
+
+    <section id="editorialNow" class="editorial-now" aria-labelledby="editorialNowTitle" hidden>
+      <div class="editorial-intro">
+        <div>
+          <p class="editorial-kicker">NOW PLAYING</p>
+          <h2 id="editorialNowTitle">עכשיו במוזיקה</h2>
+          <p>ארבעה סיפורים שכדאי להכיר לפני שממשיכים לפיד המלא.</p>
+        </div>
+      </div>
+      <div id="editorialNowGrid" class="editorial-now-grid"></div>
+    </section>
+
     <section class="control-panel" aria-label="בקרת פיד">
       <nav class="toolbar" aria-label="בקרת תוכן">
         <div class="toolbar-primary">
@@ -67,17 +87,17 @@
               <button class="btn active" data-genre="all" aria-pressed="true" aria-label="הצג את כל המבזקים">הכול</button>
               <button class="btn" data-genre="hebrew" aria-pressed="false" aria-label="הצג חדשות מוזיקה בעברית">עברית</button>
               <button class="btn" data-genre="international" aria-pressed="false" aria-label="הצג מבזקי מוזיקה בינלאומית">בינלאומי</button>
-              <button class="btn" data-genre="electronic" aria-pressed="false" aria-label="הצג מבזקי מוזיקה אלקטרונית" lang="en">Electronic</button>
+              <button class="btn" data-genre="electronic" aria-pressed="false" aria-label="הצג חדשות מוזיקה אלקטרונית" lang="en">Electronic</button>
             </div>
           </div>
           <div class="category-controls chart-controls" aria-label="קטגוריית מצעדים" hidden>
             <span class="toolbar-label">קטגוריה</span>
-      <div class="btn-group" role="tablist" aria-label="סוג המצעד">
-        <button class="btn chart-tab active" id="chart-israeliSongs" role="tab" data-chart="israeliSongs" aria-controls="chartContent" aria-selected="true">שירים ישראליים</button>
-        <button class="btn chart-tab" id="chart-internationalSongs" role="tab" data-chart="internationalSongs" aria-controls="chartContent" aria-selected="false">שירים בינלאומיים</button>
-        <button class="btn chart-tab" id="chart-israeliArtists" role="tab" data-chart="israeliArtists" aria-controls="chartContent" aria-selected="false">אמנים ישראליים</button>
-        <button class="btn chart-tab" id="chart-internationalArtists" role="tab" data-chart="internationalArtists" aria-controls="chartContent" aria-selected="false">אמנים בינלאומיים</button>
-      </div>
+            <div class="btn-group" role="tablist" aria-label="סוג המצעד">
+              <button class="btn chart-tab active" id="chart-israeliSongs" role="tab" data-chart="israeliSongs" aria-controls="chartContent" aria-selected="true">שירים ישראליים</button>
+              <button class="btn chart-tab" id="chart-internationalSongs" role="tab" data-chart="internationalSongs" aria-controls="chartContent" aria-selected="false">שירים בינלאומיים</button>
+              <button class="btn chart-tab" id="chart-israeliArtists" role="tab" data-chart="israeliArtists" aria-controls="chartContent" aria-selected="false">אמנים ישראליים</button>
+              <button class="btn chart-tab" id="chart-internationalArtists" role="tab" data-chart="internationalArtists" aria-controls="chartContent" aria-selected="false">אמנים בינלאומיים</button>
+            </div>
           </div>
         </div>
         <div class="btn-group-secondary">
@@ -86,6 +106,7 @@
         </div>
       </nav>
     </section>
+
     <section id="chartsPanel" class="charts-panel" aria-labelledby="chartsTitle" hidden>
       <header class="charts-header">
         <div>
@@ -97,7 +118,11 @@
       </header>
       <div id="chartContent" class="chart-content" role="tabpanel" aria-labelledby="chart-israeliSongs" aria-live="polite" tabindex="0"></div>
     </section>
-    <section id="storyHero" class="story-hero" aria-labelledby="storyHeroTitle" hidden></section>
+
+    <div id="editorialFeedHeading" class="editorial-feed-heading">
+      <h2>כל החדשות</h2>
+      <p>הפיד החי המלא מכל המקורות.</p>
+    </div>
     <main id="newsFeed" class="news-feed" role="feed" aria-live="polite" aria-busy="true">
       <div class="loading-label" role="status"><span class="loader-equalizer" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span><span>מכוונים תדר...</span></div>
       <div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div>
@@ -107,5 +132,6 @@
   <script src="./news-cache-refresh-v7.js?ready=1" defer></script>
   <script src="./app.js?v=feed-integrity-7" defer></script>
   <script src="./summary.js?v=private-access-7" defer></script>
+  <script src="./homepage-v2.js?v=editorial-1" defer></script>
 </body>
 </html>
