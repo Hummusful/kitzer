@@ -4,6 +4,7 @@
   const nowSection = document.getElementById('editorialNow');
   const hero = document.getElementById('storyHero');
   const feedHeading = document.getElementById('editorialFeedHeading');
+  const contentNav = document.getElementById('contentNav');
   if (!feed || !nowGrid || !nowSection) return;
 
   document.body.classList.add('homepage-v2');
@@ -11,6 +12,15 @@
   const text = (root, selector) => root.querySelector(selector)?.textContent?.trim() || '';
   const normalize = value => String(value || '').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
   const STOP_WORDS = new Set(['the','and','for','with','from','this','that','into','about','after','over','under','his','her','their','its','של','את','על','עם','לא','זה','זו','גם','אל','מן','הוא','היא','הם','הן','עוד']);
+  const SECTION_COPY = {
+    home: ['כל החדשות', 'הפיד החי המלא מכל המקורות.'],
+    israel: ['מוזיקה מישראל', 'חדשות, אמנים, יציאות וסיפורים מהסצנה המקומית.'],
+    world: ['מוזיקה מהעולם', 'החדשות הבולטות מהסצנה הבינלאומית.'],
+    hiphop: ['היפ־הופ', 'ראפ והיפ־הופ מהמקורות הבולטים בפיד.'],
+    electronic: ['אלקטרוני', 'חדשות מוזיקה אלקטרונית ועדכונים מהסצנה.']
+  };
+  const HIPHOP_SOURCES = ['hiphopdx','xxl mag','allhiphop','rap radar','hip hop wired'];
+  let currentSection = 'home';
 
   function tokenSet(value) {
     return new Set(normalize(value).split(' ').filter(word => word.length > 2 && !STOP_WORDS.has(word)));
@@ -168,6 +178,10 @@
   }
 
   function refreshEditorialNow() {
+    if (currentSection !== 'home') {
+      feed.querySelectorAll('.news-card.editorial-promoted').forEach(card => card.classList.remove('editorial-promoted'));
+      return;
+    }
     const cards = selectEditorialCards();
     if (!cards.length) return;
     const fragment = document.createDocumentFragment();
@@ -181,23 +195,87 @@
     nowSection.hidden = false;
   }
 
-  const feedObserver = new MutationObserver(refreshEditorialNow);
+  function isHipHopCard(card) {
+    const source = normalize(text(card, '.news-source'));
+    if (HIPHOP_SOURCES.some(name => source.includes(name))) return true;
+    const haystack = normalize(`${text(card, '.news-title')} ${text(card, '.news-summary')} ${text(card, '.news-tags')}`);
+    return /\bhip\s*hop\b|\brap\b|היפ הופ|היפהופ|ראפ/.test(haystack);
+  }
+
+  function applySectionFilter() {
+    feed.querySelectorAll('.news-card').forEach(card => {
+      card.classList.toggle('section-filtered-out', currentSection === 'hiphop' && !isHipHopCard(card));
+    });
+  }
+
+  function setFeedHeading(section) {
+    const copy = SECTION_COPY[section] || SECTION_COPY.home;
+    const heading = feedHeading?.querySelector('h2');
+    const subheading = feedHeading?.querySelector('p');
+    if (heading) heading.textContent = copy[0];
+    if (subheading) subheading.textContent = copy[1];
+  }
+
+  function setNavActive(section) {
+    contentNav?.querySelectorAll('[data-section]').forEach(button => {
+      const active = button.dataset.section === section;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-current', active ? 'page' : 'false');
+    });
+  }
+
+  function setEditorialVisibility(show) {
+    const shouldShow = show && currentSection === 'home';
+    if (hero) hero.toggleAttribute('hidden', !shouldShow || !hero.childElementCount);
+    nowSection.toggleAttribute('hidden', !shouldShow || !nowGrid.childElementCount);
+    feedHeading?.toggleAttribute('hidden', !show);
+  }
+
+  function activateSection(section) {
+    currentSection = section;
+    setNavActive(section);
+    setFeedHeading(section);
+
+    if (section === 'charts') {
+      document.querySelector('[data-view="charts"]')?.click();
+      return;
+    }
+
+    document.querySelector('[data-view="news"]')?.click();
+    const genre = section === 'israel' ? 'hebrew'
+      : section === 'world' || section === 'hiphop' ? 'international'
+      : section === 'electronic' ? 'electronic'
+      : 'all';
+    document.querySelector(`.news-controls [data-genre="${genre}"]`)?.click();
+    applySectionFilter();
+    setEditorialVisibility(true);
+  }
+
+  const feedObserver = new MutationObserver(() => {
+    applySectionFilter();
+    refreshEditorialNow();
+  });
   feedObserver.observe(feed, { childList: true, subtree: false });
   if (hero) {
     const heroObserver = new MutationObserver(refreshEditorialNow);
     heroObserver.observe(hero, { childList: true, subtree: true });
   }
-  refreshEditorialNow();
 
-  function setEditorialVisibility(show) {
-    if (hero) hero.toggleAttribute('hidden', !show || !hero.childElementCount);
-    nowSection.toggleAttribute('hidden', !show || !nowGrid.childElementCount);
-    feedHeading?.toggleAttribute('hidden', !show);
-  }
+  contentNav?.querySelectorAll('[data-section]').forEach(button => {
+    button.addEventListener('click', () => activateSection(button.dataset.section || 'home'));
+  });
 
   document.querySelectorAll('[data-view]').forEach(button => {
     button.addEventListener('click', () => {
-      setEditorialVisibility(button.dataset.view !== 'charts');
+      const charts = button.dataset.view === 'charts';
+      if (charts) {
+        currentSection = 'charts';
+        setNavActive('charts');
+      }
+      setEditorialVisibility(!charts);
     });
   });
+
+  applySectionFilter();
+  refreshEditorialNow();
 })();
