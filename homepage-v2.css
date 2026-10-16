@@ -15,6 +15,7 @@
 .editorial-now-card h3 a{color:var(--text);text-decoration:none}
 .editorial-now-card h3 a::after{content:"";position:absolute}
 .editorial-now-summary{margin:9px 0 0;color:var(--text-dim);font-size:.82rem;line-height:1.46;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.news-card.editorial-promoted{display:none!important}
 .editorial-feed-heading{margin:28px 0 10px;padding-top:14px;border-top:1px solid var(--line)}
 .editorial-feed-heading h2{margin:0;font-size:1.25rem}
 .editorial-feed-heading p{margin:4px 0 0;color:var(--muted);font-size:.82rem}
