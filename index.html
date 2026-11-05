@@ -80,7 +80,13 @@
       <div id="editorialNowGrid" class="editorial-now-grid"></div>
     </section>
 
-    <section class="control-panel" aria-label="בקרת פיד">
+    <div id="editorialFeedHeading" class="editorial-feed-heading">
+      <h2>כל החדשות</h2>
+      <p>הפיד החי המלא מכל המקורות.</p>
+    </div>
+
+    <section class="control-panel" aria-labelledby="feedControlsTitle">
+      <p id="feedControlsTitle" class="toolbar-label">סינון ותצוגה</p>
       <nav class="toolbar" aria-label="בקרת תוכן">
         <div class="toolbar-primary">
           <div class="view-switch" role="group" aria-label="תצוגה">
@@ -128,10 +134,6 @@
       <div id="chartContent" class="chart-content" role="tabpanel" aria-labelledby="chart-israeliSongs" aria-live="polite" tabindex="0"></div>
     </section>
 
-    <div id="editorialFeedHeading" class="editorial-feed-heading">
-      <h2>כל החדשות</h2>
-      <p>הפיד החי המלא מכל המקורות.</p>
-    </div>
     <main id="newsFeed" class="news-feed" role="feed" aria-live="polite" aria-busy="true">
       <div class="loading-label" role="status"><span class="loader-equalizer" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span><span>מכוונים תדר...</span></div>
       <div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div>
