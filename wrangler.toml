@@ -1,5 +1,5 @@
 name = "kitzer-summary"
-main = "worker/summary-worker.js"
+main = "worker/summary-entry.mjs"
 compatibility_date = "2026-09-05"
 keep_vars = true
 workers_dev = true
