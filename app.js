@@ -542,15 +542,9 @@ function setView(view) {
   const showingCharts = view === 'charts';
   document.getElementById('chartsPanel')?.toggleAttribute('hidden', !showingCharts);
   feedEl?.toggleAttribute('hidden', showingCharts);
-  document.querySelector('.news-controls')?.toggleAttribute('hidden', showingCharts);
   document.querySelector('.chart-controls')?.toggleAttribute('hidden', !showingCharts);
   refreshBtn?.setAttribute('title', showingCharts ? 'רענן את המצעד' : 'רענן את הפיד');
   refreshBtn?.setAttribute('aria-label', showingCharts ? 'רענן את המצעד השבועי' : 'רענן את פיד המוזיקה');
-  qsa('[data-view]').forEach(button => {
-    const active = button.dataset.view === view;
-    button.classList.toggle('active', active);
-    button.setAttribute('aria-pressed', String(active));
-  });
   if (showingCharts && !chartsData) loadCharts();
 }
 
@@ -759,7 +753,6 @@ async function loadNews(forceRefresh = false, quiet = false, bypassLocalCache = 
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  qsa('[data-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
   qsa('[data-chart]').forEach(btn => btn.addEventListener('click', () => {
     activeChart = btn.dataset.chart;
     qsa('[data-chart]').forEach(tab => {
@@ -780,17 +773,6 @@ document.addEventListener('DOMContentLoaded', () => {
     tabs[nextIndex]?.focus();
     tabs[nextIndex]?.click();
   }));
-  qsa('[data-genre]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state.genre = btn.getAttribute('data-genre') || 'all';
-      qsa('[data-genre]').forEach(b => {
-        const active = b === btn;
-        b.classList.toggle('active', active);
-        b.setAttribute('aria-pressed', String(active));
-      });
-      loadNews(false);
-    });
-  });
 
   refreshBtn?.addEventListener('click', () => {
     refreshBtn.classList.add('loading');

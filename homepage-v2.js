@@ -226,6 +226,7 @@
 
   function setEditorialVisibility(show) {
     const shouldShow = show && currentSection === 'home';
+    hero?.previousElementSibling?.toggleAttribute('hidden', !shouldShow);
     if (hero) hero.toggleAttribute('hidden', !shouldShow || !hero.childElementCount);
     nowSection.toggleAttribute('hidden', !shouldShow || !nowGrid.childElementCount);
     feedHeading?.toggleAttribute('hidden', !show);
@@ -237,16 +238,18 @@
     setFeedHeading(section);
 
     if (section === 'charts') {
-      document.querySelector('[data-view="charts"]')?.click();
+      setView('charts');
+      setEditorialVisibility(false);
       return;
     }
 
-    document.querySelector('[data-view="news"]')?.click();
+    setView('news');
     const genre = section === 'israel' ? 'hebrew'
       : section === 'world' || section === 'hiphop' ? 'international'
       : section === 'electronic' ? 'electronic'
       : 'all';
-    document.querySelector(`.news-controls [data-genre="${genre}"]`)?.click();
+    state.genre = genre;
+    loadNews(false);
     applySectionFilter();
     setEditorialVisibility(true);
   }
@@ -263,17 +266,6 @@
 
   contentNav?.querySelectorAll('[data-section]').forEach(button => {
     button.addEventListener('click', () => activateSection(button.dataset.section || 'home'));
-  });
-
-  document.querySelectorAll('[data-view]').forEach(button => {
-    button.addEventListener('click', () => {
-      const charts = button.dataset.view === 'charts';
-      if (charts) {
-        currentSection = 'charts';
-        setNavActive('charts');
-      }
-      setEditorialVisibility(!charts);
-    });
   });
 
   applySectionFilter();

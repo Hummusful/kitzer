@@ -33,7 +33,7 @@
   <link rel="stylesheet" href="./styles.css?v=story-cover-frame-2">
   <link rel="stylesheet" href="./story-cover-frame.css">
   <link rel="stylesheet" href="./summary.css?v=ai-summary-1">
-  <link rel="stylesheet" href="./homepage-v2.css?v=editorial-5">
+  <link rel="stylesheet" href="./homepage-v2.css?v=unified-navigation-6">
 </head>
 <body>
   <a class="skip-link" href="#newsFeed">דלג לתוכן</a>
@@ -51,14 +51,20 @@
       <span class="label">LIVE Music Feed</span>
     </div>
 
-    <nav id="contentNav" class="content-nav" aria-label="מדורי מוזיקה">
-      <button type="button" class="active" data-section="home" aria-current="page">ראשי</button>
-      <button type="button" data-section="israel" aria-current="false">ישראל</button>
-      <button type="button" data-section="world" aria-current="false">עולם</button>
-      <button type="button" data-section="hiphop" aria-current="false">היפ־הופ</button>
-      <button type="button" data-section="electronic" aria-current="false">אלקטרוני</button>
-      <button type="button" data-section="charts" aria-current="false">מצעדים</button>
-    </nav>
+    <div class="navigation-bar">
+      <nav id="contentNav" class="content-nav" aria-label="מדורי מוזיקה">
+        <button type="button" class="active" data-section="home" aria-current="page">ראשי</button>
+        <button type="button" data-section="israel" aria-current="false">ישראל</button>
+        <button type="button" data-section="world" aria-current="false">עולם</button>
+        <button type="button" data-section="hiphop" aria-current="false">היפ־הופ</button>
+        <button type="button" data-section="electronic" aria-current="false">אלקטרוני</button>
+        <button type="button" data-section="charts" aria-current="false">מצעדים</button>
+      </nav>
+      <div class="btn-group-secondary navigation-actions" role="group" aria-label="כלי האתר">
+        <button id="themeToggle" class="btn ghost" type="button" title="החלף בין עיצוב בהיר לכהה" aria-label="החלף עיצוב תיאטרלי">🌙</button>
+        <button id="refreshBtn" class="btn ghost" type="button" title="רענן את הפיד" aria-label="רענן את פיד המוזיקה">רענון</button>
+      </div>
+    </div>
 
     <div class="editorial-intro">
       <div>
@@ -85,43 +91,6 @@
       <p>הפיד החי המלא מכל המקורות.</p>
     </div>
 
-    <section class="control-panel" aria-labelledby="feedControlsTitle">
-      <p id="feedControlsTitle" class="toolbar-label">סינון ותצוגה</p>
-      <nav class="toolbar" aria-label="בקרת תוכן">
-        <div class="toolbar-primary">
-          <div class="view-switch" role="group" aria-label="תצוגה">
-            <span class="toolbar-label">תצוגה</span>
-            <div class="btn-group">
-              <button class="btn view-btn active" data-view="news" aria-pressed="true">חדשות</button>
-              <button class="btn view-btn" data-view="charts" aria-pressed="false">מצעדים</button>
-            </div>
-          </div>
-          <div class="category-controls news-controls" aria-label="קטגוריית חדשות">
-            <span class="toolbar-label">קטגוריה</span>
-            <div class="btn-group" role="group" aria-label="סינון לפי ז'אנר">
-              <button class="btn active" data-genre="all" aria-pressed="true" aria-label="הצג את כל המבזקים">הכול</button>
-              <button class="btn" data-genre="hebrew" aria-pressed="false" aria-label="הצג חדשות מוזיקה בעברית">עברית</button>
-              <button class="btn" data-genre="international" aria-pressed="false" aria-label="הצג מבזקי מוזיקה בינלאומית">בינלאומי</button>
-              <button class="btn" data-genre="electronic" aria-pressed="false" aria-label="הצג חדשות מוזיקה אלקטרונית" lang="en">Electronic</button>
-            </div>
-          </div>
-          <div class="category-controls chart-controls" aria-label="קטגוריית מצעדים" hidden>
-            <span class="toolbar-label">קטגוריה</span>
-            <div class="btn-group" role="tablist" aria-label="סוג המצעד">
-              <button class="btn chart-tab active" id="chart-israeliSongs" role="tab" data-chart="israeliSongs" aria-controls="chartContent" aria-selected="true">שירים ישראליים</button>
-              <button class="btn chart-tab" id="chart-internationalSongs" role="tab" data-chart="internationalSongs" aria-controls="chartContent" aria-selected="false">שירים בינלאומיים</button>
-              <button class="btn chart-tab" id="chart-israeliArtists" role="tab" data-chart="israeliArtists" aria-controls="chartContent" aria-selected="false">אמנים ישראליים</button>
-              <button class="btn chart-tab" id="chart-internationalArtists" role="tab" data-chart="internationalArtists" aria-controls="chartContent" aria-selected="false">אמנים בינלאומיים</button>
-            </div>
-          </div>
-        </div>
-        <div class="btn-group-secondary">
-          <button id="themeToggle" class="btn ghost" type="button" title="החלף בין עיצוב בהיר לכהה" aria-label="החלף עיצוב תיאטרלי">🌙</button>
-          <button id="refreshBtn" class="btn ghost" type="button" title="רענן את הפיד" aria-label="רענן את פיד המוזיקה">רענון</button>
-        </div>
-      </nav>
-    </section>
-
     <section id="chartsPanel" class="charts-panel" aria-labelledby="chartsTitle" hidden>
       <header class="charts-header">
         <div>
@@ -131,6 +100,15 @@
         </div>
         <a class="charts-source" href="https://mediaforest-group.com/weekly_charts.html" target="_blank" rel="noopener noreferrer">מקור: Media Forest</a>
       </header>
+      <div class="category-controls chart-controls" aria-label="קטגוריית מצעדים" hidden>
+        <span class="toolbar-label">סוג המצעד</span>
+        <div class="btn-group" role="tablist" aria-label="סוג המצעד">
+          <button class="btn chart-tab active" id="chart-israeliSongs" role="tab" data-chart="israeliSongs" aria-controls="chartContent" aria-selected="true">שירים ישראליים</button>
+          <button class="btn chart-tab" id="chart-internationalSongs" role="tab" data-chart="internationalSongs" aria-controls="chartContent" aria-selected="false">שירים בינלאומיים</button>
+          <button class="btn chart-tab" id="chart-israeliArtists" role="tab" data-chart="israeliArtists" aria-controls="chartContent" aria-selected="false">אמנים ישראליים</button>
+          <button class="btn chart-tab" id="chart-internationalArtists" role="tab" data-chart="internationalArtists" aria-controls="chartContent" aria-selected="false">אמנים בינלאומיים</button>
+        </div>
+      </div>
       <div id="chartContent" class="chart-content" role="tabpanel" aria-labelledby="chart-israeliSongs" aria-live="polite" tabindex="0"></div>
     </section>
 
@@ -141,8 +119,8 @@
     <footer class="footer" role="contentinfo"><p>קיצר — Dusty’s Feed</p></footer>
   </div>
   <script src="./news-cache-refresh-v7.js?ready=1" defer></script>
-  <script src="./app.js?v=feed-integrity-7" defer></script>
+  <script src="./app.js?v=unified-navigation-8" defer></script>
   <script src="./summary.js?v=private-access-7" defer></script>
-  <script src="./homepage-v2.js?v=editorial-5" defer></script>
+  <script src="./homepage-v2.js?v=unified-navigation-6" defer></script>
 </body>
 </html>
